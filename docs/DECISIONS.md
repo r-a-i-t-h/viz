@@ -14,6 +14,14 @@ Format for each entry:
 
 ---
 
+## 2026-07-16 — Hierarchy determines state layout direction
+
+**Context:** A hierarchical view communicates machine structure more directly than drawing every transition as crossing arrows.
+
+**Decision:** Preserve state document order and render compound/sequential children top-to-bottom. Render the direct regions of a parallel state left-to-right as non-wrapping columns. Nested nodes independently apply the same rule according to their own type.
+
+**Rationale:** Vertical order reads as sequence, while horizontal adjacency gives immediate visual context that parallel regions are concurrently active.
+
 ## 2026-07-16 — Visualizer is an API; React/CSS are optional
 
 **Context:** Real usage will not host the visualizer in-page — only the popup. React buttons and viz CSS must not be required by the machine host.

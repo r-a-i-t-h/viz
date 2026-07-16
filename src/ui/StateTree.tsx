@@ -19,6 +19,8 @@ export function StateTree({ node, activePaths, path = '' }: StateTreeProps) {
   const childKeys = Object.keys(node.states ?? {});
   const isActive = path === '' || activePaths.has(path);
   const transitions = Object.keys(node.on ?? {});
+  const childLayout =
+    node.type === 'parallel' ? 'parallel' : 'sequential';
 
   return (
     <div className={`node node--${node.type} ${isActive ? 'node--active' : ''}`}>
@@ -32,7 +34,10 @@ export function StateTree({ node, activePaths, path = '' }: StateTreeProps) {
         )}
       </div>
       {childKeys.length > 0 && (
-        <div className="node__children">
+        <div
+          className={`node__children node__children--${childLayout}`}
+          data-layout={childLayout}
+        >
           {childKeys.map((key) => {
             const childPath = path ? `${path}.${key}` : key;
             return (

@@ -113,6 +113,35 @@
   padding-left: 0.6rem;
 }
 
+/* Compound/sequential children follow document order from top to bottom. */
+.node__children--sequential {
+  display: flex;
+  flex-direction: column;
+}
+
+/*
+ * Parallel regions follow document order from left to right. Keep them as
+ * columns rather than wrapping, since their horizontal relationship conveys
+ * that all regions are active concurrently.
+ */
+.node__children--parallel {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(12rem, 1fr);
+  gap: 0.6rem;
+  margin-left: 0;
+  overflow-x: auto;
+  border-top: 2px solid #3b2a4d;
+  border-left: 0;
+  padding-top: 0.6rem;
+  padding-left: 0;
+}
+
+.node__children--parallel > .node {
+  min-width: 0;
+  margin-block: 0;
+}
+
 .viz__code {
   background: #0c0f16;
   border: 1px solid #1e2534;
