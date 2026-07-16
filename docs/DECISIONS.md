@@ -14,6 +14,18 @@ Format for each entry:
 
 ---
 
+## 2026-07-16 — Visualizer is an API; React/CSS are optional
+
+**Context:** Real usage will not host the visualizer in-page — only the popup. React buttons and viz CSS must not be required by the machine host.
+
+**Decision:**
+- Core surface is `createVisualizerHost()` in `src/viz/` (no React, no CSS): `inspect`, `openPopup()`, `showInline()` / `hideInline()` / `toggleInline()`, `subscribe()`, `dispose()`.
+- Optional React renderers + `visualizer.css` live under `src/ui/` and are imported only by PoC / popup pages.
+- PoC host exposes the same API as `window.viz` so launches work from the console without UI.
+- PoC buttons are thin wrappers around API calls, not the source of truth.
+
+**Rationale:** Matches the hidden-iframe deployment: ship a tiny inspect + postMessage bridge with the machine; load visualizer UI only in the popup (or a local debug page).
+
 ## 2026-07-16 — Popup went "connected" but stopped receiving updates
 
 **Context:** Host and popup both showed connected, but only the host UI updated.

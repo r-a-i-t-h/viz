@@ -1,9 +1,8 @@
-import type { StateNodeDefinition } from './inspection';
+import type { StateNodeDefinition } from '../viz';
 
 interface StateTreeProps {
   node: StateNodeDefinition;
   activePaths: Set<string>;
-  /** Dot-path to this node from the machine root (excluding the root key). */
   path?: string;
 }
 
@@ -15,12 +14,7 @@ const TYPE_BADGE: Record<StateNodeDefinition['type'], string> = {
   history: 'history',
 };
 
-/**
- * Renders a machine definition as a nested tree, highlighting the states that
- * are currently active. This is driven entirely by the captured `.definition`
- * (structure) plus the streamed active paths (current state) — proving the
- * visualizer has the machine's full make-up, not just its current value.
- */
+/** Optional React tree renderer — only used when a visualizer UI is mounted. */
 export function StateTree({ node, activePaths, path = '' }: StateTreeProps) {
   const childKeys = Object.keys(node.states ?? {});
   const isActive = path === '' || activePaths.has(path);

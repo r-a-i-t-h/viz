@@ -2,13 +2,15 @@
 
 ## What this repo is
 
-A Vite + React + TypeScript playground for experimenting with XState v5 state machines and the Stately Inspector (`@statelyai/inspect`).
+A Vite + React + TypeScript playground for XState v5 inspection and a **framework-agnostic visualizer host API** (`src/viz`). React under `src/ui/` is an optional PoC renderer — real hosts typically only call `openPopup()`.
 
 ## Conventions
 
 - TypeScript everywhere; keep strictness as configured in `tsconfig.app.json`.
 - XState v5 APIs only (`createMachine`, `createActor`, `setup`) — do not use v4 patterns like `Machine()` or `interpret()`.
-- App source lives in `src/`.
+- Core API lives in `src/viz/` — no React, no CSS.
+- Optional visualizer UI/CSS lives in `src/ui/` — do not import it from headless host code.
+- Launching the popup or toggling inline viz must remain **API methods** (`viz.openPopup()`, `viz.showInline()`, …), not React-only affordances. PoC buttons are thin wrappers around those calls (also available as `window.viz` in the host page).
 
 ## Workflow
 

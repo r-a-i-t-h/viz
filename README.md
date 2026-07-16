@@ -1,15 +1,44 @@
 # viz
 
-A Vite + React + TypeScript playground for exploring [XState](https://www.npmjs.com/package/xstate) state machines and visualizing them with [@statelyai/inspect](https://www.npmjs.com/package/@statelyai/inspect).
+A Vite + React + TypeScript playground for exploring [XState](https://www.npmjs.com/package/xstate) inspection and a **framework-agnostic visualizer API** that can open a popup over `window.postMessage`.
 
-The visualizer can run in a **popup window**, receiving portable inspection payloads from a machine host via `window.postMessage` — the same transport that works when the host is a hidden iframe on another site.
+In real deployments the machine host is typically a hidden iframe that **does not ship visualizer UI** — it only calls `viz.openPopup()` from a user gesture. React rendering in this repo is a PoC convenience.
 
 ## Stack
 
 - [Vite](https://vite.dev/) — dev server and bundler
-- [React 19](https://react.dev/) + TypeScript
+- [React 19](https://react.dev/) — optional PoC UI only (`src/ui/`)
 - [XState v5](https://stately.ai/docs/xstate) — state machines and actors
-- [@statelyai/inspect](https://stately.ai/docs/inspector) — inspection event serialization helpers
+- [@statelyai/inspect](https://stately.ai/docs/inspector) — reference / related tooling
+
+## API (what real hosts use)
+
+```ts
+import { createActor } from 'xstate';
+import { createVisualizerHost } from './viz';
+
+const viz = createVisualizerHost({
+  visualizerUrl: new URL('visualizer.html', location.href).href,
+});
+
+const actor = createActor(machine, { inspect: viz.inspect });
+actor.start();
+
+// From a user gesture (button, parent message → click, console in PoC):
+viz.openPopup();
+
+// Optional in-page surface (subscribers decide whether to render):
+viz.showInline();
+viz.hideInline();
+viz.toggleInline();
+
+viz.subscribe((snapshot) => { /* … */ });
+viz.dispose();
+```
+
+No React and no visualizer CSS are required to use this API. Optional UI lives under `src/ui/` and imports `visualizer.css` only when mounted.
+
+In the PoC host page the same API is exposed as `window.viz` for console use.
 
 ## Getting started
 
@@ -18,30 +47,19 @@ npm install
 npm run dev
 ```
 
-Then:
-
 | URL | Role |
 | --- | --- |
-| http://localhost:5173/ | Machine host (starts with no viz). Use **Show inline visualizer** and/or **Open popup visualizer**. |
-| http://localhost:5173/visualizer.html | Popup visualizer (opened by the host). |
-| http://localhost:5173/embed.html | Outer page with a **hidden iframe** hosting the machine (add `?visible=1` to show it). |
+| http://localhost:5173/ | PoC host — machine + API. Buttons call `viz.*`; console works too. |
+| http://localhost:5173/visualizer.html | Popup visualizer page. |
+| http://localhost:5173/embed.html | Outer page with a hidden iframe host (`?visible=1` to show it). |
 
-## Architecture
+## Layout
 
 ```
-[ outer site / embed.html ]
-        │  <iframe sandbox="allow-scripts allow-popups …">
-        ▼
-[ machine host / ] ── window.open ──► [ visualizer.html ]
-        │                                    ▲
-        └──── postMessage (@viz.*) ──────────┘
+src/viz/          # framework-agnostic API (createVisualizerHost, bridge, inspection)
+src/ui/           # optional React renderers + visualizer.css
+src/machine.ts    # demo machine for the PoC
 ```
-
-1. Host captures `actorRef.logic.definition` on `@xstate.actor`, then streams snapshots.
-2. Host opens the popup from a **user gesture** (required under popup blockers / iframes).
-3. Popup posts `@viz.hello`; host replays machine + latest snapshot, then live-updates.
-
-See [`docs/DECISIONS.md`](./docs/DECISIONS.md) for why `postMessage` was chosen over alternatives.
 
 ## Scripts
 

@@ -1,0 +1,168 @@
+/* Optional visualizer UI styles — imported only by src/ui/* renderers. */
+
+.viz {
+  text-align: left;
+}
+
+.viz__header {
+  margin-bottom: 0.75rem;
+}
+
+.viz__title {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #cbd3e1;
+}
+
+.viz__panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 860px) {
+  .viz__panels {
+    grid-template-columns: 1fr;
+  }
+}
+
+.viz__panel {
+  background: #12161f;
+  border: 1px solid #232b3a;
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  overflow: hidden;
+}
+
+.viz__panel h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: #cbd3e1;
+}
+
+.viz__panel h4 {
+  margin: 1rem 0 0.4rem;
+  font-size: 0.85rem;
+  color: #9aa4b2;
+}
+
+.viz__muted {
+  color: #6b7688;
+  font-size: 0.85rem;
+}
+
+.node {
+  border: 1px solid #2a3244;
+  border-radius: 8px;
+  padding: 0.4rem 0.55rem;
+  margin: 0.35rem 0;
+  background: #161b26;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.node--active {
+  border-color: #4ade80;
+  background: #14251a;
+  box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.25);
+}
+
+.node__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.node__key {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.node__type {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: #2a3244;
+  color: #9aa4b2;
+}
+
+.node__type--parallel {
+  background: #3b2a4d;
+  color: #d9b8ff;
+}
+
+.node__type--compound {
+  background: #23384d;
+  color: #9ccdff;
+}
+
+.node__events {
+  font-size: 0.7rem;
+  color: #7d879a;
+  font-family: ui-monospace, monospace;
+}
+
+.node__children {
+  margin-left: 1rem;
+  margin-top: 0.35rem;
+  border-left: 2px solid #232b3a;
+  padding-left: 0.6rem;
+}
+
+.viz__code {
+  background: #0c0f16;
+  border: 1px solid #1e2534;
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.78rem;
+  overflow: auto;
+  margin: 0;
+}
+
+.viz__log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 260px;
+  overflow: auto;
+  font-family: ui-monospace, monospace;
+  font-size: 0.75rem;
+}
+
+.viz__log-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  padding: 0.2rem 0.3rem;
+  border-bottom: 1px solid #1a2130;
+}
+
+.viz__log-type {
+  color: #7d879a;
+  min-width: 8.5rem;
+}
+
+.viz__log-item--snapshot .viz__log-type {
+  color: #4ade80;
+}
+
+.viz__log-item--event .viz__log-type {
+  color: #fbbf24;
+}
+
+.viz__log-item--actor .viz__log-type {
+  color: #9ccdff;
+}
+
+.viz__log-event {
+  color: #e6e9ef;
+  font-weight: 600;
+}
+
+.viz__log-value {
+  color: #6b7688;
+}

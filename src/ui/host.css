@@ -1,0 +1,124 @@
+/* PoC host chrome only — no visualizer/tree styles. */
+
+.poc {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  text-align: left;
+}
+
+.poc__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.25rem;
+}
+
+.poc h1 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.poc__lead {
+  margin: 0;
+  color: #9aa4b2;
+  max-width: 70ch;
+}
+
+.poc__lead code,
+.poc__api code {
+  background: #1b2130;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.poc__api {
+  margin: 0.75rem 0 0;
+  color: #7d879a;
+  font-size: 0.85rem;
+}
+
+.poc__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1.5rem 0;
+}
+
+.poc__controls button {
+  background: #2b3348;
+  border: 1px solid #3a4358;
+  color: #e6e9ef;
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.poc__controls button:hover:not(:disabled) {
+  background: #3a465f;
+}
+
+.poc__controls button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.poc__controls button.poc__api-btn {
+  background: #1f4d36;
+  border-color: #2f7a54;
+}
+
+.poc__controls button.poc__api-btn:hover:not(:disabled) {
+  background: #276344;
+}
+
+.poc__banner {
+  background: #161b26;
+  border: 1px solid #2a3244;
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  margin: 0 0 1rem;
+  color: #9aa4b2;
+  font-size: 0.9rem;
+}
+
+.poc__banner--warn {
+  border-color: #7a5b20;
+  background: #241c0f;
+  color: #f0d9a0;
+}
+
+.poc__status {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: #2a3244;
+  color: #9aa4b2;
+}
+
+.poc__status--on {
+  background: #14251a;
+  color: #4ade80;
+}
+
+.poc__status--connected {
+  background: #14251a;
+  color: #4ade80;
+}
+
+.poc__status--awaiting-hello,
+.poc__status--opening {
+  background: #2a2410;
+  color: #fbbf24;
+}
+
+.poc__status--blocked {
+  background: #2a1616;
+  color: #f87171;
+}
