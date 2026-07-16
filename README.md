@@ -74,3 +74,4 @@ src/machine.ts    # demo machine for the PoC
 
 - [`AGENTS.md`](./AGENTS.md) — guidance for AI agents working in this repo
 - [`docs/DECISIONS.md`](./docs/DECISIONS.md) — running log of findings and decisions
+- [`docs/TODO.md`](./docs/TODO.md) — remaining XState model surface for the visualizer

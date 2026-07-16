@@ -14,6 +14,14 @@ Format for each entry:
 
 ---
 
+## 2026-07-17 — TODO list for the rest of the XState model
+
+**Context:** The hierarchical visualizer covers structure, lifecycle badges, `on` hover, active value overlay, and multi-actor selection — but most of the XState model (guards as UI, invoke/spawn, input/output, history, tags, richer actions, bidirectional control, etc.) is still thin or absent. `@statelyai/inspect` does not provide traversal helpers, so each feature needs local interrogation work.
+
+**Decision:** Add `docs/TODO.md` as the living checklist of remaining model surface (plus demo-machine gaps), linked from the README and `AGENTS.md`. Check items off there as they land; record capture strategy in this log when non-obvious.
+
+**Rationale:** Keeps “what’s next” out of the decision log while giving agents and humans a single place to extend coverage without rediscovering gaps.
+
 ## 2026-07-17 — Multi-actor capture with a selection dropdown
 
 **Context:** The host previously kept one `machine` / one `stateValue`, so a second actor (e.g. a spawned child or a second `createActor` sharing `viz.inspect`) silently overwrote the first.
