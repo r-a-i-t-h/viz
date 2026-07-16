@@ -25,21 +25,8 @@ const SEND_BUTTONS: { label: string; event: ActorEvent }[] = [
   { label: 'STOP', event: { type: 'STOP' } },
 ];
 
-const STATUS_LABEL: Record<HostBridgeStatus, string> = {
-  idle: 'inline visualizer',
-  opening: 'opening popup…',
-  'awaiting-hello': 'awaiting handshake…',
-  connected: 'visualizer in popup',
-  blocked: 'popup blocked',
-};
-
-function isPoppedOut(status: HostBridgeStatus): boolean {
-  return (
-    status === 'opening' ||
-    status === 'awaiting-hello' ||
-    status === 'connected'
-  );
-}
+/** Where the visualizer UI lives — never both at once. */
+type VizSurface = 'host' | 'popup';
 
 export default function App() {
   const actorRef = useRef<ReturnType<typeof createActor<typeof demoMachine>>>(null);
@@ -53,12 +40,19 @@ export default function App() {
   const [libraryActorEvent, setLibraryActorEvent] =
     useState<StatelyInspectionEvent | null>(null);
   const [bridgeStatus, setBridgeStatus] = useState<HostBridgeStatus>('idle');
+  const [vizSurface, setVizSurface] = useState<VizSurface>('host');
 
   useEffect(() => {
     const visualizerUrl = new URL('visualizer.html', window.location.href).href;
     const bridge = new HostBridge({
       visualizerUrl,
-      onStatus: setBridgeStatus,
+      onStatus: (status) => {
+        setBridgeStatus(status);
+        // Popup closed or blocked → restore the host-side visualizer.
+        if (status === 'idle' || status === 'blocked') {
+          setVizSurface('host');
+        }
+      },
     });
     bridgeRef.current = bridge;
 
@@ -121,7 +115,14 @@ export default function App() {
     return new Set(activePaths(stateValue as never));
   }, [stateValue]);
 
-  const poppedOut = isPoppedOut(bridgeStatus);
+  const openPopup = () => {
+    const opened = bridgeRef.current?.open() ?? false;
+    if (opened) {
+      // Tear down the host visualizer immediately on a successful window.open —
+      // don't wait for the hello handshake.
+      setVizSurface('popup');
+    }
+  };
 
   return (
     <div className="app">
@@ -129,21 +130,21 @@ export default function App() {
         <div className="app__title-row">
           <h1>Machine host</h1>
           <span className={`status status--${bridgeStatus}`}>
-            {STATUS_LABEL[bridgeStatus]}
+            {vizSurface === 'popup' ? 'visualizer in popup' : 'inline visualizer'}
           </span>
         </div>
         <p>
-          Runs the demo machine. Visualizer is either inline here or in a popup
-          — never both (the host is often a hidden iframe).
+          Machine controls live here. The visualizer is shown either inline or
+          in the popup — never both.
         </p>
       </header>
 
       <section className="controls">
-        {!poppedOut && (
+        {vizSurface === 'host' && (
           <button
             type="button"
             className="controls__primary"
-            onClick={() => bridgeRef.current?.open()}
+            onClick={openPopup}
           >
             Pop out visualizer
           </button>
@@ -166,65 +167,90 @@ export default function App() {
         </p>
       )}
 
-      {poppedOut ? (
+      {vizSurface === 'popup' ? (
         <p className="banner">
-          Visualizer is in the popup window. Close it to bring the view back
-          here.
+          Host visualizer removed while the popup is open. Close the popup to
+          restore it here.
         </p>
       ) : (
-        <>
-          <main className="panels">
-            <section className="panel">
-              <h2>Machine structure</h2>
-              {machine ? (
-                <StateTree node={machine.definition} activePaths={active} />
-              ) : (
-                <p className="muted">Waiting for the @xstate.actor event…</p>
-              )}
-            </section>
-
-            <section className="panel">
-              <h2>Current state</h2>
-              <pre className="code">{JSON.stringify(stateValue, null, 2)}</pre>
-              <h3>Context</h3>
-              <pre className="code">{JSON.stringify(context, null, 2)}</pre>
-
-              <h2>Inspection event log</h2>
-              <ul className="log">
-                {log.map((entry) => (
-                  <li
-                    key={entry.seq}
-                    className={`log__item log__item--${entry.type.replace('@xstate.', '')}`}
-                  >
-                    <span className="log__type">{entry.type}</span>
-                    {entry.eventType && (
-                      <span className="log__event">{entry.eventType}</span>
-                    )}
-                    {entry.value !== undefined && (
-                      <span className="log__value">
-                        {JSON.stringify(entry.value)}
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          </main>
-
-          <section className="panel">
-            <h2>What the inspect library serialized (@xstate.actor)</h2>
-            <p className="muted">
-              Note the <code>definition</code> field — the library reads{' '}
-              <code>actorRef.logic.config</code> and stringifies it here.
-            </p>
-            <pre className="code code--scroll">
-              {libraryActorEvent
-                ? JSON.stringify(libraryActorEvent, null, 2)
-                : 'Waiting…'}
-            </pre>
-          </section>
-        </>
+        <HostVisualizer
+          machine={machine}
+          active={active}
+          stateValue={stateValue}
+          context={context}
+          log={log}
+          libraryActorEvent={libraryActorEvent}
+        />
       )}
     </div>
+  );
+}
+
+function HostVisualizer({
+  machine,
+  active,
+  stateValue,
+  context,
+  log,
+  libraryActorEvent,
+}: {
+  machine: CapturedMachine | null;
+  active: Set<string>;
+  stateValue: unknown;
+  context: unknown;
+  log: LoggedEvent[];
+  libraryActorEvent: StatelyInspectionEvent | null;
+}) {
+  return (
+    <>
+      <main className="panels">
+        <section className="panel">
+          <h2>Machine structure</h2>
+          {machine ? (
+            <StateTree node={machine.definition} activePaths={active} />
+          ) : (
+            <p className="muted">Waiting for the @xstate.actor event…</p>
+          )}
+        </section>
+
+        <section className="panel">
+          <h2>Current state</h2>
+          <pre className="code">{JSON.stringify(stateValue, null, 2)}</pre>
+          <h3>Context</h3>
+          <pre className="code">{JSON.stringify(context, null, 2)}</pre>
+
+          <h2>Inspection event log</h2>
+          <ul className="log">
+            {log.map((entry) => (
+              <li
+                key={entry.seq}
+                className={`log__item log__item--${entry.type.replace('@xstate.', '')}`}
+              >
+                <span className="log__type">{entry.type}</span>
+                {entry.eventType && (
+                  <span className="log__event">{entry.eventType}</span>
+                )}
+                {entry.value !== undefined && (
+                  <span className="log__value">{JSON.stringify(entry.value)}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      </main>
+
+      <section className="panel">
+        <h2>What the inspect library serialized (@xstate.actor)</h2>
+        <p className="muted">
+          Note the <code>definition</code> field — the library reads{' '}
+          <code>actorRef.logic.config</code> and stringifies it here.
+        </p>
+        <pre className="code code--scroll">
+          {libraryActorEvent
+            ? JSON.stringify(libraryActorEvent, null, 2)
+            : 'Waiting…'}
+        </pre>
+      </section>
+    </>
   );
 }
