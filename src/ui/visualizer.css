@@ -214,6 +214,14 @@
   box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.25);
 }
 
+.node--transition-target {
+  border-color: #fbbf24;
+  background: #2a2410;
+  box-shadow:
+    0 0 0 2px rgba(251, 191, 36, 0.45),
+    0 0 12px rgba(251, 191, 36, 0.25);
+}
+
 /* Circular lifecycle badges, overlapping the top border at top-right. */
 .node__badges {
   position: absolute;
@@ -308,12 +316,28 @@
   font-size: 0.7rem;
   color: #7d879a;
   font-family: ui-monospace, monospace;
-  cursor: help;
-  border-bottom: 1px dotted #5a6578;
   position: relative;
 }
 
-/* Hover / focus popup for lifecycle badges and "on" summaries. */
+.node__events-label,
+.node__event-separator {
+  color: #667085;
+}
+
+.node__event {
+  color: #9aa4b2;
+  cursor: default;
+  border-bottom: 1px dotted transparent;
+}
+
+.node__event:hover,
+.node__event:focus {
+  color: #fbbf24;
+  border-bottom-color: #fbbf24;
+  outline: none;
+}
+
+/* Hover / focus popup for lifecycle badges and individual "on" events. */
 .hover-tip {
   position: relative;
 }

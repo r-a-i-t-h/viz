@@ -14,6 +14,14 @@ Format for each entry:
 
 ---
 
+## 2026-07-17 — `on` events reveal targets and conditional behaviour
+
+**Context:** A compact event name does not show where it goes, while always showing transition details would make the hierarchy noisy.
+
+**Decision:** Render each `on` event as its own hover/focus target. While active, highlight all of that event’s target state nodes. Show a bullet popup only when at least one transition for the event has a guard or actions; simple unguarded/actionless transitions highlight targets without a popup.
+
+**Rationale:** Target highlighting gives immediate spatial context. Conditional/action details remain available precisely where needed without restating simple transitions.
+
 ## 2026-07-16 — Lifecycle badges on hierarchical state nodes
 
 **Context:** Hierarchical layout already conveys structure; entry / exit / after are important but easy to miss without arrow-heavy diagrams.

@@ -35,15 +35,37 @@ export function formatAfterTransitions(
     .filter(Boolean);
 }
 
-export function formatOnTransitions(
-  on: Record<string, unknown> | undefined,
+export function formatOnTransitionDetails(
+  eventType: string,
+  transitions: unknown,
 ): string[] {
-  return Object.entries(on ?? {})
-    .filter(([key]) => !AFTER_EVENT.test(key))
-    .flatMap(([eventType, value]) =>
-      asTransitionList(value).map((t) => formatOnTransition(eventType, t)),
-    )
+  return asTransitionList(transitions)
+    .filter(hasGuardOrActions)
+    .map((transition) => formatOnTransition(eventType, transition))
     .filter(Boolean);
+}
+
+/** Target node ids for highlighting while an `on` event is hovered. */
+export function getOnTransitionTargetIds(transitions: unknown): Set<string> {
+  const ids = new Set<string>();
+
+  for (const transition of asTransitionList(transitions)) {
+    if (!transition || typeof transition !== 'object') continue;
+    const target = (transition as { target?: unknown }).target;
+    const targets = Array.isArray(target) ? target : target == null ? [] : [target];
+
+    for (const item of targets) {
+      const id = targetId(item);
+      if (id) ids.add(id);
+    }
+  }
+
+  return ids;
+}
+
+/** Normalize XState target ids (`#demo.running`) to node ids (`demo.running`). */
+export function normalizeStateNodeId(id: string): string {
+  return id.replace(/^#/, '');
 }
 
 function formatAction(action: unknown): string {
@@ -100,6 +122,15 @@ function formatOnTransition(eventType: string, transition: unknown): string {
   return parts.join(' · ');
 }
 
+function hasGuardOrActions(transition: unknown): boolean {
+  if (!transition || typeof transition !== 'object') return false;
+  const t = transition as { guard?: unknown; actions?: unknown };
+  return (
+    t.guard != null ||
+    (Array.isArray(t.actions) && t.actions.length > 0)
+  );
+}
+
 function formatTargets(target: unknown): string {
   if (target == null) return '(internal)';
   const list = Array.isArray(target) ? target : [target];
@@ -121,6 +152,15 @@ function shortTarget(target: unknown): string {
     if (typeof key === 'string') return key;
   }
   return '?';
+}
+
+function targetId(target: unknown): string | null {
+  if (typeof target === 'string') return normalizeStateNodeId(target);
+  if (target && typeof target === 'object' && 'id' in target) {
+    const id = (target as { id: unknown }).id;
+    return typeof id === 'string' ? normalizeStateNodeId(id) : null;
+  }
+  return null;
 }
 
 function formatGuard(guard: unknown): string | null {

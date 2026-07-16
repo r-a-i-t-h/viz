@@ -6,7 +6,9 @@ import {
   formatAfterTransitions,
   formatEntryActions,
   formatExitActions,
-  formatOnTransitions,
+  formatOnTransitionDetails,
+  getOnTransitionTargetIds,
+  normalizeStateNodeId,
 } from './nodeDetails';
 import { DEFAULT_ZOOM_RADIUS, isZoomLarge } from './zoom';
 
@@ -19,6 +21,8 @@ interface StateTreeProps {
   focusPath?: string | null;
   zoomRadius?: number;
   onToggleFocus?: (path: string) => void;
+  highlightedTargetIds?: Set<string>;
+  onHighlightTargets?: (targets: Set<string>) => void;
 }
 
 /**
@@ -36,6 +40,9 @@ export function StateTree({
   zoomRadius?: number;
 }) {
   const [focusPath, setFocusPath] = useState<string | null>(null);
+  const [highlightedTargetIds, setHighlightedTargetIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   const onToggleFocus = useCallback((path: string) => {
     setFocusPath((current) => (current === path ? null : path));
@@ -49,6 +56,8 @@ export function StateTree({
       focusPath={focusPath}
       zoomRadius={zoomRadius}
       onToggleFocus={onToggleFocus}
+      highlightedTargetIds={highlightedTargetIds}
+      onHighlightTargets={setHighlightedTargetIds}
     />
   );
 }
@@ -61,6 +70,8 @@ function StateTreeNode({
   focusPath = null,
   zoomRadius = DEFAULT_ZOOM_RADIUS,
   onToggleFocus,
+  highlightedTargetIds = new Set(),
+  onHighlightTargets,
 }: StateTreeProps) {
   const childKeys = Object.keys(node.states ?? {});
   const isActive = path === '' || activePaths.has(path);
@@ -72,12 +83,13 @@ function StateTreeNode({
   const isFinal = node.type === 'final';
   const initialChildIds = resolveInitialChildIds(node);
   const zoomLarge = isZoomLarge(path, focusPath ?? null, zoomRadius);
+  const isTransitionTarget = highlightedTargetIds.has(
+    normalizeStateNodeId(node.id),
+  );
 
   const entryItems = formatEntryActions(node.entry);
   const exitItems = formatExitActions(node.exit);
   const afterItems = formatAfterTransitions(node.on, node.transitions);
-  const onItems = formatOnTransitions(node.on);
-
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
     // Deepest node under the cursor wins (children stopPropagation first).
     event.stopPropagation();
@@ -94,6 +106,7 @@ function StateTreeNode({
         isInitial ? 'node--initial' : '',
         isFinal ? 'node--final' : '',
         focusPath === path ? 'node--zoom-focus' : '',
+        isTransitionTarget ? 'node--transition-target' : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -170,15 +183,33 @@ function StateTreeNode({
         )}
         <span className="node__key">{node.key}</span>
         {eventKeys.length > 0 && (
-          <HoverTip
-            className="node__events"
-            label="on"
-            items={onItems}
-            placement="below"
-            align="left"
-          >
-            on: {eventKeys.join(', ')}
-          </HoverTip>
+          <span className="node__events">
+            <span className="node__events-label">on:</span>{' '}
+            {eventKeys.map((eventKey, index) => {
+              const transitions = node.on[eventKey];
+              return (
+                <span key={eventKey}>
+                  {index > 0 && <span className="node__event-separator">, </span>}
+                  <HoverTip
+                    className="node__event"
+                    label={eventKey}
+                    items={formatOnTransitionDetails(eventKey, transitions)}
+                    placement="below"
+                    align="left"
+                    onActiveChange={(active) =>
+                      onHighlightTargets?.(
+                        active
+                          ? getOnTransitionTargetIds(transitions)
+                          : new Set(),
+                      )
+                    }
+                  >
+                    {eventKey}
+                  </HoverTip>
+                </span>
+              );
+            })}
+          </span>
         )}
       </div>
 
@@ -202,6 +233,8 @@ function StateTreeNode({
                 focusPath={focusPath}
                 zoomRadius={zoomRadius}
                 onToggleFocus={onToggleFocus}
+                highlightedTargetIds={highlightedTargetIds}
+                onHighlightTargets={onHighlightTargets}
               />
             );
           })}

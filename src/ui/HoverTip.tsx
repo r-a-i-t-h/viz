@@ -13,6 +13,8 @@ interface HoverTipProps {
    * (for right-aligned icons), 'left' hangs it to the right.
    */
   align?: 'left' | 'center' | 'right';
+  /** Reports hover/focus state even when there is no popup content. */
+  onActiveChange?: (active: boolean) => void;
 }
 
 /**
@@ -26,28 +28,32 @@ export function HoverTip({
   className,
   placement = 'below',
   align = 'center',
+  onActiveChange,
 }: HoverTipProps) {
-  if (items.length === 0) {
-    return <span className={className}>{children}</span>;
-  }
-
   return (
     <span
       className={['hover-tip', className].filter(Boolean).join(' ')}
       tabIndex={0}
+      onMouseEnter={() => onActiveChange?.(true)}
+      onMouseLeave={() => onActiveChange?.(false)}
+      onFocus={() => onActiveChange?.(true)}
+      onBlur={() => onActiveChange?.(false)}
+      onClick={(event) => event.stopPropagation()}
     >
       {children}
-      <span
-        className={`hover-tip__popup hover-tip__popup--${placement} hover-tip__popup--${align}`}
-        role="tooltip"
-      >
-        <span className="hover-tip__title">{label}</span>
-        <ul className="hover-tip__list">
-          {items.map((item, index) => (
-            <li key={`${index}-${item}`}>{item}</li>
-          ))}
-        </ul>
-      </span>
+      {items.length > 0 && (
+        <span
+          className={`hover-tip__popup hover-tip__popup--${placement} hover-tip__popup--${align}`}
+          role="tooltip"
+        >
+          <span className="hover-tip__title">{label}</span>
+          <ul className="hover-tip__list">
+            {items.map((item, index) => (
+              <li key={`${index}-${item}`}>{item}</li>
+            ))}
+          </ul>
+        </span>
+      )}
     </span>
   );
 }
