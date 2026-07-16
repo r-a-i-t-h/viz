@@ -22,6 +22,14 @@ Format for each entry:
 
 **Rationale:** Keeps the hierarchical view while giving an immediate “this node has lifecycle/timing behaviour” signal, matching the previous visualizer’s convention.
 
+## 2026-07-17 — Two-level click zoom with neighborhood
+
+**Context:** The full machine overview is dense; users need a way to inspect a local region without a continuous zoom widget.
+
+**Decision:** Two scales only — `small` (default for the whole tree) and `large`. Clicking a node toggles focus on that path; the focused node plus ancestors/descendants within 2 hops render large. Clicking the focused node again returns everything to small.
+
+**Rationale:** Discrete zoom matches the hierarchical mental model and keeps interaction simple (click under cursor). Limiting to the parent/child lineage (±2) enlarges a useful patch without blowing up unrelated parallel regions.
+
 ## 2026-07-17 — Hover details for entry/exit/after and on
 
 **Context:** Icons and the compact `on:` summary hide the concrete actions/transitions.

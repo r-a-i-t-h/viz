@@ -1,3 +1,4 @@
+import { useCallback, useState, type MouseEvent } from 'react';
 import type { StateNodeDefinition } from '../viz';
 import { HoverTip } from './HoverTip';
 import { nodeLifecycleFlags } from './lifecycleBadges';
@@ -7,6 +8,7 @@ import {
   formatExitActions,
   formatOnTransitions,
 } from './nodeDetails';
+import { isZoomLarge } from './zoom';
 
 interface StateTreeProps {
   node: StateNodeDefinition;
@@ -14,14 +16,45 @@ interface StateTreeProps {
   path?: string;
   /** True when this node is the parent's initial child. */
   isInitial?: boolean;
+  focusPath?: string | null;
+  onToggleFocus?: (path: string) => void;
 }
 
-/** Optional React tree renderer — only used when a visualizer UI is mounted. */
+/**
+ * Stateful tree: starts at zoom "small"; clicking a node toggles a large
+ * neighborhood (±2 hops along the parent/child line).
+ */
 export function StateTree({
+  node,
+  activePaths,
+}: {
+  node: StateNodeDefinition;
+  activePaths: Set<string>;
+}) {
+  const [focusPath, setFocusPath] = useState<string | null>(null);
+
+  const onToggleFocus = useCallback((path: string) => {
+    setFocusPath((current) => (current === path ? null : path));
+  }, []);
+
+  return (
+    <StateTreeNode
+      node={node}
+      activePaths={activePaths}
+      path=""
+      focusPath={focusPath}
+      onToggleFocus={onToggleFocus}
+    />
+  );
+}
+
+function StateTreeNode({
   node,
   activePaths,
   path = '',
   isInitial = false,
+  focusPath = null,
+  onToggleFocus,
 }: StateTreeProps) {
   const childKeys = Object.keys(node.states ?? {});
   const isActive = path === '' || activePaths.has(path);
@@ -32,23 +65,47 @@ export function StateTree({
   const lifecycle = nodeLifecycleFlags(node);
   const isFinal = node.type === 'final';
   const initialChildIds = resolveInitialChildIds(node);
+  const zoomLarge = isZoomLarge(path, focusPath ?? null);
 
   const entryItems = formatEntryActions(node.entry);
   const exitItems = formatExitActions(node.exit);
   const afterItems = formatAfterTransitions(node.on, node.transitions);
   const onItems = formatOnTransitions(node.on);
 
+  const handleClick = (event: MouseEvent<HTMLDivElement>) => {
+    // Deepest node under the cursor wins (children stopPropagation first).
+    event.stopPropagation();
+    onToggleFocus?.(path);
+  };
+
   return (
     <div
       className={[
         'node',
         `node--${node.type}`,
+        zoomLarge ? 'node--zoom-large' : 'node--zoom-small',
         isActive ? 'node--active' : '',
         isInitial ? 'node--initial' : '',
         isFinal ? 'node--final' : '',
+        focusPath === path ? 'node--zoom-focus' : '',
       ]
         .filter(Boolean)
         .join(' ')}
+      onClick={handleClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          event.stopPropagation();
+          onToggleFocus?.(path);
+        }
+      }}
+      title={
+        zoomLarge
+          ? 'Click to collapse zoom'
+          : 'Click to enlarge this node (±2 hops)'
+      }
     >
       {isInitial && (
         <span className="node__initial" title="initial">
@@ -128,7 +185,7 @@ export function StateTree({
             const child = node.states[key];
             const childPath = path ? `${path}.${key}` : key;
             return (
-              <StateTree
+              <StateTreeNode
                 key={key}
                 node={child}
                 activePaths={activePaths}
@@ -136,6 +193,8 @@ export function StateTree({
                 isInitial={
                   initialChildIds.has(child.id) || initialChildIds.has(key)
                 }
+                focusPath={focusPath}
+                onToggleFocus={onToggleFocus}
               />
             );
           })}
