@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Embed demo — machine in hidden iframe</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font: 15px/1.5 system-ui, sans-serif;
+        background: #0b0e14;
+        color: #e6e9ef;
+      }
+      body {
+        margin: 0;
+        padding: 2rem 1.5rem;
+        max-width: 720px;
+      }
+      code {
+        background: #1b2130;
+        padding: 0.1em 0.35em;
+        border-radius: 4px;
+        font-size: 0.9em;
+      }
+      .note {
+        color: #9aa4b2;
+        margin-bottom: 1.5rem;
+      }
+      /* Hidden iframe: zero-size but still scriptable and able to open popups. */
+      iframe.host {
+        position: absolute;
+        width: 0;
+        height: 0;
+        border: 0;
+        opacity: 0;
+        pointer-events: none;
+      }
+      /* Visible variant for local debugging — toggle with ?visible=1 */
+      iframe.host.visible {
+        position: static;
+        width: 100%;
+        height: 70vh;
+        opacity: 1;
+        pointer-events: auto;
+        border: 1px solid #232b3a;
+        border-radius: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Embed demo</h1>
+    <p class="note">
+      This page mimics the real deployment: an outer site embeds the machine host
+      in a <strong>hidden iframe</strong>. The iframe opens the visualizer popup
+      and streams events via <code>postMessage</code>.
+    </p>
+    <p class="note">
+      Sandbox allows scripts + popups (required). Add
+      <code>?visible=1</code> to show the iframe while developing.
+    </p>
+    <p class="note" id="hint">
+      The host UI is hidden — open
+      <a href="/?embed=1" target="_blank" rel="noopener">/?</a>
+      directly if you need the controls, or use <code>?visible=1</code> on this
+      page.
+    </p>
+
+    <!--
+      allow-scripts: run the machine
+      allow-popups / allow-popups-to-escape-sandbox: window.open from iframe
+      allow-same-origin: needed for Vite HMR / module scripts on same origin
+      (in production cross-origin embeds, drop allow-same-origin if you can)
+    -->
+    <iframe
+      id="host"
+      class="host"
+      title="Machine host"
+      src="/"
+      sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+    ></iframe>
+
+    <script>
+      const params = new URLSearchParams(location.search);
+      const iframe = document.getElementById('host');
+      if (params.has('visible')) {
+        iframe.classList.add('visible');
+        document.getElementById('hint').textContent =
+          'Iframe is visible (debug mode). Use “Pop out visualizer” inside it.';
+      }
+    </script>
+  </body>
+</html>

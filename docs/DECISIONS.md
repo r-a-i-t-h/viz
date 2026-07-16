@@ -14,6 +14,22 @@ Format for each entry:
 
 ---
 
+## 2026-07-16 — Popup visualizer over `postMessage` (iframe-compatible)
+
+**Context:** The real machine will run in a hidden iframe embedded in another site, with limited permissions. We need the visualizer in a separate popup window, receiving events from the host.
+
+**Decision:** Use `window.postMessage` with `targetOrigin: "*"` between the host (iframe) and a popup opened via `window.open` from a **user gesture**. Custom protocol (`@viz.hello` / `@viz.machine` / `@viz.snapshot` / `@viz.log`) with sticky replay of machine + latest snapshot when the popup connects. Pages: `/` (host), `/visualizer.html` (popup), `/embed.html` (demo outer page with hidden iframe).
+
+**Rationale:** Most compatible option under constrained permissions:
+- Works cross-origin (iframe origin ≠ popup origin).
+- No BroadcastChannel / SharedWorker / storage — those fail or are same-origin–limited in sandboxed / multi-origin embeds.
+- Matches the approach `@statelyai/inspect` already uses (`BrowserAdapter` + `@statelyai.connected`).
+- Payload must be portable JSON (functions stripped) because live `actorRef` / `logic` cannot cross the message boundary — structure is captured on the host first, then shipped.
+
+**Embed constraints to remember:** sandboxed iframes need `allow-scripts`, `allow-popups`, and usually `allow-popups-to-escape-sandbox`. Popup open must be a click (blockers are harsher inside iframes).
+
+---
+
 ## 2026-07-16 — Intention: revive the state machine visualizer for XState v5
 
 **Context:** We previously built a visualizer against XState v4 and the old `@xstate/inspect`. XState v5 + the new `@statelyai/inspect` take a different approach and we need to re-establish the foundation. The core blocker: inspection events surface the *current state*, but a visualizer needs the *entire machine make-up* (all states, nesting, parallel regions, transitions). We could see all the events flow, but couldn't find the machine config on an actor event.

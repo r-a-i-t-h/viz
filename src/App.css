@@ -10,8 +10,16 @@
 }
 
 .app__header h1 {
-  margin: 0 0 0.25rem;
+  margin: 0;
   font-size: 1.6rem;
+}
+
+.app__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.25rem;
 }
 
 .app__header p {
@@ -50,6 +58,60 @@
 
 .controls button:hover {
   background: #3a465f;
+}
+
+.controls__primary {
+  background: #1f4d36 !important;
+  border-color: #2f7a54 !important;
+}
+
+.controls__primary:hover {
+  background: #276344 !important;
+}
+
+.banner {
+  background: #161b26;
+  border: 1px solid #2a3244;
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  margin: 0 0 1rem;
+  color: #9aa4b2;
+  font-size: 0.9rem;
+}
+
+.banner--warn {
+  border-color: #7a5b20;
+  background: #241c0f;
+  color: #f0d9a0;
+}
+
+.status {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: #2a3244;
+  color: #9aa4b2;
+}
+
+.status--connected {
+  background: #14251a;
+  color: #4ade80;
+}
+
+.status--awaiting-hello,
+.status--opening,
+.status--waiting {
+  background: #2a2410;
+  color: #fbbf24;
+}
+
+.status--blocked,
+.status--closed,
+.status--orphan {
+  background: #2a1616;
+  color: #f87171;
 }
 
 .panels {

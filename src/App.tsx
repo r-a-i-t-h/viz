@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createActor, type InspectionEvent } from 'xstate';
 import { createInspector, type StatelyInspectionEvent } from '@statelyai/inspect';
+import { HostBridge, type HostBridgeStatus } from './bridge/hostBridge';
 import { demoMachine } from './machine';
 import {
   activePaths,
@@ -24,8 +25,17 @@ const SEND_BUTTONS: { label: string; event: ActorEvent }[] = [
   { label: 'STOP', event: { type: 'STOP' } },
 ];
 
+const STATUS_LABEL: Record<HostBridgeStatus, string> = {
+  idle: 'popup closed',
+  opening: 'opening…',
+  'awaiting-hello': 'awaiting handshake…',
+  connected: 'popup connected',
+  blocked: 'popup blocked',
+};
+
 export default function App() {
   const actorRef = useRef<ReturnType<typeof createActor<typeof demoMachine>>>(null);
+  const bridgeRef = useRef<HostBridge | null>(null);
   const seqRef = useRef(0);
 
   const [machine, setMachine] = useState<CapturedMachine | null>(null);
@@ -34,11 +44,16 @@ export default function App() {
   const [log, setLog] = useState<LoggedEvent[]>([]);
   const [libraryActorEvent, setLibraryActorEvent] =
     useState<StatelyInspectionEvent | null>(null);
+  const [bridgeStatus, setBridgeStatus] = useState<HostBridgeStatus>('idle');
 
   useEffect(() => {
-    // A custom in-memory adapter so we can watch the *library's* serialized
-    // events. This proves the inspect library responds to inspection events and
-    // that its `@xstate.actor` event carries the machine config as `definition`.
+    const visualizerUrl = new URL('visualizer.html', window.location.href).href;
+    const bridge = new HostBridge({
+      visualizerUrl,
+      onStatus: setBridgeStatus,
+    });
+    bridgeRef.current = bridge;
+
     const inspector = createInspector({
       send: (event) => {
         if (event.type === '@xstate.actor') {
@@ -48,14 +63,30 @@ export default function App() {
     });
 
     const inspect = (event: InspectionEvent) => {
-      // 1. Feed the Stately inspect library so it can process/serialize events.
       inspector.inspect.next?.(event);
 
-      // 2. Our own handling: capture structure once, log everything.
       const captured = captureMachine(event);
-      if (captured) setMachine(captured);
+      if (captured) {
+        setMachine(captured);
+        bridge.sendMachine(captured);
+      }
 
-      setLog((prev) => [summarizeEvent(event, seqRef.current++), ...prev].slice(0, 40));
+      const logged = summarizeEvent(event, seqRef.current++);
+      setLog((prev) => [logged, ...prev].slice(0, 40));
+      bridge.sendLog(logged);
+
+      if (event.type === '@xstate.snapshot') {
+        const snapshot = event.snapshot as {
+          value?: unknown;
+          context?: unknown;
+        };
+        bridge.sendSnapshot({
+          sessionId: logged.sessionId,
+          value: snapshot.value,
+          context: snapshot.context,
+          eventType: logged.eventType,
+        });
+      }
     };
 
     const actor = createActor(demoMachine, { inspect });
@@ -72,6 +103,8 @@ export default function App() {
       sub.unsubscribe();
       actor.stop();
       inspector.stop();
+      bridge.dispose();
+      bridgeRef.current = null;
     };
   }, []);
 
@@ -83,16 +116,27 @@ export default function App() {
   return (
     <div className="app">
       <header className="app__header">
-        <h1>XState v5 Inspection Visualizer</h1>
+        <div className="app__title-row">
+          <h1>Machine host</h1>
+          <span className={`status status--${bridgeStatus}`}>
+            {STATUS_LABEL[bridgeStatus]}
+          </span>
+        </div>
         <p>
-          The full machine make-up is captured from{' '}
-          <code>actorRef.logic.definition</code> on the{' '}
-          <code>@xstate.actor</code> event, then live snapshot values are
-          overlaid to highlight active states.
+          Runs the demo machine and streams portable inspection payloads to a
+          popup visualizer over <code>postMessage</code> (works from a hidden
+          iframe).
         </p>
       </header>
 
       <section className="controls">
+        <button
+          type="button"
+          className="controls__primary"
+          onClick={() => bridgeRef.current?.open()}
+        >
+          Pop out visualizer
+        </button>
         {SEND_BUTTONS.map(({ label, event }) => (
           <button
             key={label}
@@ -104,9 +148,16 @@ export default function App() {
         ))}
       </section>
 
+      {bridgeStatus === 'blocked' && (
+        <p className="banner banner--warn">
+          Popup was blocked. Allow popups for this origin (especially when
+          embedded in an iframe), then try again.
+        </p>
+      )}
+
       <main className="panels">
         <section className="panel">
-          <h2>Machine structure (from definition)</h2>
+          <h2>Local preview (host)</h2>
           {machine ? (
             <StateTree node={machine.definition} activePaths={active} />
           ) : (
@@ -123,9 +174,14 @@ export default function App() {
           <h2>Inspection event log</h2>
           <ul className="log">
             {log.map((entry) => (
-              <li key={entry.seq} className={`log__item log__item--${entry.type.replace('@xstate.', '')}`}>
+              <li
+                key={entry.seq}
+                className={`log__item log__item--${entry.type.replace('@xstate.', '')}`}
+              >
                 <span className="log__type">{entry.type}</span>
-                {entry.eventType && <span className="log__event">{entry.eventType}</span>}
+                {entry.eventType && (
+                  <span className="log__event">{entry.eventType}</span>
+                )}
                 {entry.value !== undefined && (
                   <span className="log__value">{JSON.stringify(entry.value)}</span>
                 )}
