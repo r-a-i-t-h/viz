@@ -8,7 +8,7 @@ import {
   formatExitActions,
   formatOnTransitions,
 } from './nodeDetails';
-import { isZoomLarge } from './zoom';
+import { DEFAULT_ZOOM_RADIUS, isZoomLarge } from './zoom';
 
 interface StateTreeProps {
   node: StateNodeDefinition;
@@ -17,19 +17,23 @@ interface StateTreeProps {
   /** True when this node is the parent's initial child. */
   isInitial?: boolean;
   focusPath?: string | null;
+  zoomRadius?: number;
   onToggleFocus?: (path: string) => void;
 }
 
 /**
  * Stateful tree: starts at zoom "small"; clicking a node toggles a large
- * neighborhood (±2 hops along the parent/child line).
+ * neighborhood (±zoomRadius hops along the parent/child line).
  */
 export function StateTree({
   node,
   activePaths,
+  zoomRadius = DEFAULT_ZOOM_RADIUS,
 }: {
   node: StateNodeDefinition;
   activePaths: Set<string>;
+  /** Neighborhood radius in hops (±). Controllable from the visualizer UI. */
+  zoomRadius?: number;
 }) {
   const [focusPath, setFocusPath] = useState<string | null>(null);
 
@@ -43,6 +47,7 @@ export function StateTree({
       activePaths={activePaths}
       path=""
       focusPath={focusPath}
+      zoomRadius={zoomRadius}
       onToggleFocus={onToggleFocus}
     />
   );
@@ -54,6 +59,7 @@ function StateTreeNode({
   path = '',
   isInitial = false,
   focusPath = null,
+  zoomRadius = DEFAULT_ZOOM_RADIUS,
   onToggleFocus,
 }: StateTreeProps) {
   const childKeys = Object.keys(node.states ?? {});
@@ -65,7 +71,7 @@ function StateTreeNode({
   const lifecycle = nodeLifecycleFlags(node);
   const isFinal = node.type === 'final';
   const initialChildIds = resolveInitialChildIds(node);
-  const zoomLarge = isZoomLarge(path, focusPath ?? null);
+  const zoomLarge = isZoomLarge(path, focusPath ?? null, zoomRadius);
 
   const entryItems = formatEntryActions(node.entry);
   const exitItems = formatExitActions(node.exit);
@@ -104,7 +110,7 @@ function StateTreeNode({
       title={
         zoomLarge
           ? 'Click to collapse zoom'
-          : 'Click to enlarge this node (±2 hops)'
+          : `Click to enlarge this node (±${zoomRadius} hops)`
       }
     >
       {isInitial && (
@@ -194,6 +200,7 @@ function StateTreeNode({
                   initialChildIds.has(child.id) || initialChildIds.has(key)
                 }
                 focusPath={focusPath}
+                zoomRadius={zoomRadius}
                 onToggleFocus={onToggleFocus}
               />
             );

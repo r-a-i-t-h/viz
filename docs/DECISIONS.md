@@ -22,6 +22,14 @@ Format for each entry:
 
 **Rationale:** Keeps the hierarchical view while giving an immediate “this node has lifecycle/timing behaviour” signal, matching the previous visualizer’s convention.
 
+## 2026-07-17 — Zoom hop radius is on-screen configurable
+
+**Context:** A fixed ±2 hop neighborhood is a reasonable default but too blunt for deep or shallow machines.
+
+**Decision:** Expose `zoomRadius` on `StateTree` / `VisualizerView` (`defaultZoomRadius` prop) and an on-screen − / ±N / + control (clamped 0–8). Changing hops immediately re-evaluates which nodes around the current focus render large.
+
+**Rationale:** Keeps click-zoom simple while letting the user widen or tighten the patch without code changes.
+
 ## 2026-07-17 — Two-level click zoom with neighborhood
 
 **Context:** The full machine overview is dense; users need a way to inspect a local region without a continuous zoom widget.

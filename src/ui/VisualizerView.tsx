@@ -1,6 +1,13 @@
+import { useState } from 'react';
 import type { StateValue } from 'xstate';
 import { activePaths, type VisualizerSnapshot } from '../viz';
 import { StateTree } from './StateTree';
+import {
+  clampZoomRadius,
+  DEFAULT_ZOOM_RADIUS,
+  MAX_ZOOM_RADIUS,
+  MIN_ZOOM_RADIUS,
+} from './zoom';
 import './visualizer.css';
 
 /**
@@ -11,10 +18,17 @@ import './visualizer.css';
 export function VisualizerView({
   snapshot,
   title = 'Visualizer',
+  defaultZoomRadius = DEFAULT_ZOOM_RADIUS,
 }: {
   snapshot: VisualizerSnapshot;
   title?: string;
+  /** Initial ± hops for click-zoom neighborhood (also adjustable on-screen). */
+  defaultZoomRadius?: number;
 }) {
+  const [zoomRadius, setZoomRadius] = useState(() =>
+    clampZoomRadius(defaultZoomRadius),
+  );
+
   const active =
     snapshot.stateValue === undefined
       ? new Set<string>()
@@ -23,7 +37,10 @@ export function VisualizerView({
   return (
     <div className="viz">
       <header className="viz__header">
-        <h2 className="viz__title">{title}</h2>
+        <div className="viz__header-row">
+          <h2 className="viz__title">{title}</h2>
+          <ZoomHopsControl value={zoomRadius} onChange={setZoomRadius} />
+        </div>
       </header>
 
       <main className="viz__panels">
@@ -33,6 +50,7 @@ export function VisualizerView({
             <StateTree
               node={snapshot.machine.definition}
               activePaths={active}
+              zoomRadius={zoomRadius}
             />
           ) : (
             <p className="viz__muted">Waiting for machine definition…</p>
@@ -70,6 +88,50 @@ export function VisualizerView({
           </ul>
         </section>
       </main>
+    </div>
+  );
+}
+
+function ZoomHopsControl({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (next: number) => void;
+}) {
+  return (
+    <div
+      className="viz__zoom-control"
+      title="How many parent/child hops around a clicked node become large"
+    >
+      <span className="viz__zoom-label">Zoom hops</span>
+      <button
+        type="button"
+        className="viz__zoom-btn"
+        aria-label="Decrease zoom hops"
+        disabled={value <= MIN_ZOOM_RADIUS}
+        onClick={(event) => {
+          event.stopPropagation();
+          onChange(clampZoomRadius(value - 1));
+        }}
+      >
+        −
+      </button>
+      <span className="viz__zoom-value" aria-live="polite">
+        ±{value}
+      </span>
+      <button
+        type="button"
+        className="viz__zoom-btn"
+        aria-label="Increase zoom hops"
+        disabled={value >= MAX_ZOOM_RADIUS}
+        onClick={(event) => {
+          event.stopPropagation();
+          onChange(clampZoomRadius(value + 1));
+        }}
+      >
+        +
+      </button>
     </div>
   );
 }

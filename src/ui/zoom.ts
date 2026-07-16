@@ -2,10 +2,19 @@
  * Two-level zoom neighborhood around a focused state path.
  *
  * A path is "large" when it lies on the same ancestor/descendant line as the
- * focus and is within `radius` hops (default 2) in either direction.
+ * focus and is within `radius` hops in either direction.
  */
 
-export const ZOOM_RADIUS = 2;
+/** Default neighborhood radius (± hops). Overridable via UI / props. */
+export const DEFAULT_ZOOM_RADIUS = 2;
+
+export const MIN_ZOOM_RADIUS = 0;
+export const MAX_ZOOM_RADIUS = 8;
+
+export function clampZoomRadius(radius: number): number {
+  if (!Number.isFinite(radius)) return DEFAULT_ZOOM_RADIUS;
+  return Math.min(MAX_ZOOM_RADIUS, Math.max(MIN_ZOOM_RADIUS, Math.round(radius)));
+}
 
 export function pathHopDistance(a: string, b: string): number | null {
   const aParts = a === '' ? [] : a.split('.');
@@ -25,7 +34,7 @@ export function pathHopDistance(a: string, b: string): number | null {
 export function isZoomLarge(
   path: string,
   focusPath: string | null,
-  radius: number = ZOOM_RADIUS,
+  radius: number = DEFAULT_ZOOM_RADIUS,
 ): boolean {
   if (focusPath === null) return false;
   const distance = pathHopDistance(path, focusPath);

@@ -8,10 +8,66 @@
   margin-bottom: 0.75rem;
 }
 
+.viz__header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 .viz__title {
   margin: 0;
   font-size: 1.1rem;
   color: #cbd3e1;
+}
+
+.viz__zoom-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.35rem;
+  border: 1px solid #2a3244;
+  border-radius: 999px;
+  background: #161b26;
+  color: #9aa4b2;
+  font-size: 0.75rem;
+  user-select: none;
+}
+
+.viz__zoom-label {
+  padding-left: 0.25rem;
+  color: #7d879a;
+}
+
+.viz__zoom-value {
+  min-width: 2rem;
+  text-align: center;
+  font-family: ui-monospace, monospace;
+  font-weight: 600;
+  color: #e6e9ef;
+}
+
+.viz__zoom-btn {
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 1px solid #3a4358;
+  border-radius: 999px;
+  background: #1f2635;
+  color: #e6e9ef;
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.viz__zoom-btn:hover:not(:disabled) {
+  background: #2b3348;
+}
+
+.viz__zoom-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .viz__panels {
