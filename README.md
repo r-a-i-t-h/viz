@@ -22,7 +22,7 @@ Then:
 
 | URL | Role |
 | --- | --- |
-| http://localhost:5173/ | Machine host (controls + local preview). Click **Pop out visualizer**. |
+| http://localhost:5173/ | Machine host (starts with no viz). Use **Show inline visualizer** and/or **Open popup visualizer**. |
 | http://localhost:5173/visualizer.html | Popup visualizer (opened by the host). |
 | http://localhost:5173/embed.html | Outer page with a **hidden iframe** hosting the machine (add `?visible=1` to show it). |
 

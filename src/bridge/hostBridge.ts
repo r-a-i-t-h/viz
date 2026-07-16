@@ -74,15 +74,6 @@ export class HostBridge {
     return this.status;
   }
 
-  /** True when the visualizer is expected to live in the popup, not the host. */
-  isPoppedOut(): boolean {
-    return (
-      this.status === 'opening' ||
-      this.status === 'awaiting-hello' ||
-      this.status === 'connected'
-    );
-  }
-
   /**
    * Must be called from a user gesture (click). Popup blockers are especially
    * aggressive when the opener lives inside an iframe.

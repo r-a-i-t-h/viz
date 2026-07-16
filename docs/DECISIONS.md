@@ -24,7 +24,14 @@ Format for each entry:
 1. On `@viz.hello`, always re-bind `this.popup` from `event.source`.
 2. Only honour `@viz.bye` when `event.source === this.popup`.
 3. Send `@viz.bye` on `pagehide` (real close), not on React effect cleanup.
-4. Visualizer is exclusive: when popped out, host hides the inline viz (host is often a hidden iframe anyway); closing the popup restores it.
+
+## 2026-07-16 — Inline and popup visualizers are independent
+
+**Context:** Closing the popup was restoring (or implying) an in-page visualizer. In the real embed the host is often hidden, and the two surfaces are discrete choices.
+
+**Decision:** Start with **no** visualizer. Provide separate controls — “Show/Hide inline visualizer” and “Open popup visualizer”. Either, both, or neither may be active. Closing the popup does not open the inline view.
+
+**Rationale:** Matches the deployment model (hidden iframe host + optional debugger UI) and avoids surprising auto-open behavior.
 
 ## 2026-07-16 — Popup visualizer over `postMessage` (iframe-compatible)
 

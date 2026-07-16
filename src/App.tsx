@@ -25,8 +25,13 @@ const SEND_BUTTONS: { label: string; event: ActorEvent }[] = [
   { label: 'STOP', event: { type: 'STOP' } },
 ];
 
-/** Where the visualizer UI lives — never both at once. */
-type VizSurface = 'host' | 'popup';
+const POPUP_STATUS_LABEL: Record<HostBridgeStatus, string> = {
+  idle: 'popup closed',
+  opening: 'opening popup…',
+  'awaiting-hello': 'awaiting handshake…',
+  connected: 'popup connected',
+  blocked: 'popup blocked',
+};
 
 export default function App() {
   const actorRef = useRef<ReturnType<typeof createActor<typeof demoMachine>>>(null);
@@ -40,19 +45,19 @@ export default function App() {
   const [libraryActorEvent, setLibraryActorEvent] =
     useState<StatelyInspectionEvent | null>(null);
   const [bridgeStatus, setBridgeStatus] = useState<HostBridgeStatus>('idle');
-  const [vizSurface, setVizSurface] = useState<VizSurface>('host');
+  // Independent choices — start with neither; either/both/neither are valid.
+  const [showInlineViz, setShowInlineViz] = useState(false);
+
+  const popupOpen =
+    bridgeStatus === 'opening' ||
+    bridgeStatus === 'awaiting-hello' ||
+    bridgeStatus === 'connected';
 
   useEffect(() => {
     const visualizerUrl = new URL('visualizer.html', window.location.href).href;
     const bridge = new HostBridge({
       visualizerUrl,
-      onStatus: (status) => {
-        setBridgeStatus(status);
-        // Popup closed or blocked → restore the host-side visualizer.
-        if (status === 'idle' || status === 'blocked') {
-          setVizSurface('host');
-        }
-      },
+      onStatus: setBridgeStatus,
     });
     bridgeRef.current = bridge;
 
@@ -115,40 +120,42 @@ export default function App() {
     return new Set(activePaths(stateValue as never));
   }, [stateValue]);
 
-  const openPopup = () => {
-    const opened = bridgeRef.current?.open() ?? false;
-    if (opened) {
-      // Tear down the host visualizer immediately on a successful window.open —
-      // don't wait for the hello handshake.
-      setVizSurface('popup');
-    }
-  };
-
   return (
     <div className="app">
       <header className="app__header">
         <div className="app__title-row">
           <h1>Machine host</h1>
+          <span
+            className={`status ${showInlineViz ? 'status--connected' : ''}`}
+          >
+            inline {showInlineViz ? 'on' : 'off'}
+          </span>
           <span className={`status status--${bridgeStatus}`}>
-            {vizSurface === 'popup' ? 'visualizer in popup' : 'inline visualizer'}
+            {POPUP_STATUS_LABEL[bridgeStatus]}
           </span>
         </div>
         <p>
-          Machine controls live here. The visualizer is shown either inline or
-          in the popup — never both.
+          Machine controls live here. Inline and popup visualizers are separate
+          choices — either, both, or neither.
         </p>
       </header>
 
       <section className="controls">
-        {vizSurface === 'host' && (
-          <button
-            type="button"
-            className="controls__primary"
-            onClick={openPopup}
-          >
-            Pop out visualizer
-          </button>
-        )}
+        <button
+          type="button"
+          className="controls__primary"
+          onClick={() => setShowInlineViz((v) => !v)}
+        >
+          {showInlineViz ? 'Hide inline visualizer' : 'Show inline visualizer'}
+        </button>
+        <button
+          type="button"
+          className="controls__primary"
+          onClick={() => bridgeRef.current?.open()}
+          disabled={popupOpen}
+        >
+          {popupOpen ? 'Popup visualizer open' : 'Open popup visualizer'}
+        </button>
         {SEND_BUTTONS.map(({ label, event }) => (
           <button
             key={label}
@@ -167,12 +174,14 @@ export default function App() {
         </p>
       )}
 
-      {vizSurface === 'popup' ? (
+      {!showInlineViz && !popupOpen && (
         <p className="banner">
-          Host visualizer removed while the popup is open. Close the popup to
-          restore it here.
+          No visualizer active. Use the buttons above to open one inline, in a
+          popup, or both.
         </p>
-      ) : (
+      )}
+
+      {showInlineViz && (
         <HostVisualizer
           machine={machine}
           active={active}
