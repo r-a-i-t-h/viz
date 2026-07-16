@@ -14,6 +14,14 @@ Format for each entry:
 
 ---
 
+## 2026-07-16 — Lifecycle badges on hierarchical state nodes
+
+**Context:** Hierarchical layout already conveys structure; entry / exit / after are important but easy to miss without arrow-heavy diagrams.
+
+**Decision:** Overlay small circular icon badges at the top-right of each state node (straddling the top border) for authored `entry`, `exit`, and `after`. Filter out XState’s injected `xstate.raise` / `xstate.cancel` actions so `after` does not falsely imply entry/exit badges. Detect `after` via `xstate.after.*` event keys / delayed transitions.
+
+**Rationale:** Keeps the hierarchical view while giving an immediate “this node has lifecycle/timing behaviour” signal, matching the previous visualizer’s convention.
+
 ## 2026-07-16 — Hierarchy determines state layout direction
 
 **Context:** A hierarchical view communicates machine structure more directly than drawing every transition as crossing arrows.

@@ -7,6 +7,7 @@ import { assign, setup } from 'xstate';
  * - a compound (composite) top-level flow: idle -> running -> idle
  * - a `parallel` region (`running`) with two independent sub-regions
  * - deeper nesting: `running.signal.red` is itself a compound state
+ * - entry / exit / after affordances for lifecycle badge overlays
  *
  * Written with XState v5's `setup().createMachine()` so `actorRef.logic` exposes
  * a fully-resolved `.definition` we can capture for visualization.
@@ -23,12 +24,21 @@ export const demoMachine = setup({
       | { type: 'CYCLE' }
       | { type: 'TOGGLE_MODE' },
   },
+  actions: {
+    markIdle: () => {},
+    clearIdle: () => {},
+    markActive: () => {},
+    clearActive: () => {},
+    markFlashing: () => {},
+  },
 }).createMachine({
   id: 'demo',
   initial: 'idle',
   context: { ticks: 0 },
   states: {
     idle: {
+      entry: 'markIdle',
+      exit: 'clearIdle',
       on: { START: 'running' },
     },
     // Parallel state: both regions are active simultaneously while `running`.
@@ -41,6 +51,10 @@ export const demoMachine = setup({
           initial: 'active',
           states: {
             active: {
+              entry: 'markActive',
+              exit: 'clearActive',
+              // Demo delayed self-nudge so the "after" badge is visible.
+              after: { 5000: { target: 'active' } },
               on: {
                 PAUSE: 'paused',
                 TICK: {
@@ -58,13 +72,20 @@ export const demoMachine = setup({
           initial: 'green',
           states: {
             green: { on: { CYCLE: 'amber' } },
-            amber: { on: { CYCLE: 'red' } },
+            amber: {
+              // Auto-advance after a short delay if CYCLE isn't sent.
+              after: { 2000: 'red' },
+              on: { CYCLE: 'red' },
+            },
             red: {
               initial: 'solid',
               on: { CYCLE: 'green' },
               states: {
                 solid: { on: { TOGGLE_MODE: 'flashing' } },
-                flashing: { on: { TOGGLE_MODE: 'solid' } },
+                flashing: {
+                  entry: 'markFlashing',
+                  on: { TOGGLE_MODE: 'solid' },
+                },
               },
             },
           },
