@@ -113,7 +113,7 @@
   border: 1px solid #2a3244;
   border-radius: 8px;
   padding: 0.4rem 0.55rem;
-  margin: 0.35rem 0;
+  margin: 0.7rem 0;
   background: #161b26;
   cursor: pointer;
   transform-origin: top left;
@@ -129,7 +129,7 @@
 .node--zoom-small {
   font-size: 0.48rem;
   padding: 0.1rem 0.22rem;
-  margin: 0.08rem 0;
+  margin: 0.16rem 0;
   border-radius: 4px;
 }
 
@@ -167,14 +167,20 @@
   height: 8px;
 }
 
+.node--zoom-small .node__children {
+  margin-left: 0.8rem;
+  margin-top: 0.2rem;
+  padding-left: 0.6rem;
+}
+
 .node--zoom-small .node__children--sequential {
-  margin-left: 0.4rem;
-  padding-left: 0.3rem;
+  margin-left: 0.8rem;
+  padding-left: 0.6rem;
 }
 
 .node--zoom-small .node__children--parallel {
-  gap: 0.25rem;
-  padding-top: 0.3rem;
+  gap: 0.5rem;
+  padding-top: 0.6rem;
   grid-auto-columns: minmax(5.5rem, 1fr);
 }
 
@@ -182,7 +188,7 @@
 .node--zoom-large {
   font-size: 0.72rem;
   padding: 0.28rem 0.4rem;
-  margin: 0.22rem 0;
+  margin: 0.44rem 0;
 }
 
 .node--zoom-large .node__key {
@@ -201,6 +207,17 @@
 
 .node--zoom-large .node__events {
   font-size: 0.62rem;
+}
+
+.node--zoom-large .node__children {
+  margin-left: 2rem;
+  margin-top: 0.7rem;
+  padding-left: 1.2rem;
+}
+
+.node--zoom-large .node__children--parallel {
+  gap: 1.2rem;
+  padding-top: 1.2rem;
 }
 
 .node--zoom-focus {
@@ -418,16 +435,17 @@
 }
 
 .node__children {
-  margin-left: 1rem;
-  margin-top: 0.35rem;
+  margin-left: 2rem;
+  margin-top: 0.7rem;
   border-left: 2px solid #232b3a;
-  padding-left: 0.6rem;
+  padding-left: 1.2rem;
 }
 
 /* Compound/sequential children follow document order from top to bottom. */
 .node__children--sequential {
   display: flex;
   flex-direction: column;
+  gap: 0.35rem;
 }
 
 /*
@@ -439,12 +457,12 @@
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(12rem, 1fr);
-  gap: 0.6rem;
+  gap: 1.2rem;
   margin-left: 0;
   overflow-x: auto;
   border-top: 2px solid #3b2a4d;
   border-left: 0;
-  padding-top: 0.6rem;
+  padding-top: 1.2rem;
   padding-left: 0;
 }
 
