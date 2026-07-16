@@ -19,14 +19,26 @@ export interface VisualizerHostOptions {
   maxLogEntries?: number;
 }
 
+/** Latest observed state for one actor session. */
+export interface ActorStateData {
+  value: unknown;
+  context: unknown;
+  eventType?: string;
+}
+
 /**
  * Portable snapshot of everything a visualizer UI needs.
  * Framework-agnostic — React (or anything else) can subscribe and render.
  */
 export interface VisualizerSnapshot {
-  machine: CapturedMachine | null;
-  stateValue: unknown;
-  context: unknown;
+  /**
+   * Every machine-backed actor observed so far (registration order).
+   * Each `@xstate.actor` inspection event adds one; a UI with more than one
+   * should offer a selector.
+   */
+  machines: CapturedMachine[];
+  /** Latest state per sessionId. */
+  actorStates: Record<string, ActorStateData>;
   log: LoggedEvent[];
   /** Whether an in-page visualizer surface should be shown (caller decides how). */
   inlineVisible: boolean;
@@ -58,7 +70,8 @@ export type VisualizerListener = (snapshot: VisualizerSnapshot) => void;
 export interface VisualizerHost {
   /**
    * Pass to `createActor(machine, { inspect: host.inspect })`.
-   * Captures machine structure and streams portable events to the popup / subscribers.
+   * Every new machine actor (root or spawned/invoked) is captured from its
+   * `@xstate.actor` event and forwarded to the popup / subscribers.
    */
   readonly inspect: (event: InspectionEvent) => void;
 
@@ -87,7 +100,7 @@ export interface VisualizerHost {
 }
 
 /**
- * Create a visualizer host that attaches to an XState actor via `inspect`.
+ * Create a visualizer host that attaches to XState actors via `inspect`.
  * No React, no CSS — pure API. Optional UIs subscribe or call these methods.
  */
 export function createVisualizerHost(
@@ -96,9 +109,8 @@ export function createVisualizerHost(
   const maxLogEntries = options.maxLogEntries ?? 100;
   const listeners = new Set<VisualizerListener>();
 
-  let machine: CapturedMachine | null = null;
-  let stateValue: unknown = undefined;
-  let context: unknown = undefined;
+  const machines = new Map<string, CapturedMachine>();
+  const actorStates = new Map<string, ActorStateData>();
   let log: LoggedEvent[] = [];
   let inlineVisible = false;
   let seq = 0;
@@ -115,18 +127,19 @@ export function createVisualizerHost(
   };
 
   const getSnapshot = (): VisualizerSnapshot => ({
-    machine,
-    stateValue,
-    context,
+    machines: [...machines.values()],
+    actorStates: Object.fromEntries(actorStates),
     log,
     inlineVisible,
     popupStatus: bridge.getStatus(),
   });
 
   const inspect = (event: InspectionEvent) => {
+    // Every @xstate.actor registration with machine logic is captured and
+    // forwarded — root actors and spawned/invoked children alike.
     const captured = captureMachine(event);
     if (captured) {
-      machine = captured;
+      machines.set(captured.sessionId, captured);
       bridge.sendMachine(captured);
     }
 
@@ -139,8 +152,12 @@ export function createVisualizerHost(
         value?: unknown;
         context?: unknown;
       };
-      stateValue = snapshot.value;
-      context = snapshot.context;
+      const state: ActorStateData = {
+        value: snapshot.value,
+        context: snapshot.context,
+        eventType: logged.eventType,
+      };
+      actorStates.set(logged.sessionId, state);
       bridge.sendSnapshot({
         sessionId: logged.sessionId,
         value: snapshot.value,

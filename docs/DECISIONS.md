@@ -14,6 +14,14 @@ Format for each entry:
 
 ---
 
+## 2026-07-17 — Multi-actor capture with a selection dropdown
+
+**Context:** The host previously kept one `machine` / one `stateValue`, so a second actor (e.g. a spawned child or a second `createActor` sharing `viz.inspect`) silently overwrote the first.
+
+**Decision:** `VisualizerHost` now keys everything by `sessionId`: every `@xstate.actor` event with machine logic adds to a `machines` map, and `@xstate.snapshot` events update a per-session `actorStates` map. `VisualizerSnapshot` exposes `machines: CapturedMachine[]` (registration order) plus `actorStates: Record<sessionId, {value, context}>`. `HostBridge` replays *all* machines and latest per-session snapshots on popup (re)connect. The React view shows an actor dropdown when more than one machine is present; selection is a UI concern, not host state. A self-cycling `blinkerMachine` was added to the PoC so the dropdown is always exercisable.
+
+**Rationale:** Actor registration already flows through the single `inspect` observer — the host just had to stop discarding it. Keeping selection out of the host API means two surfaces (inline + popup) can view different actors simultaneously.
+
 ## 2026-07-17 — `on` events reveal targets and conditional behaviour
 
 **Context:** A compact event name does not show where it goes, while always showing transition details would make the hierarchy noisy.

@@ -101,3 +101,24 @@ export const demoMachine = setup({
     },
   },
 });
+
+/**
+ * A second, self-driving machine so the PoC always has multiple actors — it
+ * cycles on `after` delays with no external events, exercising the viz's
+ * actor-selection dropdown.
+ */
+export const blinkerMachine = setup({}).createMachine({
+  id: 'blinker',
+  initial: 'off',
+  states: {
+    off: {
+      after: { 1500: 'on' },
+    },
+    on: {
+      after: { 1500: 'dim' },
+    },
+    dim: {
+      after: { 1500: 'off' },
+    },
+  },
+});

@@ -7,6 +7,7 @@
  */
 export {
   createVisualizerHost,
+  type ActorStateData,
   type VisualizerHost,
   type VisualizerHostOptions,
   type VisualizerListener,

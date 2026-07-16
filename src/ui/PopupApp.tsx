@@ -17,9 +17,8 @@ type ConnectionState = 'waiting' | 'connected' | 'closed' | 'orphan';
 export default function PopupApp() {
   const [connection, setConnection] = useState<ConnectionState>('waiting');
   const [snapshot, setSnapshot] = useState<VisualizerSnapshot>({
-    machine: null,
-    stateValue: undefined,
-    context: undefined,
+    machines: [],
+    actorStates: {},
     log: [],
     inlineVisible: false,
     popupStatus: 'idle',
@@ -35,18 +34,30 @@ export default function PopupApp() {
       switch (message.type) {
         case '@viz.machine':
           setConnection('connected');
-          setSnapshot((prev) => ({
-            ...prev,
-            machine: message.payload as CapturedMachine,
-            popupStatus: 'connected',
-          }));
+          setSnapshot((prev) => {
+            const machine = message.payload as CapturedMachine;
+            const existing = prev.machines.findIndex(
+              (m) => m.sessionId === machine.sessionId,
+            );
+            const machines =
+              existing >= 0
+                ? prev.machines.map((m, i) => (i === existing ? machine : m))
+                : [...prev.machines, machine];
+            return { ...prev, machines, popupStatus: 'connected' };
+          });
           break;
         case '@viz.snapshot':
           setConnection('connected');
           setSnapshot((prev) => ({
             ...prev,
-            stateValue: message.payload.value,
-            context: message.payload.context,
+            actorStates: {
+              ...prev.actorStates,
+              [message.payload.sessionId]: {
+                value: message.payload.value,
+                context: message.payload.context,
+                eventType: message.payload.eventType,
+              },
+            },
             popupStatus: 'connected',
           }));
           break;

@@ -6,7 +6,7 @@ import {
   type VisualizerHost,
   type VisualizerSnapshot,
 } from '../viz';
-import { demoMachine } from '../machine';
+import { blinkerMachine, demoMachine } from '../machine';
 import './host.css';
 
 // Lazy: visualizer.css is only fetched when inline viz is shown.
@@ -70,9 +70,15 @@ export default function HostApp() {
     actorRef.current = actor;
     actor.start();
 
+    // Second top-level actor: same inspect hook. Its @xstate.actor event is
+    // enough for the viz to pick it up and list it in the actor dropdown.
+    const blinker = createActor(blinkerMachine, { inspect: viz.inspect });
+    blinker.start();
+
     return () => {
       unsub();
       actor.stop();
+      blinker.stop();
       viz.dispose();
       actorRef.current = null;
       if (window.viz === viz) delete window.viz;

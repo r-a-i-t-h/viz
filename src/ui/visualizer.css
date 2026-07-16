@@ -22,6 +22,31 @@
   color: #cbd3e1;
 }
 
+.viz__actor-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+  color: #9aa4b2;
+  font-size: 0.75rem;
+  user-select: none;
+}
+
+.viz__actor-select-label {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.65rem;
+}
+
+.viz__actor-select select {
+  background: #161b26;
+  color: #e2e8f0;
+  border: 1px solid #2a3244;
+  border-radius: 6px;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.75rem;
+}
+
 .viz__zoom-control {
   display: inline-flex;
   align-items: center;

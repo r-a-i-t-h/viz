@@ -26,8 +26,10 @@ export interface HostBridgeOptions {
 export class HostBridge {
   private popup: Window | null = null;
   private status: HostBridgeStatus = 'idle';
-  private latestMachine: VizDownstreamMessage | null = null;
-  private latestSnapshot: VizDownstreamMessage | null = null;
+  /** Latest machine definition per sessionId — all replayed on (re)connect. */
+  private machines = new Map<string, VizDownstreamMessage>();
+  /** Latest snapshot per sessionId — all replayed on (re)connect. */
+  private snapshots = new Map<string, VizDownstreamMessage>();
   private deferredLogs: VizDownstreamMessage[] = [];
   private readonly maxLogDeferred: number;
   private readonly visualizerUrl: string;
@@ -102,7 +104,7 @@ export class HostBridge {
       type: '@viz.machine',
       payload: toPortable(machine),
     };
-    this.latestMachine = message;
+    this.machines.set(machine.sessionId, message);
     if (this.status === 'connected') this.post(message);
   }
 
@@ -112,7 +114,7 @@ export class HostBridge {
       type: '@viz.snapshot',
       payload: toPortable(snapshot),
     };
-    this.latestSnapshot = message;
+    this.snapshots.set(snapshot.sessionId, message);
     if (this.status === 'connected') this.post(message);
   }
 
@@ -140,8 +142,8 @@ export class HostBridge {
   }
 
   private replay(): void {
-    if (this.latestMachine) this.post(this.latestMachine);
-    if (this.latestSnapshot) this.post(this.latestSnapshot);
+    for (const msg of this.machines.values()) this.post(msg);
+    for (const msg of this.snapshots.values()) this.post(msg);
     for (const msg of this.deferredLogs) this.post(msg);
   }
 

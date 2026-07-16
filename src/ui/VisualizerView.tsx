@@ -28,17 +28,34 @@ export function VisualizerView({
   const [zoomRadius, setZoomRadius] = useState(() =>
     clampZoomRadius(defaultZoomRadius),
   );
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
+    null,
+  );
+
+  const { machines } = snapshot;
+  const machine =
+    machines.find((m) => m.sessionId === selectedSessionId) ?? machines[0];
+  const actorState = machine
+    ? snapshot.actorStates[machine.sessionId]
+    : undefined;
 
   const active =
-    snapshot.stateValue === undefined
+    actorState?.value === undefined
       ? new Set<string>()
-      : new Set(activePaths(snapshot.stateValue as StateValue));
+      : new Set(activePaths(actorState.value as StateValue));
 
   return (
     <div className="viz">
       <header className="viz__header">
         <div className="viz__header-row">
           <h2 className="viz__title">{title}</h2>
+          {machines.length > 1 && (
+            <ActorSelect
+              machines={machines}
+              selectedSessionId={machine?.sessionId ?? ''}
+              onChange={setSelectedSessionId}
+            />
+          )}
           <ZoomHopsControl value={zoomRadius} onChange={setZoomRadius} />
         </div>
       </header>
@@ -46,9 +63,9 @@ export function VisualizerView({
       <main className="viz__panels">
         <section className="viz__panel">
           <h3>Machine structure</h3>
-          {snapshot.machine ? (
+          {machine ? (
             <StateTree
-              node={snapshot.machine.definition}
+              node={machine.definition}
               activePaths={active}
               zoomRadius={zoomRadius}
             />
@@ -60,11 +77,11 @@ export function VisualizerView({
         <section className="viz__panel">
           <h3>Current state</h3>
           <pre className="viz__code">
-            {JSON.stringify(snapshot.stateValue, null, 2)}
+            {JSON.stringify(actorState?.value, null, 2)}
           </pre>
           <h4>Context</h4>
           <pre className="viz__code">
-            {JSON.stringify(snapshot.context, null, 2)}
+            {JSON.stringify(actorState?.context, null, 2)}
           </pre>
 
           <h3>Event log</h3>
@@ -89,6 +106,32 @@ export function VisualizerView({
         </section>
       </main>
     </div>
+  );
+}
+
+function ActorSelect({
+  machines,
+  selectedSessionId,
+  onChange,
+}: {
+  machines: VisualizerSnapshot['machines'];
+  selectedSessionId: string;
+  onChange: (sessionId: string) => void;
+}) {
+  return (
+    <label className="viz__actor-select">
+      <span className="viz__actor-select-label">Actor</span>
+      <select
+        value={selectedSessionId}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {machines.map((m) => (
+          <option key={m.sessionId} value={m.sessionId}>
+            {m.definition.id} ({m.sessionId})
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
