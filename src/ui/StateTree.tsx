@@ -143,16 +143,10 @@ function resolveInitialChildIds(node: StateNodeDefinition): Set<string> {
 
 function InitialArrowIcon() {
   return (
-    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-      <circle cx="3.5" cy="8" r="2.25" fill="currentColor" />
-      <path d="M6.5 8h6.2" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+    <svg viewBox="0 0 10 14" width="10" height="14" aria-hidden="true">
       <path
-        d="M10.5 5.25L14 8l-3.5 2.75"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M1.5 1.75 8.5 7l-7 5.25V1.75z"
+        fill="currentColor"
       />
     </svg>
   );

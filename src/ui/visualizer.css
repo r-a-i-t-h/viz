@@ -148,22 +148,13 @@
   position: absolute;
   top: 50%;
   left: 0;
-  transform: translate(-50%, -50%);
+  transform: translate(-75%, -50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 999px;
-  border: 1px solid #3a4358;
-  background: #0f131c;
-  color: #e6e9ef;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  color: #9ccdff;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
   z-index: 2;
-}
-
-.node--initial {
-  margin-left: 0.55rem;
 }
 
 .node__events {
