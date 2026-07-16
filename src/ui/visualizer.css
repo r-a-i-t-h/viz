@@ -31,7 +31,8 @@
   border: 1px solid #232b3a;
   border-radius: 10px;
   padding: 1rem 1.1rem;
-  overflow: hidden;
+  /* Allow hover tips to extend outside the panel. */
+  overflow: visible;
 }
 
 .viz__panel h3 {
@@ -93,6 +94,8 @@
   color: #cbd3e1;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
   pointer-events: auto;
+  cursor: help;
+  position: relative;
 }
 
 .node__badge-label {
@@ -161,6 +164,73 @@
   font-size: 0.7rem;
   color: #7d879a;
   font-family: ui-monospace, monospace;
+  cursor: help;
+  border-bottom: 1px dotted #5a6578;
+  position: relative;
+}
+
+/* Hover / focus popup for lifecycle badges and "on" summaries. */
+.hover-tip {
+  position: relative;
+}
+
+.hover-tip__popup {
+  position: absolute;
+  left: 50%;
+  z-index: 20;
+  min-width: 12rem;
+  max-width: 22rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid #3a4358;
+  background: #0c0f16;
+  color: #e6e9ef;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity 0.1s ease;
+  white-space: normal;
+  text-align: left;
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.hover-tip__popup--below {
+  top: calc(100% + 0.45rem);
+}
+
+.hover-tip__popup--above {
+  bottom: calc(100% + 0.45rem);
+}
+
+.hover-tip:hover > .hover-tip__popup,
+.hover-tip:focus-within > .hover-tip__popup {
+  opacity: 1;
+  visibility: visible;
+}
+
+.hover-tip__title {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: #9aa4b2;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hover-tip__list {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.hover-tip__list li {
+  margin: 0.15rem 0;
 }
 
 .node__children {

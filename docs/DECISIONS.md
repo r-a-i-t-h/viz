@@ -22,6 +22,14 @@ Format for each entry:
 
 **Rationale:** Keeps the hierarchical view while giving an immediate “this node has lifecycle/timing behaviour” signal, matching the previous visualizer’s convention.
 
+## 2026-07-17 — Hover details for entry/exit/after and on
+
+**Context:** Icons and the compact `on:` summary hide the concrete actions/transitions.
+
+**Decision:** CSS hover (and focus-within) popups list authored entry/exit actions, delayed `after` transitions, and `on` transitions as bullet lines (event → target · guard · actions). Filter injected after raise/cancel from entry/exit lists.
+
+**Rationale:** Keeps the tree dense while making details one hover away; no portal/JS tooltip library needed for the PoC.
+
 ## 2026-07-16 — Drop type labels; mark initial and final visually
 
 **Context:** Labels like ATOMIC / COMPOUND / PARALLEL waste space and duplicate what hierarchy already shows (children ⇒ compound; vertical vs horizontal ⇒ sequential vs parallel).

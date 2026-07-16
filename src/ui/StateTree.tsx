@@ -1,5 +1,12 @@
 import type { StateNodeDefinition } from '../viz';
+import { HoverTip } from './HoverTip';
 import { nodeLifecycleFlags } from './lifecycleBadges';
+import {
+  formatAfterTransitions,
+  formatEntryActions,
+  formatExitActions,
+  formatOnTransitions,
+} from './nodeDetails';
 
 interface StateTreeProps {
   node: StateNodeDefinition;
@@ -18,13 +25,18 @@ export function StateTree({
 }: StateTreeProps) {
   const childKeys = Object.keys(node.states ?? {});
   const isActive = path === '' || activePaths.has(path);
-  const transitions = Object.keys(node.on ?? {}).filter(
+  const eventKeys = Object.keys(node.on ?? {}).filter(
     (key) => !key.startsWith('xstate.after.'),
   );
   const childLayout = node.type === 'parallel' ? 'parallel' : 'sequential';
   const lifecycle = nodeLifecycleFlags(node);
   const isFinal = node.type === 'final';
   const initialChildIds = resolveInitialChildIds(node);
+
+  const entryItems = formatEntryActions(node.entry);
+  const exitItems = formatExitActions(node.exit);
+  const afterItems = formatAfterTransitions(node.on, node.transitions);
+  const onItems = formatOnTransitions(node.on);
 
   return (
     <div
@@ -48,22 +60,37 @@ export function StateTree({
       {(lifecycle.entry || lifecycle.exit || lifecycle.after) && (
         <div className="node__badges">
           {lifecycle.entry && (
-            <span className="node__badge node__badge--entry" title="entry">
+            <HoverTip
+              className="node__badge node__badge--entry"
+              label="entry"
+              items={entryItems}
+              placement="below"
+            >
               <EntryIcon />
               <span className="node__badge-label">entry</span>
-            </span>
+            </HoverTip>
           )}
           {lifecycle.exit && (
-            <span className="node__badge node__badge--exit" title="exit">
+            <HoverTip
+              className="node__badge node__badge--exit"
+              label="exit"
+              items={exitItems}
+              placement="below"
+            >
               <ExitIcon />
               <span className="node__badge-label">exit</span>
-            </span>
+            </HoverTip>
           )}
           {lifecycle.after && (
-            <span className="node__badge node__badge--after" title="after">
+            <HoverTip
+              className="node__badge node__badge--after"
+              label="after"
+              items={afterItems}
+              placement="below"
+            >
               <AfterIcon />
               <span className="node__badge-label">after</span>
-            </span>
+            </HoverTip>
           )}
         </div>
       )}
@@ -76,8 +103,15 @@ export function StateTree({
           </span>
         )}
         <span className="node__key">{node.key}</span>
-        {transitions.length > 0 && (
-          <span className="node__events">on: {transitions.join(', ')}</span>
+        {eventKeys.length > 0 && (
+          <HoverTip
+            className="node__events"
+            label="on"
+            items={onItems}
+            placement="below"
+          >
+            on: {eventKeys.join(', ')}
+          </HoverTip>
         )}
       </div>
 
@@ -95,7 +129,9 @@ export function StateTree({
                 node={child}
                 activePaths={activePaths}
                 path={childPath}
-                isInitial={initialChildIds.has(child.id) || initialChildIds.has(key)}
+                isInitial={
+                  initialChildIds.has(child.id) || initialChildIds.has(key)
+                }
               />
             );
           })}
@@ -117,13 +153,6 @@ function resolveInitialChildIds(node: StateNodeDefinition): Set<string> {
   for (const item of target) {
     if (typeof item === 'string') {
       ids.add(item);
-      const key = item.includes('.') ? item.slice(item.lastIndexOf('.') + 1) : item;
-      if (key.startsWith('#')) {
-        // leave full id; also try bare key from end segment without #
-      } else {
-        ids.add(key);
-      }
-      // `#demo.idle` → also match key `idle`
       const bare = item.replace(/^#/, '').split('.').pop();
       if (bare) ids.add(bare);
       continue;
@@ -144,10 +173,7 @@ function resolveInitialChildIds(node: StateNodeDefinition): Set<string> {
 function InitialArrowIcon() {
   return (
     <svg viewBox="0 0 10 14" width="10" height="14" aria-hidden="true">
-      <path
-        d="M1.5 1.75 8.5 7l-7 5.25V1.75z"
-        fill="currentColor"
-      />
+      <path d="M1.5 1.75 8.5 7l-7 5.25V1.75z" fill="currentColor" />
     </svg>
   );
 }
