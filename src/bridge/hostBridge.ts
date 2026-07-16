@@ -37,14 +37,29 @@ export class HostBridge {
   private readonly onMessage = (event: MessageEvent) => {
     if (!isVizMessage(event.data)) return;
     const data = event.data as VizUpstreamMessage;
+
     if (data.type === '@viz.hello') {
+      // Always re-bind from event.source. Relying only on the Window returned
+      // by window.open breaks after React StrictMode remounts: the popup sends
+      // @viz.bye (clears this.popup) then @viz.hello (marks connected) — without
+      // rebinding, status is "connected" but post() no-ops.
+      if (isWindowSource(event.source)) {
+        this.popup = event.source;
+      }
       this.setStatus('connected');
+      this.startClosePoll();
       this.replay();
       return;
     }
+
     if (data.type === '@viz.bye') {
-      this.popup = null;
-      this.setStatus('idle');
+      // Ignore bye unless it came from the window we are currently talking to.
+      // Transient remounts in the popup must not drop the live handle.
+      if (isWindowSource(event.source) && event.source === this.popup) {
+        this.popup = null;
+        this.stopClosePoll();
+        this.setStatus('idle');
+      }
     }
   };
 
@@ -57,6 +72,15 @@ export class HostBridge {
 
   getStatus(): HostBridgeStatus {
     return this.status;
+  }
+
+  /** True when the visualizer is expected to live in the popup, not the host. */
+  isPoppedOut(): boolean {
+    return (
+      this.status === 'opening' ||
+      this.status === 'awaiting-hello' ||
+      this.status === 'connected'
+    );
   }
 
   /**
@@ -161,4 +185,13 @@ export class HostBridge {
     this.status = status;
     this.onStatus?.(status);
   }
+}
+
+function isWindowSource(source: MessageEventSource | null): source is Window {
+  return (
+    source !== null &&
+    typeof source === 'object' &&
+    'postMessage' in source &&
+    'closed' in source
+  );
 }

@@ -12,6 +12,10 @@ export type PopupMessageHandler = (message: VizDownstreamMessage) => void;
  * Runs inside the popup visualizer. Announces readiness to `window.opener`
  * (the host, which may itself be a nested iframe) and delivers downstream
  * messages to a handler.
+ *
+ * Does not send `@viz.bye` on React effect cleanup — StrictMode remounts would
+ * otherwise clear the host's popup handle while leaving status "connected".
+ * Teardown uses `pagehide` (actual close / navigate) instead.
  */
 export function connectPopupReceiver(onMessage: PopupMessageHandler): () => void {
   const handle = (event: MessageEvent) => {
@@ -27,16 +31,26 @@ export function connectPopupReceiver(onMessage: PopupMessageHandler): () => void
     }
   };
 
-  window.addEventListener('message', handle);
-
-  // Announce to whoever opened us. Prefer opener (popup case); fall back to
-  // parent (if the visualizer is ever embedded as an iframe instead).
   const target: Window | null =
     window.opener && !window.opener.closed
       ? window.opener
       : window.parent !== window
         ? window.parent
         : null;
+
+  const sendBye = () => {
+    if (!target) return;
+    const bye: VizUpstreamMessage = { channel: VIZ_CHANNEL, type: '@viz.bye' };
+    try {
+      target.postMessage(bye, '*');
+    } catch {
+      // ignore
+    }
+  };
+
+  window.addEventListener('message', handle);
+  // pagehide fires on real close/navigation; not on React StrictMode remount.
+  window.addEventListener('pagehide', sendBye);
 
   if (target) {
     const hello: VizUpstreamMessage = {
@@ -49,13 +63,6 @@ export function connectPopupReceiver(onMessage: PopupMessageHandler): () => void
 
   return () => {
     window.removeEventListener('message', handle);
-    if (target) {
-      const bye: VizUpstreamMessage = { channel: VIZ_CHANNEL, type: '@viz.bye' };
-      try {
-        target.postMessage(bye, '*');
-      } catch {
-        // ignore
-      }
-    }
+    window.removeEventListener('pagehide', sendBye);
   };
 }

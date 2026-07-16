@@ -26,12 +26,20 @@ const SEND_BUTTONS: { label: string; event: ActorEvent }[] = [
 ];
 
 const STATUS_LABEL: Record<HostBridgeStatus, string> = {
-  idle: 'popup closed',
-  opening: 'opening…',
+  idle: 'inline visualizer',
+  opening: 'opening popup…',
   'awaiting-hello': 'awaiting handshake…',
-  connected: 'popup connected',
+  connected: 'visualizer in popup',
   blocked: 'popup blocked',
 };
+
+function isPoppedOut(status: HostBridgeStatus): boolean {
+  return (
+    status === 'opening' ||
+    status === 'awaiting-hello' ||
+    status === 'connected'
+  );
+}
 
 export default function App() {
   const actorRef = useRef<ReturnType<typeof createActor<typeof demoMachine>>>(null);
@@ -113,6 +121,8 @@ export default function App() {
     return new Set(activePaths(stateValue as never));
   }, [stateValue]);
 
+  const poppedOut = isPoppedOut(bridgeStatus);
+
   return (
     <div className="app">
       <header className="app__header">
@@ -123,20 +133,21 @@ export default function App() {
           </span>
         </div>
         <p>
-          Runs the demo machine and streams portable inspection payloads to a
-          popup visualizer over <code>postMessage</code> (works from a hidden
-          iframe).
+          Runs the demo machine. Visualizer is either inline here or in a popup
+          — never both (the host is often a hidden iframe).
         </p>
       </header>
 
       <section className="controls">
-        <button
-          type="button"
-          className="controls__primary"
-          onClick={() => bridgeRef.current?.open()}
-        >
-          Pop out visualizer
-        </button>
+        {!poppedOut && (
+          <button
+            type="button"
+            className="controls__primary"
+            onClick={() => bridgeRef.current?.open()}
+          >
+            Pop out visualizer
+          </button>
+        )}
         {SEND_BUTTONS.map(({ label, event }) => (
           <button
             key={label}
@@ -155,54 +166,65 @@ export default function App() {
         </p>
       )}
 
-      <main className="panels">
-        <section className="panel">
-          <h2>Local preview (host)</h2>
-          {machine ? (
-            <StateTree node={machine.definition} activePaths={active} />
-          ) : (
-            <p className="muted">Waiting for the @xstate.actor event…</p>
-          )}
-        </section>
-
-        <section className="panel">
-          <h2>Current state</h2>
-          <pre className="code">{JSON.stringify(stateValue, null, 2)}</pre>
-          <h3>Context</h3>
-          <pre className="code">{JSON.stringify(context, null, 2)}</pre>
-
-          <h2>Inspection event log</h2>
-          <ul className="log">
-            {log.map((entry) => (
-              <li
-                key={entry.seq}
-                className={`log__item log__item--${entry.type.replace('@xstate.', '')}`}
-              >
-                <span className="log__type">{entry.type}</span>
-                {entry.eventType && (
-                  <span className="log__event">{entry.eventType}</span>
-                )}
-                {entry.value !== undefined && (
-                  <span className="log__value">{JSON.stringify(entry.value)}</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      </main>
-
-      <section className="panel">
-        <h2>What the inspect library serialized (@xstate.actor)</h2>
-        <p className="muted">
-          Note the <code>definition</code> field — the library reads{' '}
-          <code>actorRef.logic.config</code> and stringifies it here.
+      {poppedOut ? (
+        <p className="banner">
+          Visualizer is in the popup window. Close it to bring the view back
+          here.
         </p>
-        <pre className="code code--scroll">
-          {libraryActorEvent
-            ? JSON.stringify(libraryActorEvent, null, 2)
-            : 'Waiting…'}
-        </pre>
-      </section>
+      ) : (
+        <>
+          <main className="panels">
+            <section className="panel">
+              <h2>Machine structure</h2>
+              {machine ? (
+                <StateTree node={machine.definition} activePaths={active} />
+              ) : (
+                <p className="muted">Waiting for the @xstate.actor event…</p>
+              )}
+            </section>
+
+            <section className="panel">
+              <h2>Current state</h2>
+              <pre className="code">{JSON.stringify(stateValue, null, 2)}</pre>
+              <h3>Context</h3>
+              <pre className="code">{JSON.stringify(context, null, 2)}</pre>
+
+              <h2>Inspection event log</h2>
+              <ul className="log">
+                {log.map((entry) => (
+                  <li
+                    key={entry.seq}
+                    className={`log__item log__item--${entry.type.replace('@xstate.', '')}`}
+                  >
+                    <span className="log__type">{entry.type}</span>
+                    {entry.eventType && (
+                      <span className="log__event">{entry.eventType}</span>
+                    )}
+                    {entry.value !== undefined && (
+                      <span className="log__value">
+                        {JSON.stringify(entry.value)}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </main>
+
+          <section className="panel">
+            <h2>What the inspect library serialized (@xstate.actor)</h2>
+            <p className="muted">
+              Note the <code>definition</code> field — the library reads{' '}
+              <code>actorRef.logic.config</code> and stringifies it here.
+            </p>
+            <pre className="code code--scroll">
+              {libraryActorEvent
+                ? JSON.stringify(libraryActorEvent, null, 2)
+                : 'Waiting…'}
+            </pre>
+          </section>
+        </>
+      )}
     </div>
   );
 }

@@ -14,6 +14,18 @@ Format for each entry:
 
 ---
 
+## 2026-07-16 — Popup went "connected" but stopped receiving updates
+
+**Context:** Host and popup both showed connected, but only the host UI updated.
+
+**Finding:** React StrictMode remounts the popup effect: cleanup sent `@viz.bye` (host nulled `this.popup` and went idle), then the remount sent `@viz.hello` (host set status back to `connected` and called `replay()`). Because `this.popup` was still null, every `post()` was a no-op. Status lied; the pipe was dead.
+
+**Decision:**
+1. On `@viz.hello`, always re-bind `this.popup` from `event.source`.
+2. Only honour `@viz.bye` when `event.source === this.popup`.
+3. Send `@viz.bye` on `pagehide` (real close), not on React effect cleanup.
+4. Visualizer is exclusive: when popped out, host hides the inline viz (host is often a hidden iframe anyway); closing the popup restores it.
+
 ## 2026-07-16 — Popup visualizer over `postMessage` (iframe-compatible)
 
 **Context:** The real machine will run in a hidden iframe embedded in another site, with limited permissions. We need the visualizer in a separate popup window, receiving events from the host.
