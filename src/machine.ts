@@ -22,7 +22,8 @@ export const demoMachine = setup({
       | { type: 'RESUME' }
       | { type: 'TICK' }
       | { type: 'CYCLE' }
-      | { type: 'TOGGLE_MODE' },
+      | { type: 'TOGGLE_MODE' }
+      | { type: 'DONE' },
   },
   actions: {
     markIdle: () => {},
@@ -39,7 +40,10 @@ export const demoMachine = setup({
     idle: {
       entry: 'markIdle',
       exit: 'clearIdle',
-      on: { START: 'running' },
+      on: {
+        START: 'running',
+        DONE: 'done',
+      },
     },
     // Parallel state: both regions are active simultaneously while `running`.
     running: {
@@ -91,6 +95,9 @@ export const demoMachine = setup({
           },
         },
       },
+    },
+    done: {
+      type: 'final',
     },
   },
 });

@@ -5,18 +5,17 @@ interface StateTreeProps {
   node: StateNodeDefinition;
   activePaths: Set<string>;
   path?: string;
+  /** True when this node is the parent's initial child. */
+  isInitial?: boolean;
 }
 
-const TYPE_BADGE: Record<StateNodeDefinition['type'], string> = {
-  atomic: 'atomic',
-  compound: 'compound',
-  parallel: 'parallel',
-  final: 'final',
-  history: 'history',
-};
-
 /** Optional React tree renderer — only used when a visualizer UI is mounted. */
-export function StateTree({ node, activePaths, path = '' }: StateTreeProps) {
+export function StateTree({
+  node,
+  activePaths,
+  path = '',
+  isInitial = false,
+}: StateTreeProps) {
   const childKeys = Object.keys(node.states ?? {});
   const isActive = path === '' || activePaths.has(path);
   const transitions = Object.keys(node.on ?? {}).filter(
@@ -24,11 +23,30 @@ export function StateTree({ node, activePaths, path = '' }: StateTreeProps) {
   );
   const childLayout = node.type === 'parallel' ? 'parallel' : 'sequential';
   const lifecycle = nodeLifecycleFlags(node);
+  const isFinal = node.type === 'final';
+  const initialChildIds = resolveInitialChildIds(node);
 
   return (
-    <div className={`node node--${node.type} ${isActive ? 'node--active' : ''}`}>
+    <div
+      className={[
+        'node',
+        `node--${node.type}`,
+        isActive ? 'node--active' : '',
+        isInitial ? 'node--initial' : '',
+        isFinal ? 'node--final' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
+      {isInitial && (
+        <span className="node__initial" title="initial">
+          <InitialArrowIcon />
+          <span className="node__badge-label">initial</span>
+        </span>
+      )}
+
       {(lifecycle.entry || lifecycle.exit || lifecycle.after) && (
-        <div className="node__badges" aria-hidden={false}>
+        <div className="node__badges">
           {lifecycle.entry && (
             <span className="node__badge node__badge--entry" title="entry">
               <EntryIcon />
@@ -49,34 +67,111 @@ export function StateTree({ node, activePaths, path = '' }: StateTreeProps) {
           )}
         </div>
       )}
+
       <div className="node__header">
+        {isFinal && (
+          <span className="node__final-icon" title="final">
+            <FinalStateIcon />
+            <span className="node__badge-label">final</span>
+          </span>
+        )}
         <span className="node__key">{node.key}</span>
-        <span className={`node__type node__type--${node.type}`}>
-          {TYPE_BADGE[node.type]}
-        </span>
         {transitions.length > 0 && (
           <span className="node__events">on: {transitions.join(', ')}</span>
         )}
       </div>
+
       {childKeys.length > 0 && (
         <div
           className={`node__children node__children--${childLayout}`}
           data-layout={childLayout}
         >
           {childKeys.map((key) => {
+            const child = node.states[key];
             const childPath = path ? `${path}.${key}` : key;
             return (
               <StateTree
                 key={key}
-                node={node.states[key]}
+                node={child}
                 activePaths={activePaths}
                 path={childPath}
+                isInitial={initialChildIds.has(child.id) || initialChildIds.has(key)}
               />
             );
           })}
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Resolve which child ids/keys are the parent's initial target(s).
+ * After portable serialization, targets are id strings like `#demo.idle`.
+ */
+function resolveInitialChildIds(node: StateNodeDefinition): Set<string> {
+  const ids = new Set<string>();
+  const target = node.initial?.target;
+  if (!target) return ids;
+
+  for (const item of target) {
+    if (typeof item === 'string') {
+      ids.add(item);
+      const key = item.includes('.') ? item.slice(item.lastIndexOf('.') + 1) : item;
+      if (key.startsWith('#')) {
+        // leave full id; also try bare key from end segment without #
+      } else {
+        ids.add(key);
+      }
+      // `#demo.idle` → also match key `idle`
+      const bare = item.replace(/^#/, '').split('.').pop();
+      if (bare) ids.add(bare);
+      continue;
+    }
+    if (item && typeof item === 'object' && 'id' in item) {
+      const id = (item as { id: unknown }).id;
+      if (typeof id === 'string') {
+        ids.add(id);
+        const bare = id.replace(/^#/, '').split('.').pop();
+        if (bare) ids.add(bare);
+      }
+    }
+  }
+
+  return ids;
+}
+
+function InitialArrowIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+      <circle cx="3.5" cy="8" r="2.25" fill="currentColor" />
+      <path d="M6.5 8h6.2" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+      <path
+        d="M10.5 5.25L14 8l-3.5 2.75"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Classic UML final-state glyph: outer ring + filled inner circle. */
+function FinalStateIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+      <circle
+        cx="8"
+        cy="8"
+        r="6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <circle cx="8" cy="8" r="3.25" fill="currentColor" />
+    </svg>
   );
 }
 

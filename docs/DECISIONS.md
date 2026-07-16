@@ -22,6 +22,14 @@ Format for each entry:
 
 **Rationale:** Keeps the hierarchical view while giving an immediate “this node has lifecycle/timing behaviour” signal, matching the previous visualizer’s convention.
 
+## 2026-07-16 — Drop type labels; mark initial and final visually
+
+**Context:** Labels like ATOMIC / COMPOUND / PARALLEL waste space and duplicate what hierarchy already shows (children ⇒ compound; vertical vs horizontal ⇒ sequential vs parallel).
+
+**Decision:** Remove type text badges. Mark the parent’s initial child with a classic filled-dot + arrow on the left edge. Represent `final` states with the UML double-circle icon beside the name.
+
+**Rationale:** Structure is inferred from layout; initial/final need explicit glyphs because they are not layout properties.
+
 ## 2026-07-16 — Hierarchy determines state layout direction
 
 **Context:** A hierarchical view communicates machine structure more directly than drawing every transition as crossing arrows.
