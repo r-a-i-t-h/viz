@@ -125,40 +125,82 @@
     margin 0.15s ease;
 }
 
-/* Default overview scale — the whole machine starts here. */
+/* Overview scale — positively miniature so the whole machine fits at a glance. */
 .node--zoom-small {
+  font-size: 0.48rem;
+  padding: 0.1rem 0.22rem;
+  margin: 0.08rem 0;
+  border-radius: 4px;
+}
+
+.node--zoom-small .node__key {
+  font-size: 0.52rem;
+  font-weight: 600;
+}
+
+.node--zoom-small .node__badge {
+  width: 0.7rem;
+  height: 0.7rem;
+  right: 0.2rem;
+}
+
+.node--zoom-small .node__badge svg {
+  width: 7px;
+  height: 7px;
+}
+
+.node--zoom-small .node__events {
+  font-size: 0.42rem;
+  max-width: 8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node--zoom-small .node__final-icon svg {
+  width: 8px;
+  height: 8px;
+}
+
+.node--zoom-small .node__initial svg {
+  width: 6px;
+  height: 8px;
+}
+
+.node--zoom-small .node__children--sequential {
+  margin-left: 0.4rem;
+  padding-left: 0.3rem;
+}
+
+.node--zoom-small .node__children--parallel {
+  gap: 0.25rem;
+  padding-top: 0.3rem;
+  grid-auto-columns: minmax(5.5rem, 1fr);
+}
+
+/* Focused neighborhood — previously the overview size; plenty readable. */
+.node--zoom-large {
   font-size: 0.72rem;
   padding: 0.28rem 0.4rem;
   margin: 0.22rem 0;
 }
 
-.node--zoom-small .node__key {
+.node--zoom-large .node__key {
   font-size: 0.78rem;
 }
 
-.node--zoom-small .node__badge {
+.node--zoom-large .node__badge {
   width: 1.1rem;
   height: 1.1rem;
 }
 
-.node--zoom-small .node__badge svg {
+.node--zoom-large .node__badge svg {
   width: 10px;
   height: 10px;
 }
 
-.node--zoom-small .node__events {
+.node--zoom-large .node__events {
   font-size: 0.62rem;
-}
-
-/* Focused neighborhood (±2 hops) — readable detail scale. */
-.node--zoom-large {
-  font-size: 0.92rem;
-  padding: 0.5rem 0.65rem;
-  margin: 0.4rem 0;
-}
-
-.node--zoom-large .node__key {
-  font-size: 1rem;
 }
 
 .node--zoom-focus {
