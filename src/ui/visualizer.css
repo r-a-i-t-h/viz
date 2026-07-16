@@ -176,7 +176,6 @@
 
 .hover-tip__popup {
   position: absolute;
-  left: 50%;
   z-index: 20;
   min-width: 12rem;
   max-width: 22rem;
@@ -189,7 +188,6 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translateX(-50%);
   transition: opacity 0.1s ease;
   white-space: normal;
   text-align: left;
@@ -207,6 +205,24 @@
 
 .hover-tip__popup--above {
   bottom: calc(100% + 0.45rem);
+}
+
+.hover-tip__popup--center {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Hang to the right of the trigger. */
+.hover-tip__popup--left {
+  left: 0;
+  transform: none;
+}
+
+/* Hang to the left of the trigger (for right-aligned icons). */
+.hover-tip__popup--right {
+  left: auto;
+  right: 0;
+  transform: none;
 }
 
 .hover-tip:hover > .hover-tip__popup,

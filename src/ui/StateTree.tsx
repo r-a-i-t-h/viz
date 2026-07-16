@@ -65,6 +65,7 @@ export function StateTree({
               label="entry"
               items={entryItems}
               placement="below"
+              align="right"
             >
               <EntryIcon />
               <span className="node__badge-label">entry</span>
@@ -76,6 +77,7 @@ export function StateTree({
               label="exit"
               items={exitItems}
               placement="below"
+              align="right"
             >
               <ExitIcon />
               <span className="node__badge-label">exit</span>
@@ -87,6 +89,7 @@ export function StateTree({
               label="after"
               items={afterItems}
               placement="below"
+              align="right"
             >
               <AfterIcon />
               <span className="node__badge-label">after</span>
@@ -109,6 +112,7 @@ export function StateTree({
             label="on"
             items={onItems}
             placement="below"
+            align="left"
           >
             on: {eventKeys.join(', ')}
           </HoverTip>

@@ -8,6 +8,11 @@ interface HoverTipProps {
   className?: string;
   /** Prefer popup below (default) or above the trigger. */
   placement?: 'below' | 'above';
+  /**
+   * Horizontal anchoring. 'right' hangs the popup to the left of the trigger
+   * (for right-aligned icons), 'left' hangs it to the right.
+   */
+  align?: 'left' | 'center' | 'right';
 }
 
 /**
@@ -20,6 +25,7 @@ export function HoverTip({
   children,
   className,
   placement = 'below',
+  align = 'center',
 }: HoverTipProps) {
   if (items.length === 0) {
     return <span className={className}>{children}</span>;
@@ -32,7 +38,7 @@ export function HoverTip({
     >
       {children}
       <span
-        className={`hover-tip__popup hover-tip__popup--${placement}`}
+        className={`hover-tip__popup hover-tip__popup--${placement} hover-tip__popup--${align}`}
         role="tooltip"
       >
         <span className="hover-tip__title">{label}</span>
