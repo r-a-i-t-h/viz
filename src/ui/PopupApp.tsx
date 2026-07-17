@@ -77,18 +77,12 @@ export default function PopupApp() {
   }, []);
 
   return (
-    <div
-      className="viz"
-      style={{ maxWidth: 1100, margin: '0 auto', padding: '2rem 1.5rem' }}
-    >
-      <header
-        className="viz__header"
-        style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}
-      >
-        <h1 style={{ margin: 0, fontSize: '1.6rem' }}>Visualizer</h1>
+    <div className="viz viz--popup">
+      <header className="viz__header viz__popup-header">
+        <h1 className="viz__popup-title">Visualizer</h1>
         <StatusPill state={connection} />
       </header>
-      <p className="viz__muted" style={{ marginBottom: '1rem' }}>
+      <p className="viz__muted viz__popup-lead">
         Popup surface — fed by <code>postMessage</code> from the host API.
       </p>
 

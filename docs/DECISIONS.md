@@ -14,6 +14,26 @@ Format for each entry:
 
 ---
 
+## 2026-07-17 — Cumulative node zoom by default
+
+**Context:** Exclusive click-to-zoom discarded other enlarged nodes, making it awkward to compare several distant parts of a complex machine.
+
+**Decision:** A plain click now toggles only that node's zoom while retaining every other node's current zoom. Shift/Cmd/Ctrl-click keeps the previous exclusive ±hop neighborhood behavior. The same modifiers work with Enter/Space for keyboard interaction.
+
+**Rationale:** Cumulative zoom supports ad hoc comparisons; keeping exclusive neighborhood zoom behind a modifier preserves fast isolation without adding another control.
+
+---
+
+## 2026-07-17 — Full-width layout; collapsible current-state panel
+
+**Context:** The 1100px host/popup max-width and a 50/50 panel split starved complex machine trees of horizontal space.
+
+**Decision:** Drop the overall max-width on host and popup shells. Machine structure takes remaining width (`minmax(0, 1fr)`); current state / context / event log sit in a narrower sidebar (`minmax(16rem, 22rem)`) that can be collapsed entirely (header “Show current state” to restore).
+
+**Rationale:** Tree inspection is the primary job; JSON/log are secondary and can yield the viewport on demand without changing the host API.
+
+---
+
 ## 2026-07-17 — TODO list for the rest of the XState model
 
 **Context:** The hierarchical visualizer covers structure, lifecycle badges, `on` hover, active value overlay, and multi-actor selection — but most of the XState model (guards as UI, invoke/spawn, input/output, history, tags, richer actions, bidirectional control, etc.) is still thin or absent. `@statelyai/inspect` does not provide traversal helpers, so each feature needs local interrogation work.

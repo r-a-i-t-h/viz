@@ -1,4 +1,10 @@
-import { useCallback, useState, type MouseEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type KeyboardEvent,
+  type MouseEvent,
+} from 'react';
 import type { StateNodeDefinition } from '../viz';
 import { HoverTip } from './HoverTip';
 import { nodeLifecycleFlags } from './lifecycleBadges';
@@ -19,15 +25,16 @@ interface StateTreeProps {
   /** True when this node is the parent's initial child. */
   isInitial?: boolean;
   focusPath?: string | null;
+  zoomOverrides?: Set<string>;
   zoomRadius?: number;
-  onToggleFocus?: (path: string) => void;
+  onToggleZoom?: (path: string, exclusive: boolean) => void;
   highlightedTargetIds?: Set<string>;
   onHighlightTargets?: (targets: Set<string>) => void;
 }
 
 /**
- * Stateful tree: starts at zoom "small"; clicking a node toggles a large
- * neighborhood (±zoomRadius hops along the parent/child line).
+ * Stateful tree: starts at zoom "small". Plain clicks toggle individual nodes
+ * cumulatively; modifier-clicks toggle an exclusive large neighborhood.
  */
 export function StateTree({
   node,
@@ -40,12 +47,37 @@ export function StateTree({
   zoomRadius?: number;
 }) {
   const [focusPath, setFocusPath] = useState<string | null>(null);
+  const [zoomOverrides, setZoomOverrides] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [highlightedTargetIds, setHighlightedTargetIds] = useState<Set<string>>(
     () => new Set(),
   );
 
-  const onToggleFocus = useCallback((path: string) => {
-    setFocusPath((current) => (current === path ? null : path));
+  const onToggleZoom = useCallback((path: string, exclusive: boolean) => {
+    if (exclusive) {
+      setFocusPath((current) => (current === path ? null : path));
+      setZoomOverrides(new Set());
+      return;
+    }
+
+    setZoomOverrides((current) => {
+      const next = new Set(current);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
+  }, []);
+
+  // Escape resets every zoom (exclusive focus and cumulative toggles).
+  useEffect(() => {
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setFocusPath(null);
+      setZoomOverrides(new Set());
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
   return (
@@ -54,8 +86,9 @@ export function StateTree({
       activePaths={activePaths}
       path=""
       focusPath={focusPath}
+      zoomOverrides={zoomOverrides}
       zoomRadius={zoomRadius}
-      onToggleFocus={onToggleFocus}
+      onToggleZoom={onToggleZoom}
       highlightedTargetIds={highlightedTargetIds}
       onHighlightTargets={setHighlightedTargetIds}
     />
@@ -68,8 +101,9 @@ function StateTreeNode({
   path = '',
   isInitial = false,
   focusPath = null,
+  zoomOverrides = new Set(),
   zoomRadius = DEFAULT_ZOOM_RADIUS,
-  onToggleFocus,
+  onToggleZoom,
   highlightedTargetIds = new Set(),
   onHighlightTargets,
 }: StateTreeProps) {
@@ -82,7 +116,8 @@ function StateTreeNode({
   const lifecycle = nodeLifecycleFlags(node);
   const isFinal = node.type === 'final';
   const initialChildIds = resolveInitialChildIds(node);
-  const zoomLarge = isZoomLarge(path, focusPath ?? null, zoomRadius);
+  const neighborhoodLarge = isZoomLarge(path, focusPath ?? null, zoomRadius);
+  const zoomLarge = neighborhoodLarge !== zoomOverrides.has(path);
   const isTransitionTarget = highlightedTargetIds.has(
     normalizeStateNodeId(node.id),
   );
@@ -93,7 +128,13 @@ function StateTreeNode({
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
     // Deepest node under the cursor wins (children stopPropagation first).
     event.stopPropagation();
-    onToggleFocus?.(path);
+    onToggleZoom?.(path, hasZoomModifier(event));
+  };
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    event.stopPropagation();
+    onToggleZoom?.(path, hasZoomModifier(event));
   };
 
   return (
@@ -105,7 +146,9 @@ function StateTreeNode({
         isActive ? 'node--active' : '',
         isInitial ? 'node--initial' : '',
         isFinal ? 'node--final' : '',
-        focusPath === path ? 'node--zoom-focus' : '',
+        zoomLarge && (focusPath === path || zoomOverrides.has(path))
+          ? 'node--zoom-focus'
+          : '',
         isTransitionTarget ? 'node--transition-target' : '',
       ]
         .filter(Boolean)
@@ -113,17 +156,11 @@ function StateTreeNode({
       onClick={handleClick}
       role="button"
       tabIndex={0}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          event.stopPropagation();
-          onToggleFocus?.(path);
-        }
-      }}
+      onKeyDown={handleKeyDown}
       title={
         zoomLarge
-          ? 'Click to collapse zoom'
-          : `Click to enlarge this node (±${zoomRadius} hops)`
+          ? `Click to shrink this node; Shift/Cmd-click for exclusive ±${zoomRadius}-hop zoom`
+          : `Click to enlarge this node; Shift/Cmd-click for exclusive ±${zoomRadius}-hop zoom`
       }
     >
       {isInitial && (
@@ -147,18 +184,6 @@ function StateTreeNode({
               <span className="node__badge-label">entry</span>
             </HoverTip>
           )}
-          {lifecycle.exit && (
-            <HoverTip
-              className="node__badge node__badge--exit"
-              label="exit"
-              items={exitItems}
-              placement="below"
-              align="right"
-            >
-              <ExitIcon />
-              <span className="node__badge-label">exit</span>
-            </HoverTip>
-          )}
           {lifecycle.after && (
             <HoverTip
               className="node__badge node__badge--after"
@@ -169,6 +194,18 @@ function StateTreeNode({
             >
               <AfterIcon />
               <span className="node__badge-label">after</span>
+            </HoverTip>
+          )}
+          {lifecycle.exit && (
+            <HoverTip
+              className="node__badge node__badge--exit"
+              label="exit"
+              items={exitItems}
+              placement="below"
+              align="right"
+            >
+              <ExitIcon />
+              <span className="node__badge-label">exit</span>
             </HoverTip>
           )}
         </div>
@@ -231,8 +268,9 @@ function StateTreeNode({
                   initialChildIds.has(child.id) || initialChildIds.has(key)
                 }
                 focusPath={focusPath}
+                zoomOverrides={zoomOverrides}
                 zoomRadius={zoomRadius}
-                onToggleFocus={onToggleFocus}
+                onToggleZoom={onToggleZoom}
                 highlightedTargetIds={highlightedTargetIds}
                 onHighlightTargets={onHighlightTargets}
               />
@@ -242,6 +280,12 @@ function StateTreeNode({
       )}
     </div>
   );
+}
+
+function hasZoomModifier(
+  event: Pick<MouseEvent, 'metaKey' | 'ctrlKey' | 'shiftKey'>,
+): boolean {
+  return event.metaKey || event.ctrlKey || event.shiftKey;
 }
 
 /**

@@ -31,6 +31,7 @@ export function VisualizerView({
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
     null,
   );
+  const [sidePanelOpen, setSidePanelOpen] = useState(true);
 
   const { machines } = snapshot;
   const machine =
@@ -45,7 +46,12 @@ export function VisualizerView({
       : new Set(activePaths(actorState.value as StateValue));
 
   return (
-    <div className="viz">
+    <div
+      className={[
+        'viz',
+        sidePanelOpen ? 'viz--side-open' : 'viz--side-collapsed',
+      ].join(' ')}
+    >
       <header className="viz__header">
         <div className="viz__header-row">
           <h2 className="viz__title">{title}</h2>
@@ -57,11 +63,20 @@ export function VisualizerView({
             />
           )}
           <ZoomHopsControl value={zoomRadius} onChange={setZoomRadius} />
+          {!sidePanelOpen && (
+            <button
+              type="button"
+              className="viz__side-toggle"
+              onClick={() => setSidePanelOpen(true)}
+            >
+              Show current state
+            </button>
+          )}
         </div>
       </header>
 
       <main className="viz__panels">
-        <section className="viz__panel">
+        <section className="viz__panel viz__panel--tree">
           <h3>Machine structure</h3>
           {machine ? (
             <StateTree
@@ -74,36 +89,48 @@ export function VisualizerView({
           )}
         </section>
 
-        <section className="viz__panel">
-          <h3>Current state</h3>
-          <pre className="viz__code">
-            {JSON.stringify(actorState?.value, null, 2)}
-          </pre>
-          <h4>Context</h4>
-          <pre className="viz__code">
-            {JSON.stringify(actorState?.context, null, 2)}
-          </pre>
-
-          <h3>Event log</h3>
-          <ul className="viz__log">
-            {snapshot.log.map((entry) => (
-              <li
-                key={entry.seq}
-                className={`viz__log-item viz__log-item--${entry.type.replace('@xstate.', '')}`}
+        {sidePanelOpen && (
+          <section className="viz__panel viz__panel--side">
+            <div className="viz__panel-heading">
+              <h3>Current state</h3>
+              <button
+                type="button"
+                className="viz__side-toggle"
+                onClick={() => setSidePanelOpen(false)}
+                aria-expanded={sidePanelOpen}
               >
-                <span className="viz__log-type">{entry.type}</span>
-                {entry.eventType && (
-                  <span className="viz__log-event">{entry.eventType}</span>
-                )}
-                {entry.value !== undefined && (
-                  <span className="viz__log-value">
-                    {JSON.stringify(entry.value)}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
+                Collapse
+              </button>
+            </div>
+            <pre className="viz__code">
+              {JSON.stringify(actorState?.value, null, 2)}
+            </pre>
+            <h4>Context</h4>
+            <pre className="viz__code">
+              {JSON.stringify(actorState?.context, null, 2)}
+            </pre>
+
+            <h3>Event log</h3>
+            <ul className="viz__log">
+              {snapshot.log.map((entry) => (
+                <li
+                  key={entry.seq}
+                  className={`viz__log-item viz__log-item--${entry.type.replace('@xstate.', '')}`}
+                >
+                  <span className="viz__log-type">{entry.type}</span>
+                  {entry.eventType && (
+                    <span className="viz__log-event">{entry.eventType}</span>
+                  )}
+                  {entry.value !== undefined && (
+                    <span className="viz__log-value">
+                      {JSON.stringify(entry.value)}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </main>
     </div>
   );

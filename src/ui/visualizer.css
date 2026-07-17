@@ -97,8 +97,13 @@
 
 .viz__panels {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
   gap: 1.25rem;
+  align-items: start;
+}
+
+.viz--side-collapsed .viz__panels {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 @media (max-width: 860px) {
@@ -114,6 +119,60 @@
   padding: 1rem 1.1rem;
   /* Allow hover tips to extend outside the panel. */
   overflow: visible;
+}
+
+.viz__panel--tree {
+  min-width: 0;
+}
+
+.viz__panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.viz__panel-heading h3 {
+  margin: 0;
+}
+
+.viz__side-toggle {
+  flex-shrink: 0;
+  background: #1f2635;
+  border: 1px solid #3a4358;
+  color: #cbd3e1;
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.viz__side-toggle:hover {
+  background: #2b3348;
+}
+
+.viz--popup {
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.viz__popup-header {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.viz__popup-title {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.viz__popup-lead {
+  margin-bottom: 1rem;
 }
 
 .viz__panel h3 {
