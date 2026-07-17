@@ -28,6 +28,7 @@ export function VisualizerView({
   const [zoomRadius, setZoomRadius] = useState(() =>
     clampZoomRadius(defaultZoomRadius),
   );
+  const [showLifecycleBadges, setShowLifecycleBadges] = useState(true);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
     null,
   );
@@ -62,7 +63,12 @@ export function VisualizerView({
               onChange={setSelectedSessionId}
             />
           )}
-          <ZoomHopsControl value={zoomRadius} onChange={setZoomRadius} />
+          <AppearanceSettings
+            zoomRadius={zoomRadius}
+            onZoomRadiusChange={setZoomRadius}
+            showLifecycleBadges={showLifecycleBadges}
+            onShowLifecycleBadgesChange={setShowLifecycleBadges}
+          />
           {!sidePanelOpen && (
             <button
               type="button"
@@ -83,6 +89,7 @@ export function VisualizerView({
               node={machine.definition}
               activePaths={active}
               zoomRadius={zoomRadius}
+              showLifecycleBadges={showLifecycleBadges}
             />
           ) : (
             <p className="viz__muted">Waiting for machine definition…</p>
@@ -162,46 +169,65 @@ function ActorSelect({
   );
 }
 
-function ZoomHopsControl({
-  value,
-  onChange,
+function AppearanceSettings({
+  zoomRadius,
+  onZoomRadiusChange,
+  showLifecycleBadges,
+  onShowLifecycleBadgesChange,
 }: {
-  value: number;
-  onChange: (next: number) => void;
+  zoomRadius: number;
+  onZoomRadiusChange: (next: number) => void;
+  showLifecycleBadges: boolean;
+  onShowLifecycleBadgesChange: (next: boolean) => void;
 }) {
   return (
-    <div
-      className="viz__zoom-control"
-      title="How many parent/child hops around a clicked node become large"
-    >
-      <span className="viz__zoom-label">Zoom hops</span>
-      <button
-        type="button"
-        className="viz__zoom-btn"
-        aria-label="Decrease zoom hops"
-        disabled={value <= MIN_ZOOM_RADIUS}
-        onClick={(event) => {
-          event.stopPropagation();
-          onChange(clampZoomRadius(value - 1));
-        }}
-      >
-        −
-      </button>
-      <span className="viz__zoom-value" aria-live="polite">
-        ±{value}
-      </span>
-      <button
-        type="button"
-        className="viz__zoom-btn"
-        aria-label="Increase zoom hops"
-        disabled={value >= MAX_ZOOM_RADIUS}
-        onClick={(event) => {
-          event.stopPropagation();
-          onChange(clampZoomRadius(value + 1));
-        }}
-      >
-        +
-      </button>
-    </div>
+    <details className="viz__appearance">
+      <summary>Appearance</summary>
+      <div className="viz__appearance-panel">
+        <div
+          className="viz__setting-row"
+          title="How many parent/child hops around a clicked node become large"
+        >
+          <span>Zoom hops</span>
+          <div className="viz__zoom-control">
+            <button
+              type="button"
+              className="viz__zoom-btn"
+              aria-label="Decrease zoom hops"
+              disabled={zoomRadius <= MIN_ZOOM_RADIUS}
+              onClick={() =>
+                onZoomRadiusChange(clampZoomRadius(zoomRadius - 1))
+              }
+            >
+              −
+            </button>
+            <span className="viz__zoom-value" aria-live="polite">
+              ±{zoomRadius}
+            </span>
+            <button
+              type="button"
+              className="viz__zoom-btn"
+              aria-label="Increase zoom hops"
+              disabled={zoomRadius >= MAX_ZOOM_RADIUS}
+              onClick={() =>
+                onZoomRadiusChange(clampZoomRadius(zoomRadius + 1))
+              }
+            >
+              +
+            </button>
+          </div>
+        </div>
+        <label className="viz__setting-row">
+          <span>Show badges?</span>
+          <input
+            type="checkbox"
+            checked={showLifecycleBadges}
+            onChange={(event) =>
+              onShowLifecycleBadgesChange(event.target.checked)
+            }
+          />
+        </label>
+      </div>
+    </details>
   );
 }

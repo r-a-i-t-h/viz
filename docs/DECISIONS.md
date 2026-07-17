@@ -14,6 +14,16 @@ Format for each entry:
 
 ---
 
+## 2026-07-17 — Appearance settings group visual preferences
+
+**Context:** Zoom hops occupied permanent header space, and additional visual preferences need a discoverable home.
+
+**Decision:** Move zoom hops into a collapsible Appearance panel and add a default-on “Show badges?” option controlling the entry, exit, and after lifecycle badges.
+
+**Rationale:** A single compact panel keeps the header clear and gives future appearance controls an obvious extension point. Badge visibility is renderer-local and does not change captured machine data.
+
+---
+
 ## 2026-07-17 — Cumulative zoom anchors by default
 
 **Context:** Exclusive click-to-zoom discarded other enlarged nodes, making it awkward to compare several distant parts of a complex machine. A first cut made plain clicks enlarge only the clicked node, which lost the ±hop neighborhood entirely.

@@ -26,6 +26,7 @@ interface StateTreeProps {
   isInitial?: boolean;
   zoomAnchors?: Set<string>;
   zoomRadius?: number;
+  showLifecycleBadges?: boolean;
   onToggleZoom?: (path: string, exclusive: boolean) => void;
   highlightedTargetIds?: Set<string>;
   onHighlightTargets?: (targets: Set<string>) => void;
@@ -41,11 +42,14 @@ export function StateTree({
   node,
   activePaths,
   zoomRadius = DEFAULT_ZOOM_RADIUS,
+  showLifecycleBadges = true,
 }: {
   node: StateNodeDefinition;
   activePaths: Set<string>;
   /** Neighborhood radius in hops (±). Controllable from the visualizer UI. */
   zoomRadius?: number;
+  /** Whether authored entry, exit, and after badges are visible. */
+  showLifecycleBadges?: boolean;
 }) {
   const [zoomAnchors, setZoomAnchors] = useState<Set<string>>(() => new Set());
   const [highlightedTargetIds, setHighlightedTargetIds] = useState<Set<string>>(
@@ -84,6 +88,7 @@ export function StateTree({
       path=""
       zoomAnchors={zoomAnchors}
       zoomRadius={zoomRadius}
+      showLifecycleBadges={showLifecycleBadges}
       onToggleZoom={onToggleZoom}
       highlightedTargetIds={highlightedTargetIds}
       onHighlightTargets={setHighlightedTargetIds}
@@ -98,6 +103,7 @@ function StateTreeNode({
   isInitial = false,
   zoomAnchors = new Set(),
   zoomRadius = DEFAULT_ZOOM_RADIUS,
+  showLifecycleBadges = true,
   onToggleZoom,
   highlightedTargetIds = new Set(),
   onHighlightTargets,
@@ -164,7 +170,8 @@ function StateTreeNode({
         </span>
       )}
 
-      {(lifecycle.entry || lifecycle.exit || lifecycle.after) && (
+      {showLifecycleBadges &&
+        (lifecycle.entry || lifecycle.exit || lifecycle.after) && (
         <div className="node__badges">
           {lifecycle.entry && (
             <HoverTip
@@ -263,6 +270,7 @@ function StateTreeNode({
                 }
                 zoomAnchors={zoomAnchors}
                 zoomRadius={zoomRadius}
+                showLifecycleBadges={showLifecycleBadges}
                 onToggleZoom={onToggleZoom}
                 highlightedTargetIds={highlightedTargetIds}
                 onHighlightTargets={onHighlightTargets}
