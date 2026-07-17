@@ -14,7 +14,15 @@ Format for each entry:
 
 ---
 
-## 2026-07-17 — Watch column for fixed-size node inspection
+## 2026-07-17 — Resizable side columns with << / >> chevrons
+
+**Context:** Watch and current-state collapse used wordy buttons that jumped between the header and panel headings, and column widths were fixed.
+
+**Decision:** Both side columns always stay in the layout (zero-width rail when collapsed). A round triangle toggle on the shared inner divider collapses/expands; dragging the divider (not the button) resizes width (clamped). Flex layout replaces the old CSS-grid column templates.
+
+**Rationale:** IDE-style edge controls keep collapse and resize in one place; a solid arrowhead reads clearer than `<<` / `>>` text.
+
+---
 
 **Context:** Graph zoom is good for structure, but watching a few states for active/inactive changes and config details is awkward when those nodes shrink with the overview zoom.
 

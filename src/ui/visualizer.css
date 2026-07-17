@@ -135,45 +135,10 @@
 }
 
 .viz__panels {
-  display: grid;
-  grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr) minmax(16rem, 22rem);
-  gap: 1.25rem;
-  align-items: start;
-}
-
-.viz--side-collapsed.viz--watch-open .viz__panels {
-  grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
-}
-
-.viz--side-open.viz--watch-collapsed .viz__panels {
-  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
-}
-
-.viz--side-collapsed.viz--watch-collapsed .viz__panels {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-@media (max-width: 1100px) {
-  .viz--side-open.viz--watch-open .viz__panels {
-    grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr);
-  }
-
-  .viz--side-open.viz--watch-open .viz__panel--side {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (max-width: 860px) {
-  .viz__panels,
-  .viz--side-collapsed.viz--watch-open .viz__panels,
-  .viz--side-open.viz--watch-collapsed .viz__panels,
-  .viz--side-open.viz--watch-open .viz__panels {
-    grid-template-columns: 1fr;
-  }
-
-  .viz--side-open.viz--watch-open .viz__panel--side {
-    grid-column: auto;
-  }
+  display: flex;
+  gap: 0.75rem;
+  align-items: stretch;
+  min-height: min(70vh, 48rem);
 }
 
 .viz__panel {
@@ -185,21 +150,62 @@
   overflow: visible;
 }
 
-.viz__panel--tree {
-  min-width: 0;
+.viz__column {
+  position: relative;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  /* Cap height so a tall graph scrolls inside the panel rather than
-     stretching the page indefinitely. */
+  min-width: 0;
   max-height: min(70vh, 48rem);
+  box-sizing: border-box;
 }
 
+.viz__column-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Watch cards flush left; reserve the right for the divider toggle
+   (half of the 1.5rem handle sits over the panel edge). */
 .viz__panel--watch {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.viz__panel--watch .viz__panel-heading {
+  padding-left: 0.75rem;
+  padding-right: 0.85rem;
+}
+
+.viz__panel--watch .viz__column-body {
+  padding: 0.75rem 0.85rem 0.35rem 0;
+}
+
+.viz__panel--watch .viz__muted {
+  padding-left: 0.75rem;
+  padding-right: 0.85rem;
+}
+
+.viz__column--collapsed {
+  padding: 0;
+  border: none;
+  background: transparent;
+  overflow: visible;
+  /* Keep a hit target in the flex gap for the divider toggle. */
+  min-width: 0;
+}
+
+.viz__column--collapsed .viz__panel-heading {
+  display: none;
+}
+
+.viz__panel--tree {
+  flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
   max-height: min(70vh, 48rem);
-  overflow: auto;
 }
 
 .viz__watch-list {
@@ -213,6 +219,9 @@
 
 .viz__watch-item {
   margin: 0;
+  /* Let absolute badge/control clusters paint outside the card box
+     without being clipped by the item itself. */
+  overflow: visible;
 }
 
 .viz__panel--tree > h3 {
@@ -234,31 +243,129 @@
 .viz__panel-heading {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.5rem;
   margin-bottom: 0.75rem;
+  flex-shrink: 0;
 }
 
 .viz__panel-heading h3 {
   margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.viz__side-toggle {
-  flex-shrink: 0;
-  background: #1f2635;
+.viz__divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 6;
+  touch-action: none;
+}
+
+.viz__divider--after {
+  right: -7px;
+}
+
+.viz__divider--before {
+  left: -7px;
+}
+
+.viz__divider--resizable {
+  cursor: col-resize;
+}
+
+.viz__divider--resizable::before {
+  content: '';
+  position: absolute;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: transparent;
+  transition: background 0.12s ease;
+}
+
+.viz__divider--resizable:hover::before,
+.viz--resizing .viz__divider--resizable::before {
+  background: rgba(156, 205, 255, 0.35);
+}
+
+.viz__divider-toggle {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 4.5rem;
+  padding: 0;
+  border-radius: 999px;
   border: 1px solid #3a4358;
+  background: #1a2030;
   color: #cbd3e1;
-  padding: 0.25rem 0.55rem;
-  border-radius: 6px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   cursor: pointer;
 }
 
-.viz__side-toggle:hover {
+.viz__divider-toggle:hover {
   background: #2b3348;
+  border-color: #4a5568;
+  color: #e6e9ef;
+}
+
+body.viz--resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+body.viz--resizing iframe {
+  pointer-events: none;
+}
+
+@media (max-width: 860px) {
+  .viz__panels {
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .viz__column,
+  .viz__panel--tree {
+    width: 100% !important;
+    flex-basis: auto !important;
+    max-height: none;
+  }
+
+  .viz__column--collapsed {
+    width: 100% !important;
+    flex-basis: auto !important;
+    min-height: 2rem;
+    padding: 0.35rem;
+    border: 1px solid #232b3a;
+    background: #12161f;
+  }
+
+  .viz__divider {
+    position: static;
+    width: 100%;
+    height: auto;
+    padding: 0.15rem 0;
+  }
+
+  .viz__divider--resizable {
+    cursor: default;
+  }
+
+  .viz__divider--resizable::before {
+    display: none;
+  }
 }
 
 .viz--popup {
@@ -287,10 +394,57 @@
   color: #cbd3e1;
 }
 
-.viz__panel h4 {
-  margin: 1rem 0 0.4rem;
-  font-size: 0.85rem;
+.viz__fold {
+  margin: 0 0 0.85rem;
+}
+
+.viz__fold:last-child {
+  margin-bottom: 0;
+}
+
+.viz__fold-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  margin: 0 0 0.45rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 4px;
+}
+
+.viz__fold-toggle:hover .viz__fold-title,
+.viz__fold-toggle:focus-visible .viz__fold-title {
+  color: #9ccdff;
+}
+
+.viz__fold-toggle:focus-visible {
+  outline: 1px solid rgba(156, 205, 255, 0.55);
+  outline-offset: 2px;
+}
+
+.viz__fold-disclosure {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: #9aa4b2;
+  flex-shrink: 0;
+}
+
+.viz__fold-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #cbd3e1;
+}
+
+.viz__fold-body {
+  min-width: 0;
 }
 
 .viz__muted {
@@ -453,6 +607,7 @@
   padding: 0.55rem 0.7rem 0.65rem;
   margin: 0;
   cursor: default;
+  overflow: visible;
   /* Room for control + badge clusters on the top edge. */
   padding-top: 0.85rem;
 }
@@ -464,7 +619,8 @@
 .node__watch-controls {
   position: absolute;
   top: 0;
-  left: 0.45rem;
+  right: 0.45rem;
+  left: auto;
   transform: translateY(-50%);
   display: flex;
   gap: 0.2rem;
@@ -506,33 +662,52 @@
   background: #3a1f1f;
 }
 
-/* Badges sit top-right on watch cards; controls are top-left. */
+/* Lifecycle badges sit top-left on watch cards; controls are top-right. */
 .node__badges--watch {
-  right: 0.45rem;
-  left: auto;
+  left: 0.45rem;
+  right: auto;
 }
 
-.node__watch-details {
-  margin-top: 0.55rem;
-  color: #9aa4b2;
-  font-size: 0.72rem;
-}
-
-.node__watch-details summary {
+.node__watch-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
   cursor: pointer;
-  user-select: none;
-  color: #cbd3e1;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-size: 0.65rem;
+  text-align: left;
+  border-radius: 4px;
+}
+
+.node__watch-name:hover .node__key,
+.node__watch-name:focus-visible .node__key {
+  color: #9ccdff;
+}
+
+.node__watch-name:focus-visible {
+  outline: 1px solid rgba(156, 205, 255, 0.55);
+  outline-offset: 2px;
+}
+
+.node__watch-disclosure {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #9aa4b2;
+  flex-shrink: 0;
 }
 
 .node__watch-meta {
-  margin: 0.45rem 0 0;
+  margin: 0.55rem 0 0;
   display: grid;
   gap: 0.4rem;
   font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  color: #9aa4b2;
 }
 
 .node__watch-meta > div {
@@ -692,26 +867,25 @@
   outline: none;
 }
 
-/* Hover / focus popup for lifecycle badges and individual "on" events. */
+/* Hover / focus popup for lifecycle badges and individual "on" events.
+ * Portaled to document.body; position applied in JS as position:fixed. */
 .hover-tip {
   position: relative;
 }
 
 .hover-tip__popup {
-  position: absolute;
-  z-index: 20;
+  position: fixed;
+  z-index: 1000;
   min-width: 12rem;
-  max-width: 22rem;
+  max-width: min(22rem, calc(100vw - 1rem));
+  max-height: calc(100vh - 1rem);
+  overflow: auto;
   padding: 0.45rem 0.55rem;
   border-radius: 6px;
   border: 1px solid #3a4358;
   background: #0c0f16;
   color: #e6e9ef;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 0.1s ease;
   white-space: normal;
   text-align: left;
   font-family: ui-monospace, monospace;
@@ -720,38 +894,7 @@
   font-weight: 400;
   text-transform: none;
   letter-spacing: normal;
-}
-
-.hover-tip__popup--below {
-  top: calc(100% + 0.45rem);
-}
-
-.hover-tip__popup--above {
-  bottom: calc(100% + 0.45rem);
-}
-
-.hover-tip__popup--center {
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-/* Hang to the right of the trigger. */
-.hover-tip__popup--left {
-  left: 0;
-  transform: none;
-}
-
-/* Hang to the left of the trigger (for right-aligned icons). */
-.hover-tip__popup--right {
-  left: auto;
-  right: 0;
-  transform: none;
-}
-
-.hover-tip:hover > .hover-tip__popup,
-.hover-tip:focus-within > .hover-tip__popup {
-  opacity: 1;
-  visibility: visible;
+  pointer-events: none;
 }
 
 .hover-tip__title {

@@ -47,6 +47,8 @@ export function StateTree({
   showLifecycleBadges = true,
   onToggleWatch,
   watchedPaths,
+  highlightedTargetIds,
+  onHighlightTargets,
 }: {
   node: StateNodeDefinition;
   activePaths: Set<string>;
@@ -58,11 +60,11 @@ export function StateTree({
   onToggleWatch?: (path: string) => void;
   /** Paths currently in the watch column (for title hints). */
   watchedPaths?: Set<string>;
+  /** Node ids highlighted while an `on` event is hovered (graph or watch). */
+  highlightedTargetIds?: Set<string>;
+  onHighlightTargets?: (targets: Set<string>) => void;
 }) {
   const [zoomAnchors, setZoomAnchors] = useState<Set<string>>(() => new Set());
-  const [highlightedTargetIds, setHighlightedTargetIds] = useState<Set<string>>(
-    () => new Set(),
-  );
 
   const onToggleZoom = useCallback((path: string, exclusive: boolean) => {
     setZoomAnchors((current) => {
@@ -101,7 +103,7 @@ export function StateTree({
       onToggleWatch={onToggleWatch}
       watchedPaths={watchedPaths}
       highlightedTargetIds={highlightedTargetIds}
-      onHighlightTargets={setHighlightedTargetIds}
+      onHighlightTargets={onHighlightTargets}
     />
   );
 }
@@ -179,11 +181,6 @@ function StateTreeNode({
       role="button"
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      title={nodeTitle({
-        zoomRadius,
-        isZoomAnchor: zoomAnchors.has(path),
-        isWatched,
-      })}
     >
       {isInitial && (
         <span className="node__initial" title="initial">
@@ -317,24 +314,6 @@ function hasWatchModifier(
   event: Pick<MouseEvent, 'altKey'>,
 ): boolean {
   return event.altKey;
-}
-
-function nodeTitle({
-  zoomRadius,
-  isZoomAnchor,
-  isWatched,
-}: {
-  zoomRadius: number;
-  isZoomAnchor: boolean;
-  isWatched: boolean;
-}): string {
-  const watchHint = isWatched
-    ? 'Alt-click to stop watching'
-    : 'Alt-click to watch';
-  const zoomHint = isZoomAnchor
-    ? `Click to remove this ±${zoomRadius} zoom; Shift/Cmd-click to zoom exclusively; Esc clears all`
-    : `Click to zoom ±${zoomRadius} levels; Shift/Cmd-click to zoom exclusively`;
-  return `${zoomHint}. ${watchHint}.`;
 }
 
 /**

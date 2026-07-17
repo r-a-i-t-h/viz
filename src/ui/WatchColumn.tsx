@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import type { StateNodeDefinition } from '../viz';
+import { DisclosureChevron } from './DisclosureChevron';
 import { findNodeByPath } from './findNodeByPath';
 import { HoverTip } from './HoverTip';
 import { nodeLifecycleFlags } from './lifecycleBadges';
@@ -8,6 +10,7 @@ import {
   formatEntryActions,
   formatExitActions,
   formatOnTransitionDetails,
+  getOnTransitionTargetIds,
 } from './nodeDetails';
 
 export function WatchColumn({
@@ -17,7 +20,7 @@ export function WatchColumn({
   showLifecycleBadges,
   onMove,
   onUnwatch,
-  onCollapse,
+  onHighlightTargets,
 }: {
   root: StateNodeDefinition;
   watchedPaths: string[];
@@ -25,50 +28,39 @@ export function WatchColumn({
   showLifecycleBadges: boolean;
   onMove: (path: string, direction: -1 | 1) => void;
   onUnwatch: (path: string) => void;
-  onCollapse: () => void;
+  onHighlightTargets?: (targets: Set<string>) => void;
 }) {
-  return (
-    <aside className="viz__panel viz__panel--watch">
-      <div className="viz__panel-heading">
-        <h3>Watched</h3>
-        <button
-          type="button"
-          className="viz__side-toggle"
-          onClick={onCollapse}
-          aria-expanded={true}
-        >
-          Collapse
-        </button>
-      </div>
+  if (watchedPaths.length === 0) {
+    return (
+      <p className="viz__muted">
+        Alt-click a node in the graph to watch it here at a fixed size.
+      </p>
+    );
+  }
 
-      {watchedPaths.length === 0 ? (
-        <p className="viz__muted">
-          Alt-click a node in the graph to watch it here at a fixed size.
-        </p>
-      ) : (
-        <ul className="viz__watch-list">
-          {watchedPaths.map((path, index) => {
-            const node = findNodeByPath(root, path);
-            if (!node) return null;
-            return (
-              <li key={path} className="viz__watch-item">
-                <WatchNode
-                  node={node}
-                  path={path}
-                  isActive={path === '' || activePaths.has(path)}
-                  showLifecycleBadges={showLifecycleBadges}
-                  canMoveUp={index > 0}
-                  canMoveDown={index < watchedPaths.length - 1}
-                  onMoveUp={() => onMove(path, -1)}
-                  onMoveDown={() => onMove(path, 1)}
-                  onClose={() => onUnwatch(path)}
-                />
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </aside>
+  return (
+    <ul className="viz__watch-list">
+      {watchedPaths.map((path, index) => {
+        const node = findNodeByPath(root, path);
+        if (!node) return null;
+        return (
+          <li key={path} className="viz__watch-item">
+            <WatchNode
+              node={node}
+              path={path}
+              isActive={path === '' || activePaths.has(path)}
+              showLifecycleBadges={showLifecycleBadges}
+              canMoveUp={index > 0}
+              canMoveDown={index < watchedPaths.length - 1}
+              onMoveUp={() => onMove(path, -1)}
+              onMoveDown={() => onMove(path, 1)}
+              onClose={() => onUnwatch(path)}
+              onHighlightTargets={onHighlightTargets}
+            />
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -82,6 +74,7 @@ function WatchNode({
   onMoveUp,
   onMoveDown,
   onClose,
+  onHighlightTargets,
 }: {
   node: StateNodeDefinition;
   path: string;
@@ -92,7 +85,9 @@ function WatchNode({
   onMoveUp: () => void;
   onMoveDown: () => void;
   onClose: () => void;
+  onHighlightTargets?: (targets: Set<string>) => void;
 }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const isFinal = node.type === 'final';
   const lifecycle = nodeLifecycleFlags(node);
   const eventKeys = Object.keys(node.on ?? {}).filter(
@@ -111,6 +106,7 @@ function WatchNode({
         `node--${node.type}`,
         isActive ? 'node--active' : '',
         isFinal ? 'node--final' : '',
+        detailsOpen ? 'node--watch-open' : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -159,7 +155,7 @@ function WatchNode({
                 label="entry"
                 items={entryItems}
                 placement="below"
-                align="right"
+                align="left"
               >
                 <EntryIcon />
                 <span className="node__badge-label">entry</span>
@@ -171,7 +167,7 @@ function WatchNode({
                 label="after"
                 items={afterItems}
                 placement="below"
-                align="right"
+                align="left"
               >
                 <AfterIcon />
                 <span className="node__badge-label">after</span>
@@ -183,7 +179,7 @@ function WatchNode({
                 label="exit"
                 items={exitItems}
                 placement="below"
-                align="right"
+                align="left"
               >
                 <ExitIcon />
                 <span className="node__badge-label">exit</span>
@@ -199,7 +195,17 @@ function WatchNode({
             <span className="node__badge-label">final</span>
           </span>
         )}
-        <span className="node__key">{node.key}</span>
+        <button
+          type="button"
+          className="node__watch-name"
+          aria-expanded={detailsOpen}
+          onClick={() => setDetailsOpen((open) => !open)}
+        >
+          <span className="node__watch-disclosure" aria-hidden="true">
+            <DisclosureChevron open={detailsOpen} />
+          </span>
+          <span className="node__key">{node.key}</span>
+        </button>
         {eventKeys.length > 0 && (
           <span className="node__events">
             <span className="node__events-label">on:</span>{' '}
@@ -212,6 +218,13 @@ function WatchNode({
                   items={formatOnTransitionDetails(eventKey, node.on[eventKey])}
                   placement="below"
                   align="left"
+                  onActiveChange={(active) =>
+                    onHighlightTargets?.(
+                      active
+                        ? getOnTransitionTargetIds(node.on[eventKey])
+                        : new Set(),
+                    )
+                  }
                 >
                   {eventKey}
                 </HoverTip>
@@ -221,8 +234,7 @@ function WatchNode({
         )}
       </div>
 
-      <details className="node__watch-details">
-        <summary>Details</summary>
+      {detailsOpen && (
         <dl className="node__watch-meta">
           <div>
             <dt>path</dt>
@@ -295,7 +307,7 @@ function WatchNode({
             );
           })}
         </dl>
-      </details>
+      )}
     </div>
   );
 }

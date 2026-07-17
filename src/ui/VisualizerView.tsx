@@ -1,6 +1,12 @@
 import { useCallback, useState } from 'react';
 import type { StateValue } from 'xstate';
 import { activePaths, type VisualizerSnapshot } from '../viz';
+import {
+  DEFAULT_SIDE_WIDTH,
+  DEFAULT_WATCH_WIDTH,
+} from './columnLayout';
+import { SideColumn } from './SideColumn';
+import { FoldSection } from './FoldSection';
 import { StateTree } from './StateTree';
 import { WatchColumn } from './WatchColumn';
 import {
@@ -35,6 +41,11 @@ export function VisualizerView({
   );
   const [sidePanelOpen, setSidePanelOpen] = useState(true);
   const [watchPanelOpen, setWatchPanelOpen] = useState(true);
+  const [watchWidth, setWatchWidth] = useState(DEFAULT_WATCH_WIDTH);
+  const [sideWidth, setSideWidth] = useState(DEFAULT_SIDE_WIDTH);
+  const [highlightedTargetIds, setHighlightedTargetIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   /** Watched node paths keyed by actor session id (order preserved). */
   const [watchedBySession, setWatchedBySession] = useState<
     Record<string, string[]>
@@ -100,13 +111,7 @@ export function VisualizerView({
   );
 
   return (
-    <div
-      className={[
-        'viz',
-        sidePanelOpen ? 'viz--side-open' : 'viz--side-collapsed',
-        watchPanelOpen ? 'viz--watch-open' : 'viz--watch-collapsed',
-      ].join(' ')}
-    >
+    <div className="viz">
       <header className="viz__header">
         <div className="viz__header-row">
           <h2 className="viz__title">{title}</h2>
@@ -123,40 +128,33 @@ export function VisualizerView({
             showLifecycleBadges={showLifecycleBadges}
             onShowLifecycleBadgesChange={setShowLifecycleBadges}
           />
-          {!watchPanelOpen && (
-            <button
-              type="button"
-              className="viz__side-toggle"
-              onClick={() => setWatchPanelOpen(true)}
-            >
-              Show watched
-              {watchedPaths.length > 0 ? ` (${watchedPaths.length})` : ''}
-            </button>
-          )}
-          {!sidePanelOpen && (
-            <button
-              type="button"
-              className="viz__side-toggle"
-              onClick={() => setSidePanelOpen(true)}
-            >
-              Show current state
-            </button>
-          )}
         </div>
       </header>
 
       <main className="viz__panels">
-        {machine && watchPanelOpen && (
-          <WatchColumn
-            root={machine.definition}
-            watchedPaths={watchedPaths}
-            activePaths={active}
-            showLifecycleBadges={showLifecycleBadges}
-            onMove={moveWatch}
-            onUnwatch={unwatch}
-            onCollapse={() => setWatchPanelOpen(false)}
-          />
-        )}
+        <SideColumn
+          edge="start"
+          title="Watched"
+          open={watchPanelOpen}
+          width={watchWidth}
+          onToggle={() => setWatchPanelOpen((open) => !open)}
+          onWidthChange={setWatchWidth}
+          className="viz__panel--watch"
+        >
+          {machine ? (
+            <WatchColumn
+              root={machine.definition}
+              watchedPaths={watchedPaths}
+              activePaths={active}
+              showLifecycleBadges={showLifecycleBadges}
+              onMove={moveWatch}
+              onUnwatch={unwatch}
+              onHighlightTargets={setHighlightedTargetIds}
+            />
+          ) : (
+            <p className="viz__muted">Waiting for machine definition…</p>
+          )}
+        </SideColumn>
 
         <section className="viz__panel viz__panel--tree">
           <h3>Machine structure</h3>
@@ -169,6 +167,8 @@ export function VisualizerView({
                 showLifecycleBadges={showLifecycleBadges}
                 onToggleWatch={toggleWatch}
                 watchedPaths={watchedPathSet}
+                highlightedTargetIds={highlightedTargetIds}
+                onHighlightTargets={setHighlightedTargetIds}
               />
             ) : (
               <p className="viz__muted">Waiting for machine definition…</p>
@@ -176,28 +176,25 @@ export function VisualizerView({
           </div>
         </section>
 
-        {sidePanelOpen && (
-          <section className="viz__panel viz__panel--side">
-            <div className="viz__panel-heading">
-              <h3>Current state</h3>
-              <button
-                type="button"
-                className="viz__side-toggle"
-                onClick={() => setSidePanelOpen(false)}
-                aria-expanded={sidePanelOpen}
-              >
-                Collapse
-              </button>
-            </div>
+        <SideColumn
+          edge="end"
+          open={sidePanelOpen}
+          width={sideWidth}
+          onToggle={() => setSidePanelOpen((open) => !open)}
+          onWidthChange={setSideWidth}
+          className="viz__panel--side"
+        >
+          <FoldSection title="Current state">
             <pre className="viz__code">
               {JSON.stringify(actorState?.value, null, 2)}
             </pre>
-            <h4>Context</h4>
+          </FoldSection>
+          <FoldSection title="Context">
             <pre className="viz__code">
               {JSON.stringify(actorState?.context, null, 2)}
             </pre>
-
-            <h3>Event log</h3>
+          </FoldSection>
+          <FoldSection title="Event log">
             <ul className="viz__log">
               {snapshot.log.map((entry) => (
                 <li
@@ -216,8 +213,8 @@ export function VisualizerView({
                 </li>
               ))}
             </ul>
-          </section>
-        )}
+          </FoldSection>
+        </SideColumn>
       </main>
     </div>
   );
