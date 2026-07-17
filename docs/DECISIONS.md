@@ -14,13 +14,13 @@ Format for each entry:
 
 ---
 
-## 2026-07-17 — Cumulative node zoom by default
+## 2026-07-17 — Cumulative zoom anchors by default
 
-**Context:** Exclusive click-to-zoom discarded other enlarged nodes, making it awkward to compare several distant parts of a complex machine.
+**Context:** Exclusive click-to-zoom discarded other enlarged nodes, making it awkward to compare several distant parts of a complex machine. A first cut made plain clicks enlarge only the clicked node, which lost the ±hop neighborhood entirely.
 
-**Decision:** A plain click now toggles only that node's zoom while retaining every other node's current zoom. Shift/Cmd/Ctrl-click keeps the previous exclusive ±hop neighborhood behavior. The same modifiers work with Enter/Space for keyboard interaction.
+**Decision:** Zoom state is a set of anchor paths; a node renders large when it is within ±zoomRadius hops of any anchor. Plain click toggles an anchor without touching the others; Shift/Cmd/Ctrl-click replaces the whole set with the clicked node (the old exclusive behavior); Escape clears all anchors. Enter/Space honor the same modifiers.
 
-**Rationale:** Cumulative zoom supports ad hoc comparisons; keeping exclusive neighborhood zoom behind a modifier preserves fast isolation without adding another control.
+**Rationale:** Anchors keep the neighborhood semantics uniform for both interaction styles — cumulative zoom is just "more than one anchor" — while preserving quick isolation and a one-key reset.
 
 ---
 

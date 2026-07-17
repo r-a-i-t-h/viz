@@ -24,8 +24,7 @@ interface StateTreeProps {
   path?: string;
   /** True when this node is the parent's initial child. */
   isInitial?: boolean;
-  focusPath?: string | null;
-  zoomOverrides?: Set<string>;
+  zoomAnchors?: Set<string>;
   zoomRadius?: number;
   onToggleZoom?: (path: string, exclusive: boolean) => void;
   highlightedTargetIds?: Set<string>;
@@ -33,8 +32,10 @@ interface StateTreeProps {
 }
 
 /**
- * Stateful tree: starts at zoom "small". Plain clicks toggle individual nodes
- * cumulatively; modifier-clicks toggle an exclusive large neighborhood.
+ * Stateful tree: starts at zoom "small". Clicking a node toggles a large
+ * ±zoomRadius neighborhood anchored on it; plain clicks accumulate anchors,
+ * modifier-clicks (Shift/Cmd/Ctrl) replace them all. Escape clears every
+ * anchor.
  */
 export function StateTree({
   node,
@@ -46,22 +47,19 @@ export function StateTree({
   /** Neighborhood radius in hops (±). Controllable from the visualizer UI. */
   zoomRadius?: number;
 }) {
-  const [focusPath, setFocusPath] = useState<string | null>(null);
-  const [zoomOverrides, setZoomOverrides] = useState<Set<string>>(
-    () => new Set(),
-  );
+  const [zoomAnchors, setZoomAnchors] = useState<Set<string>>(() => new Set());
   const [highlightedTargetIds, setHighlightedTargetIds] = useState<Set<string>>(
     () => new Set(),
   );
 
   const onToggleZoom = useCallback((path: string, exclusive: boolean) => {
-    if (exclusive) {
-      setFocusPath((current) => (current === path ? null : path));
-      setZoomOverrides(new Set());
-      return;
-    }
-
-    setZoomOverrides((current) => {
+    setZoomAnchors((current) => {
+      if (exclusive) {
+        // Sole anchor already → toggle off; otherwise focus only this one.
+        return current.size === 1 && current.has(path)
+          ? new Set<string>()
+          : new Set([path]);
+      }
       const next = new Set(current);
       if (next.has(path)) next.delete(path);
       else next.add(path);
@@ -69,12 +67,11 @@ export function StateTree({
     });
   }, []);
 
-  // Escape resets every zoom (exclusive focus and cumulative toggles).
+  // Escape resets every zoom anchor.
   useEffect(() => {
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      setFocusPath(null);
-      setZoomOverrides(new Set());
+      setZoomAnchors(new Set());
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
@@ -85,8 +82,7 @@ export function StateTree({
       node={node}
       activePaths={activePaths}
       path=""
-      focusPath={focusPath}
-      zoomOverrides={zoomOverrides}
+      zoomAnchors={zoomAnchors}
       zoomRadius={zoomRadius}
       onToggleZoom={onToggleZoom}
       highlightedTargetIds={highlightedTargetIds}
@@ -100,8 +96,7 @@ function StateTreeNode({
   activePaths,
   path = '',
   isInitial = false,
-  focusPath = null,
-  zoomOverrides = new Set(),
+  zoomAnchors = new Set(),
   zoomRadius = DEFAULT_ZOOM_RADIUS,
   onToggleZoom,
   highlightedTargetIds = new Set(),
@@ -116,8 +111,9 @@ function StateTreeNode({
   const lifecycle = nodeLifecycleFlags(node);
   const isFinal = node.type === 'final';
   const initialChildIds = resolveInitialChildIds(node);
-  const neighborhoodLarge = isZoomLarge(path, focusPath ?? null, zoomRadius);
-  const zoomLarge = neighborhoodLarge !== zoomOverrides.has(path);
+  const zoomLarge = [...zoomAnchors].some((anchor) =>
+    isZoomLarge(path, anchor, zoomRadius),
+  );
   const isTransitionTarget = highlightedTargetIds.has(
     normalizeStateNodeId(node.id),
   );
@@ -146,9 +142,7 @@ function StateTreeNode({
         isActive ? 'node--active' : '',
         isInitial ? 'node--initial' : '',
         isFinal ? 'node--final' : '',
-        zoomLarge && (focusPath === path || zoomOverrides.has(path))
-          ? 'node--zoom-focus'
-          : '',
+        zoomAnchors.has(path) ? 'node--zoom-focus' : '',
         isTransitionTarget ? 'node--transition-target' : '',
       ]
         .filter(Boolean)
@@ -158,9 +152,9 @@ function StateTreeNode({
       tabIndex={0}
       onKeyDown={handleKeyDown}
       title={
-        zoomLarge
-          ? `Click to shrink this node; Shift/Cmd-click for exclusive ±${zoomRadius}-hop zoom`
-          : `Click to enlarge this node; Shift/Cmd-click for exclusive ±${zoomRadius}-hop zoom`
+        zoomAnchors.has(path)
+          ? `Click to remove this ±${zoomRadius}-hop zoom; Shift/Cmd-click to zoom it exclusively; Esc clears all`
+          : `Click to zoom ±${zoomRadius} hops around this node; Shift/Cmd-click to zoom it exclusively`
       }
     >
       {isInitial && (
@@ -267,8 +261,7 @@ function StateTreeNode({
                 isInitial={
                   initialChildIds.has(child.id) || initialChildIds.has(key)
                 }
-                focusPath={focusPath}
-                zoomOverrides={zoomOverrides}
+                zoomAnchors={zoomAnchors}
                 zoomRadius={zoomRadius}
                 onToggleZoom={onToggleZoom}
                 highlightedTargetIds={highlightedTargetIds}
