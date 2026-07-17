@@ -14,6 +14,16 @@ Format for each entry:
 
 ---
 
+## 2026-07-17 — Layers: host API vs interaction model vs renderer
+
+**Context:** Clarifying whether zoom/highlight/watch belong inside React views or a separable model, and whether a “headless visualizer” would help bolt on other renderers later.
+
+**Decision:** Document the split in `docs/ARCHITECTURE.md`. Prefer **host API** (`src/viz`) for inspect/snapshot/launch; **interaction model** for zoom/highlight/watches/selection (today: React state in `VisualizerView`); **renderer** for `src/ui`. Do not extract a headless interaction model until a second consumer needs the same behavior.
+
+**Rationale:** The host is already headless; interaction is already an explicit lifted view-model with pure helpers. Formal extraction is cheap later and speculative now. “Visualizer API” / “headless visualizer” alone blur host vs session.
+
+---
+
 ## 2026-07-17 — After transitions highlight targets
 
 **Context:** Hovering an `on` event highlights its target nodes; delayed `after` transitions only showed text and left the graph unchanged.
