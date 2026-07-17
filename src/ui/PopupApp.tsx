@@ -5,17 +5,18 @@ import {
   type LoggedEvent,
   type VisualizerSnapshot,
 } from '../viz';
-import { VisualizerView } from './VisualizerView';
+import {
+  VisualizerView,
+  type ConnectionStatus,
+} from './VisualizerView';
 import './visualizer.css';
-
-type ConnectionState = 'waiting' | 'connected' | 'closed' | 'orphan';
 
 /**
  * Popup page — receives portable payloads via postMessage and renders with the
  * optional React visualizer UI.
  */
 export default function PopupApp() {
-  const [connection, setConnection] = useState<ConnectionState>('waiting');
+  const [connection, setConnection] = useState<ConnectionStatus>('waiting');
   const [snapshot, setSnapshot] = useState<VisualizerSnapshot>({
     machines: [],
     actorStates: {},
@@ -76,64 +77,28 @@ export default function PopupApp() {
     });
   }, []);
 
+  if (connection === 'orphan') {
+    return (
+      <div className="viz viz--popup">
+        <header className="viz__header">
+          <div className="viz__header-row">
+            <div className="viz__header-start">
+              <h1 className="viz__title">XState viz</h1>
+              <span className="viz__status viz__status--err">no host</span>
+            </div>
+          </div>
+        </header>
+      </div>
+    );
+  }
+
   return (
     <div className="viz viz--popup">
-      <header className="viz__header viz__popup-header">
-        <h1 className="viz__popup-title">Visualizer</h1>
-        <StatusPill state={connection} />
-      </header>
-      <p className="viz__muted viz__popup-lead">
-        Popup surface — fed by <code>postMessage</code> from the host API.
-      </p>
-
-      {connection === 'orphan' && (
-        <p className="viz__muted">
-          Opened directly — call <code>viz.openPopup()</code> from the host
-          instead.
-        </p>
-      )}
-      {connection === 'waiting' && (
-        <p className="viz__muted">Waiting for host handshake…</p>
-      )}
-      {connection === 'closed' && (
-        <p className="viz__muted">Host closed the connection.</p>
-      )}
-
-      {connection !== 'orphan' && (
-        <VisualizerView snapshot={snapshot} title="Popup visualizer" />
-      )}
+      <VisualizerView
+        snapshot={snapshot}
+        title="XState viz"
+        connection={connection}
+      />
     </div>
-  );
-}
-
-function StatusPill({ state }: { state: ConnectionState }) {
-  const label =
-    state === 'connected'
-      ? 'connected'
-      : state === 'waiting'
-        ? 'waiting'
-        : state === 'closed'
-          ? 'closed'
-          : 'no host';
-  const color =
-    state === 'connected'
-      ? '#4ade80'
-      : state === 'waiting'
-        ? '#fbbf24'
-        : '#f87171';
-  return (
-    <span
-      style={{
-        fontSize: '0.7rem',
-        textTransform: 'uppercase',
-        letterSpacing: '0.04em',
-        padding: '0.15rem 0.5rem',
-        borderRadius: 999,
-        background: '#2a3244',
-        color,
-      }}
-    >
-      {label}
-    </span>
   );
 }

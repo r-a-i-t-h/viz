@@ -14,6 +14,36 @@ Format for each entry:
 
 ---
 
+## 2026-07-17 — After transitions highlight targets
+
+**Context:** Hovering an `on` event highlights its target nodes; delayed `after` transitions only showed text and left the graph unchanged.
+
+**Decision:** Collect after-transition targets the same way as `on` (from `xstate.after.*` keys, falling back to delayed `transitions`). Hovering the after badge or the watch-card after block highlights those targets.
+
+**Rationale:** After is just a delayed transition; spatial target feedback should match ordinary events.
+
+---
+
+## 2026-07-17 — Popup panels fill the viewport
+
+**Context:** With the slim popup header, the side/tree panels still used the older `70vh` visualizer height and could stop short of the window bottom when content was small.
+
+**Decision:** Popup layout now stretches the embedded visualizer as a column to the available viewport height; the panel row flexes to fill the remaining space and popup columns/tree drop their old max-height cap.
+
+**Rationale:** A full-height inspection surface feels more like an IDE pane and keeps collapse/resize rails visually stable even when there is little content.
+
+---
+
+## 2026-07-17 — Popup header is title + status + actor
+
+**Context:** The popup stacked a large “Visualizer” heading, connection pill, explanatory blurb, and a second VisualizerView header with actor/appearance controls.
+
+**Decision:** One header row: “XState viz”, connection status pill, actor select (when needed), Appearance on the trailing edge. Drop the lead copy and redundant waiting/closed paragraphs — the pill carries that state.
+
+**Rationale:** Maximizes graph space; connection and actor selection are the only chrome that must stay visible at a glance.
+
+---
+
 ## 2026-07-17 — Resizable side columns with << / >> chevrons
 
 **Context:** Watch and current-state collapse used wordy buttons that jumped between the header and panel headings, and column widths were fixed.

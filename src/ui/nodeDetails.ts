@@ -73,6 +73,22 @@ export function getOnTransitionTargetIds(transitions: unknown): Set<string> {
   return ids;
 }
 
+/** Target node ids for all delayed `after` transitions on a node. */
+export function getAfterTransitionTargetIds(
+  on: Record<string, unknown> | undefined,
+  transitions: unknown[] | undefined,
+): Set<string> {
+  const fromOn = Object.entries(on ?? {})
+    .filter(([key]) => AFTER_EVENT.test(key))
+    .flatMap(([, value]) => asTransitionList(value));
+
+  if (fromOn.length > 0) return getOnTransitionTargetIds(fromOn);
+
+  return getOnTransitionTargetIds(
+    (transitions ?? []).filter(isDelayedTransition),
+  );
+}
+
 /** Normalize XState target ids (`#demo.running`) to node ids (`demo.running`). */
 export function normalizeStateNodeId(id: string): string {
   return id.replace(/^#/, '');

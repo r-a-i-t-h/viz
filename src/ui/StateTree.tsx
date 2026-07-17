@@ -158,7 +158,13 @@ function StateTreeNode({
         </span>
       )}
 
-      {showLifecycleBadges && <NodeLifecycleBadges node={node} align="right" />}
+      {showLifecycleBadges && (
+        <NodeLifecycleBadges
+          node={node}
+          align="right"
+          onHighlightTargets={onHighlightTargets}
+        />
+      )}
 
       <div className="node__header">
         {isFinal && (

@@ -22,13 +22,18 @@ import './visualizer.css';
  * Importing this module pulls in visualizer CSS — do not import it from a
  * headless host that only needs `openPopup()`.
  */
+export type ConnectionStatus = 'waiting' | 'connected' | 'closed' | 'orphan';
+
 export function VisualizerView({
   snapshot,
   title = 'Visualizer',
+  connection,
   defaultZoomRadius = DEFAULT_ZOOM_RADIUS,
 }: {
   snapshot: VisualizerSnapshot;
   title?: string;
+  /** When set, shows a status pill beside the title (popup host link). */
+  connection?: ConnectionStatus;
   /** Initial ± range for click-zoom neighborhood (also adjustable on-screen). */
   defaultZoomRadius?: number;
 }) {
@@ -139,7 +144,10 @@ export function VisualizerView({
     <div className="viz">
       <header className="viz__header">
         <div className="viz__header-row">
-          <h2 className="viz__title">{title}</h2>
+          <div className="viz__header-start">
+            <h2 className="viz__title">{title}</h2>
+            {connection && <StatusPill state={connection} />}
+          </div>
           {machines.length > 1 && (
             <ActorSelect
               machines={machines}
@@ -251,6 +259,26 @@ export function VisualizerView({
         </SideColumn>
       </main>
     </div>
+  );
+}
+
+function StatusPill({ state }: { state: ConnectionStatus }) {
+  const label =
+    state === 'connected'
+      ? 'connected'
+      : state === 'waiting'
+        ? 'waiting'
+        : state === 'closed'
+          ? 'closed'
+          : 'no host';
+  const tone =
+    state === 'connected'
+      ? 'ok'
+      : state === 'waiting'
+        ? 'warn'
+        : 'err';
+  return (
+    <span className={`viz__status viz__status--${tone}`}>{label}</span>
   );
 }
 

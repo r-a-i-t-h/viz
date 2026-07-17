@@ -4,6 +4,7 @@ import {
   formatAfterTransitions,
   formatEntryActions,
   formatExitActions,
+  getAfterTransitionTargetIds,
 } from './nodeDetails';
 import { AfterIcon, EntryIcon, ExitIcon } from './nodeIcons';
 
@@ -12,6 +13,7 @@ export function NodeLifecycleBadges({
   node,
   align = 'right',
   className,
+  onHighlightTargets,
 }: {
   node: {
     entry?: unknown[] | undefined;
@@ -21,6 +23,8 @@ export function NodeLifecycleBadges({
   };
   align?: 'left' | 'right';
   className?: string;
+  /** Highlight `after` transition targets while the after badge is hovered. */
+  onHighlightTargets?: (targets: Set<string>) => void;
 }) {
   const lifecycle = nodeLifecycleFlags(node);
   if (!lifecycle.entry && !lifecycle.exit && !lifecycle.after) return null;
@@ -50,6 +54,13 @@ export function NodeLifecycleBadges({
           items={afterItems}
           placement="below"
           align={align}
+          onActiveChange={(active) =>
+            onHighlightTargets?.(
+              active
+                ? getAfterTransitionTargetIds(node.on, node.transitions)
+                : new Set(),
+            )
+          }
         >
           <AfterIcon />
           <span className="node__badge-label">after</span>

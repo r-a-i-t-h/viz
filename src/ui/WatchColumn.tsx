@@ -8,6 +8,7 @@ import {
   formatAllOnTransitions,
   formatEntryActions,
   formatExitActions,
+  getAfterTransitionTargetIds,
   getOnTransitionTargetIds,
   normalizeStateNodeId,
 } from './nodeDetails';
@@ -187,6 +188,7 @@ function WatchNode({
           node={node}
           align="left"
           className="node__badges--watch"
+          onHighlightTargets={onHighlightTargets}
         />
       )}
 
@@ -255,7 +257,15 @@ function WatchNode({
             </div>
           )}
           {afterItems.length > 0 && (
-            <div>
+            <div
+              className="node__watch-on"
+              onMouseEnter={() =>
+                onHighlightTargets?.(
+                  getAfterTransitionTargetIds(node.on, node.transitions),
+                )
+              }
+              onMouseLeave={() => onHighlightTargets?.(new Set())}
+            >
               <dt>after</dt>
               <dd>
                 <ul>
