@@ -79,6 +79,7 @@ Extend `src/machine.ts` (or add sibling demos) so each new viz affordance has so
 - [ ] Tags / meta
 - [ ] Machine input + final output
 - [ ] `assign` that mutates several context keys
+- [x] Wide parallel stress machine (12 regions) for scroll/overflow decisions
 
 ## Notes
 

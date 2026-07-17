@@ -22,7 +22,7 @@ export function VisualizerView({
 }: {
   snapshot: VisualizerSnapshot;
   title?: string;
-  /** Initial ± hops for click-zoom neighborhood (also adjustable on-screen). */
+  /** Initial ± range for click-zoom neighborhood (also adjustable on-screen). */
   defaultZoomRadius?: number;
 }) {
   const [zoomRadius, setZoomRadius] = useState(() =>
@@ -84,16 +84,18 @@ export function VisualizerView({
       <main className="viz__panels">
         <section className="viz__panel viz__panel--tree">
           <h3>Machine structure</h3>
-          {machine ? (
-            <StateTree
-              node={machine.definition}
-              activePaths={active}
-              zoomRadius={zoomRadius}
-              showLifecycleBadges={showLifecycleBadges}
-            />
-          ) : (
-            <p className="viz__muted">Waiting for machine definition…</p>
-          )}
+          <div className="viz__tree-scroll">
+            {machine ? (
+              <StateTree
+                node={machine.definition}
+                activePaths={active}
+                zoomRadius={zoomRadius}
+                showLifecycleBadges={showLifecycleBadges}
+              />
+            ) : (
+              <p className="viz__muted">Waiting for machine definition…</p>
+            )}
+          </div>
         </section>
 
         {sidePanelOpen && (
@@ -186,14 +188,14 @@ function AppearanceSettings({
       <div className="viz__appearance-panel">
         <div
           className="viz__setting-row"
-          title="How many parent/child hops around a clicked node become large"
+          title="How many parent/child levels around a clicked node become large"
         >
-          <span>Zoom hops</span>
+          <span>Zoom range</span>
           <div className="viz__zoom-control">
             <button
               type="button"
               className="viz__zoom-btn"
-              aria-label="Decrease zoom hops"
+              aria-label="Decrease zoom range"
               disabled={zoomRadius <= MIN_ZOOM_RADIUS}
               onClick={() =>
                 onZoomRadiusChange(clampZoomRadius(zoomRadius - 1))
@@ -207,7 +209,7 @@ function AppearanceSettings({
             <button
               type="button"
               className="viz__zoom-btn"
-              aria-label="Increase zoom hops"
+              aria-label="Increase zoom range"
               disabled={zoomRadius >= MAX_ZOOM_RADIUS}
               onClick={() =>
                 onZoomRadiusChange(clampZoomRadius(zoomRadius + 1))

@@ -162,6 +162,27 @@
 
 .viz__panel--tree {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  /* Cap height so a tall graph scrolls inside the panel rather than
+     stretching the page indefinitely. */
+  max-height: min(70vh, 48rem);
+}
+
+.viz__panel--tree > h3 {
+  flex-shrink: 0;
+}
+
+/*
+ * Single scrollport for the whole state graph. Nodes (incl. parallel
+ * regions) size to their content and never scroll internally — when the
+ * graph exceeds this viewport, scroll here instead.
+ */
+.viz__tree-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
 }
 
 .viz__panel-heading {
@@ -233,6 +254,10 @@
 
 .node {
   position: relative;
+  /* Size to contents so parallel parents grow with their regions instead of
+     clipping to the panel; graph-level scroll is on `.viz__tree-scroll`. */
+  width: max-content;
+  max-width: none;
   border: 1px solid #2a3244;
   border-radius: 8px;
   padding: 0.4rem 0.55rem;
@@ -265,56 +290,55 @@
   padding: 0.1rem 0.2rem 0.2rem;
 }
 
-.node--zoom-small .node__key {
-  font-size: 0.32rem;
-  font-weight: 600;
-}
-
-.node--zoom-small .node__badge {
+/*
+ * Zoom chrome is scoped with `>` so a large ancestor cannot restyle a nested
+ * small node's key/events/badges (and vice versa). Text uses em against the
+ * node's own font-size.
+ */
+.node--zoom-small > .node__badges .node__badge {
   width: 0.4rem;
   height: 0.4rem;
   right: 0.12rem;
   border-width: 0.5px;
 }
 
-.node--zoom-small .node__badge svg {
+.node--zoom-small > .node__badges .node__badge svg {
   width: 4px;
   height: 4px;
 }
 
-.node--zoom-small .node__events {
-  font-size: 0.26rem;
+.node--zoom-small > .node__header .node__events {
   max-width: 4rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.node--zoom-small .node__final-icon svg {
+.node--zoom-small > .node__header .node__final-icon svg {
   width: 5px;
   height: 5px;
 }
 
-.node--zoom-small .node__initial svg {
+.node--zoom-small > .node__initial svg {
   width: 4px;
   height: 5px;
 }
 
-.node--zoom-small .node__children {
+.node--zoom-small > .node__children {
   margin: 0.18rem 0.12rem 0.08rem 0.32rem;
   padding: 0.12rem 0.08rem 0.08rem 0.24rem;
   border-left-width: 1px;
 }
 
-.node--zoom-small .node__children--parallel {
+.node--zoom-small > .node__children--parallel {
   margin: 0.18rem 0.08rem 0.08rem 0;
   padding: 0.22rem 0.12rem 0.08rem;
   gap: 0.28rem;
-  grid-auto-columns: minmax(3rem, 1fr);
+  grid-auto-columns: max-content;
   border-top-width: 1px;
 }
 
-.node--zoom-small .node__children--sequential {
+.node--zoom-small > .node__children--sequential {
   gap: 0.16rem;
 }
 
@@ -329,36 +353,28 @@
   padding: 0.4rem 0.7rem 0.7rem;
 }
 
-.node--zoom-large .node__key {
-  font-size: 0.78rem;
-}
-
-.node--zoom-large .node__badge {
+.node--zoom-large > .node__badges .node__badge {
   width: 1.1rem;
   height: 1.1rem;
 }
 
-.node--zoom-large .node__badge svg {
+.node--zoom-large > .node__badges .node__badge svg {
   width: 10px;
   height: 10px;
 }
 
-.node--zoom-large .node__events {
-  font-size: 0.62rem;
-}
-
-.node--zoom-large .node__children {
+.node--zoom-large > .node__children {
   margin: 0.7rem 0.35rem 0.3rem 1rem;
   padding: 0.45rem 0.25rem 0.25rem 0.8rem;
 }
 
-.node--zoom-large .node__children--parallel {
+.node--zoom-large > .node__children--parallel {
   margin: 0.7rem 0.25rem 0.3rem 0;
   padding: 0.9rem 0.35rem 0.3rem;
   gap: 1.2rem;
 }
 
-.node--zoom-large .node__children--sequential {
+.node--zoom-large > .node__children--sequential {
   gap: 0.7rem;
 }
 
@@ -448,7 +464,9 @@
 
 .node__key {
   font-weight: 600;
-  font-size: 0.9rem;
+  /* Relative to the owning `.node` zoom font-size — not rem, so nested
+     large/small nodes don't steal each other's text scale. */
+  font-size: 1.1em;
 }
 
 .node__final-icon {
@@ -472,7 +490,7 @@
 }
 
 .node__events {
-  font-size: 0.7rem;
+  font-size: 0.85em;
   color: #7d879a;
   font-family: ui-monospace, monospace;
   position: relative;
@@ -594,22 +612,22 @@
 /*
  * Parallel regions follow document order from left to right. Keep them as
  * columns rather than wrapping, since their horizontal relationship conveys
- * that all regions are active concurrently.
+ * that all regions are active concurrently. Columns size to content so the
+ * parent grows with its regions; graph-level scroll lives on `.viz__tree-scroll`.
  */
 .node__children--parallel {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(12rem, 1fr);
+  grid-auto-columns: max-content;
+  width: max-content;
   gap: 1.2rem;
   margin: 0.8rem 0.35rem 0.35rem 0;
-  overflow-x: auto;
   border-top: 2px solid #3b2a4d;
   border-left: 0;
   padding: 1rem 0.4rem 0.35rem;
 }
 
 .node__children--parallel > .node {
-  min-width: 0;
   margin-block: 0;
 }
 

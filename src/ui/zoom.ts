@@ -2,10 +2,10 @@
  * Two-level zoom neighborhood around a focused state path.
  *
  * A path is "large" when it lies on the same ancestor/descendant line as the
- * focus and is within `radius` hops in either direction.
+ * focus and is within `radius` parent/child levels in either direction.
  */
 
-/** Default neighborhood radius (± hops). Overridable via UI / props. */
+/** Default neighborhood radius (± levels). Overridable via UI / props. */
 export const DEFAULT_ZOOM_RADIUS = 2;
 
 export const MIN_ZOOM_RADIUS = 0;

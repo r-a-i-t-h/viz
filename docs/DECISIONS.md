@@ -14,6 +14,36 @@ Format for each entry:
 
 ---
 
+## 2026-07-17 — Zoom styles scoped per node; label is “range”
+
+**Context:** Changing zoom range updated node padding/margins, but keys/events stayed large because selectors like `.node--zoom-large .node__key` matched nested small nodes under a large ancestor.
+
+**Decision:** Scope zoom chrome with the child combinator (`>`). Size `.node__key` / `.node__events` in `em` against each node’s own zoom `font-size`. Rename the Appearance control from “Zoom hops” to “Zoom range”.
+
+**Rationale:** Each node’s zoom class is authoritative for its own chrome; nested large/small neighbors no longer fight. “Range” matches the ±N control without the graph-theory jargon.
+
+---
+
+## 2026-07-17 — Graph-level scroll; parallel regions size to content
+
+**Context:** Parallel regions used `overflow-x: auto` and `1fr` columns, so a wide parent (e.g. `wideParallel`) clipped to the panel and scrolled its children internally.
+
+**Decision:** Parallel child columns use `max-content` with no internal overflow. A single `.viz__tree-scroll` viewport around the state tree scrolls the whole graph when it exceeds the panel.
+
+**Rationale:** Scrolling the graph as one surface matches how you read the machine; per-node scrollports hide sibling regions and fight zoom/hover.
+
+---
+
+## 2026-07-17 — Wide parallel stress machine for scroll decisions
+
+**Context:** Parallel regions lay out left-to-right without wrapping; with only two regions in `demo`, overflow/scroll behavior is hard to judge.
+
+**Decision:** Add `wideParallelMachine` as a third top-level actor: a compound root with 10 sequential siblings (each a nested a→b→c compound) plus a middle `band` parallel region of 12 columns. Selectable via the actor dropdown.
+
+**Rationale:** Stretching both axes lets us confirm the single `.viz__tree-scroll` viewport pans the whole graph — not per-node overflow — before locking layout CSS.
+
+---
+
 ## 2026-07-17 — Appearance settings group visual preferences
 
 **Context:** Zoom hops occupied permanent header space, and additional visual preferences need a discoverable home.

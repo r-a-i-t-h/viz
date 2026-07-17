@@ -46,7 +46,7 @@ export function StateTree({
 }: {
   node: StateNodeDefinition;
   activePaths: Set<string>;
-  /** Neighborhood radius in hops (±). Controllable from the visualizer UI. */
+  /** Neighborhood radius in parent/child levels (±). Controllable from the visualizer UI. */
   zoomRadius?: number;
   /** Whether authored entry, exit, and after badges are visible. */
   showLifecycleBadges?: boolean;
@@ -159,8 +159,8 @@ function StateTreeNode({
       onKeyDown={handleKeyDown}
       title={
         zoomAnchors.has(path)
-          ? `Click to remove this ±${zoomRadius}-hop zoom; Shift/Cmd-click to zoom it exclusively; Esc clears all`
-          : `Click to zoom ±${zoomRadius} hops around this node; Shift/Cmd-click to zoom it exclusively`
+          ? `Click to remove this ±${zoomRadius} zoom; Shift/Cmd-click to zoom it exclusively; Esc clears all`
+          : `Click to zoom ±${zoomRadius} levels around this node; Shift/Cmd-click to zoom it exclusively`
       }
     >
       {isInitial && (

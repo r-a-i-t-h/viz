@@ -122,3 +122,90 @@ export const blinkerMachine = setup({}).createMachine({
     },
   },
 });
+
+/**
+ * Stress machine: a compound root with many sequential siblings (vertical
+ * stretch) plus one wide parallel band (horizontal stretch). Used to verify
+ * the visualizer scrolls the whole graph as one surface — never per-node.
+ *
+ * Each parallel region is a small compound state (a↔b) so nodes have height as
+ * well as width — not just a flat row of atomics.
+ */
+const WIDE_REGION_KEYS = [
+  'alpha',
+  'bravo',
+  'charlie',
+  'delta',
+  'echo',
+  'foxtrot',
+  'golf',
+  'hotel',
+  'india',
+  'juliet',
+  'kilo',
+  'lima',
+] as const;
+
+const TALL_STAGE_KEYS = [
+  'prep',
+  'warmup',
+  'ready',
+  'armed',
+  'staged',
+  'band',
+  'cooldown',
+  'wrapUp',
+  'archive',
+  'sealed',
+] as const;
+
+function wideRegion(key: (typeof WIDE_REGION_KEYS)[number]) {
+  const flip = `FLIP_${key.toUpperCase()}` as const;
+  return {
+    initial: 'a' as const,
+    states: {
+      a: { on: { [flip]: 'b' } },
+      b: { on: { [flip]: 'a' } },
+    },
+  };
+}
+
+function tallStage(
+  key: (typeof TALL_STAGE_KEYS)[number],
+  next: (typeof TALL_STAGE_KEYS)[number] | 'done',
+) {
+  if (key === 'band') {
+    return {
+      type: 'parallel' as const,
+      on: { NEXT: next },
+      states: Object.fromEntries(
+        WIDE_REGION_KEYS.map((region) => [region, wideRegion(region)]),
+      ),
+    };
+  }
+
+  // Nested a→b→c compound so each sequential sibling adds real vertical depth.
+  return {
+    initial: 'a' as const,
+    on: { NEXT: next },
+    states: {
+      a: { on: { STEP: 'b' } },
+      b: { on: { STEP: 'c' } },
+      c: {},
+    },
+  };
+}
+
+export const wideParallelMachine = setup({}).createMachine({
+  id: 'wideParallel',
+  initial: 'prep',
+  states: {
+    ...Object.fromEntries(
+      TALL_STAGE_KEYS.map((key, index) => {
+        const next = TALL_STAGE_KEYS[index + 1] ?? 'done';
+        return [key, tallStage(key, next)];
+      }),
+    ),
+    done: { type: 'final' },
+  },
+});
