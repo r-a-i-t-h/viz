@@ -1,7 +1,4 @@
 import {
-  useCallback,
-  useEffect,
-  useState,
   type KeyboardEvent,
   type MouseEvent,
 } from 'react';
@@ -35,10 +32,10 @@ interface StateTreeProps {
 }
 
 /**
- * Stateful tree: starts at zoom "small". Clicking a node toggles a large
- * ±zoomRadius neighborhood anchored on it; plain clicks accumulate anchors,
- * modifier-clicks (Shift/Cmd/Ctrl) replace them all. Alt-click watches the
- * node in the left column. Escape clears every zoom anchor.
+ * Clicking a node toggles a large ±zoomRadius neighborhood anchored on it;
+ * plain clicks accumulate anchors, modifier-clicks (Shift/Cmd/Ctrl) replace
+ * them all. Alt-click watches the node in the left column. Zoom anchors are
+ * owned by the parent so the watch column can toggle them too.
  */
 export function StateTree({
   node,
@@ -47,6 +44,8 @@ export function StateTree({
   showLifecycleBadges = true,
   onToggleWatch,
   watchedPaths,
+  zoomAnchors,
+  onToggleZoom,
   highlightedTargetIds,
   onHighlightTargets,
 }: {
@@ -60,37 +59,13 @@ export function StateTree({
   onToggleWatch?: (path: string) => void;
   /** Paths currently in the watch column (for title hints). */
   watchedPaths?: Set<string>;
+  /** Zoom anchor paths owned by the parent view (shared with watch). */
+  zoomAnchors: Set<string>;
+  onToggleZoom: (path: string, exclusive: boolean) => void;
   /** Node ids highlighted while an `on` event is hovered (graph or watch). */
   highlightedTargetIds?: Set<string>;
   onHighlightTargets?: (targets: Set<string>) => void;
 }) {
-  const [zoomAnchors, setZoomAnchors] = useState<Set<string>>(() => new Set());
-
-  const onToggleZoom = useCallback((path: string, exclusive: boolean) => {
-    setZoomAnchors((current) => {
-      if (exclusive) {
-        // Sole anchor already → toggle off; otherwise focus only this one.
-        return current.size === 1 && current.has(path)
-          ? new Set<string>()
-          : new Set([path]);
-      }
-      const next = new Set(current);
-      if (next.has(path)) next.delete(path);
-      else next.add(path);
-      return next;
-    });
-  }, []);
-
-  // Escape resets every zoom anchor.
-  useEffect(() => {
-    const onKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      setZoomAnchors(new Set());
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
-
   return (
     <StateTreeNode
       node={node}
@@ -345,10 +320,26 @@ function resolveInitialChildIds(node: StateNodeDefinition): Set<string> {
   return ids;
 }
 
+/** Bent initial-state arrow (down, then in) with an open three-point tip. */
 function InitialArrowIcon() {
   return (
-    <svg viewBox="0 0 10 14" width="10" height="14" aria-hidden="true">
-      <path d="M1.5 1.75 8.5 7l-7 5.25V1.75z" fill="currentColor" />
+    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+      <path
+        d="M3.5 3 V8 c0 1.75 1.25 3 3 3 H13.1"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8.35 9.2 13.1 11 8.35 12.8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

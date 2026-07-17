@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { StateValue } from 'xstate';
 import { activePaths, type VisualizerSnapshot } from '../viz';
 import {
@@ -46,6 +46,7 @@ export function VisualizerView({
   const [highlightedTargetIds, setHighlightedTargetIds] = useState<Set<string>>(
     () => new Set(),
   );
+  const [zoomAnchors, setZoomAnchors] = useState<Set<string>>(() => new Set());
   /** Watched node paths keyed by actor session id (order preserved). */
   const [watchedBySession, setWatchedBySession] = useState<
     Record<string, string[]>
@@ -66,6 +67,30 @@ export function VisualizerView({
   const sessionId = machine?.sessionId ?? '';
   const watchedPaths = watchedBySession[sessionId] ?? [];
   const watchedPathSet = new Set(watchedPaths);
+
+  const toggleZoom = useCallback((path: string, exclusive: boolean) => {
+    setZoomAnchors((current) => {
+      if (exclusive) {
+        return current.size === 1 && current.has(path)
+          ? new Set<string>()
+          : new Set([path]);
+      }
+      const next = new Set(current);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
+  }, []);
+
+  // Escape clears every zoom anchor (graph + watch "z" controls).
+  useEffect(() => {
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setZoomAnchors(new Set());
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const toggleWatch = useCallback(
     (path: string) => {
@@ -149,6 +174,9 @@ export function VisualizerView({
               showLifecycleBadges={showLifecycleBadges}
               onMove={moveWatch}
               onUnwatch={unwatch}
+              zoomAnchors={zoomAnchors}
+              onToggleZoom={toggleZoom}
+              highlightedTargetIds={highlightedTargetIds}
               onHighlightTargets={setHighlightedTargetIds}
             />
           ) : (
@@ -157,7 +185,11 @@ export function VisualizerView({
         </SideColumn>
 
         <section className="viz__panel viz__panel--tree">
-          <h3>Machine structure</h3>
+          <h3>
+            {machine
+              ? `${machine.definition.id} (${machine.sessionId})`
+              : 'Machine structure'}
+          </h3>
           <div className="viz__tree-scroll">
             {machine ? (
               <StateTree
@@ -167,6 +199,8 @@ export function VisualizerView({
                 showLifecycleBadges={showLifecycleBadges}
                 onToggleWatch={toggleWatch}
                 watchedPaths={watchedPathSet}
+                zoomAnchors={zoomAnchors}
+                onToggleZoom={toggleZoom}
                 highlightedTargetIds={highlightedTargetIds}
                 onHighlightTargets={setHighlightedTargetIds}
               />

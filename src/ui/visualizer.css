@@ -166,8 +166,8 @@
   overflow: auto;
 }
 
-/* Watch cards flush left; reserve the right for the divider toggle
-   (half of the 1.5rem handle sits over the panel edge). */
+/* Watch cards flush left; inset from the right so they clear the
+   divider toggle that straddles the panel border. */
 .viz__panel--watch {
   padding-left: 0;
   padding-right: 0;
@@ -175,16 +175,16 @@
 
 .viz__panel--watch .viz__panel-heading {
   padding-left: 0.75rem;
-  padding-right: 0.85rem;
+  padding-right: 1.6rem;
 }
 
 .viz__panel--watch .viz__column-body {
-  padding: 0.75rem 0.85rem 0.35rem 0;
+  padding: 0.75rem 1.6rem 0.35rem 0;
 }
 
 .viz__panel--watch .viz__muted {
   padding-left: 0.75rem;
-  padding-right: 0.85rem;
+  padding-right: 1.6rem;
 }
 
 .viz__column--collapsed {
@@ -520,8 +520,8 @@ body.viz--resizing iframe {
 }
 
 .node--zoom-small > .node__initial svg {
-  width: 4px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 .node--zoom-small > .node__children {
@@ -616,12 +616,16 @@ body.viz--resizing iframe {
   font-size: 1rem;
 }
 
+.node--watch > .node__header {
+  /* Keep the node label clear of the in-card action cluster (4 buttons). */
+  padding-right: 5.9rem;
+}
+
 .node__watch-controls {
   position: absolute;
-  top: 0;
+  top: 0.35rem;
   right: 0.45rem;
   left: auto;
-  transform: translateY(-50%);
   display: flex;
   gap: 0.2rem;
   z-index: 2;
@@ -641,6 +645,10 @@ body.viz--resizing iframe {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
   cursor: pointer;
   position: relative;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: lowercase;
 }
 
 .node__watch-btn:hover:not(:disabled) {
@@ -650,6 +658,13 @@ body.viz--resizing iframe {
 .node__watch-btn:disabled {
   opacity: 0.35;
   cursor: default;
+}
+
+.node__watch-btn--zoom.node__watch-btn--active {
+  color: #9ccdff;
+  border-color: #4a6a8a;
+  background: #1a2838;
+  box-shadow: 0 0 0 1px rgba(156, 205, 255, 0.35);
 }
 
 .node__watch-btn--close {

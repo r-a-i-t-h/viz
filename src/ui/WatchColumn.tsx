@@ -9,8 +9,8 @@ import {
   formatAllOnTransitions,
   formatEntryActions,
   formatExitActions,
-  formatOnTransitionDetails,
   getOnTransitionTargetIds,
+  normalizeStateNodeId,
 } from './nodeDetails';
 
 export function WatchColumn({
@@ -20,6 +20,9 @@ export function WatchColumn({
   showLifecycleBadges,
   onMove,
   onUnwatch,
+  zoomAnchors,
+  onToggleZoom,
+  highlightedTargetIds,
   onHighlightTargets,
 }: {
   root: StateNodeDefinition;
@@ -28,6 +31,9 @@ export function WatchColumn({
   showLifecycleBadges: boolean;
   onMove: (path: string, direction: -1 | 1) => void;
   onUnwatch: (path: string) => void;
+  zoomAnchors?: Set<string>;
+  onToggleZoom?: (path: string, exclusive: boolean) => void;
+  highlightedTargetIds?: Set<string>;
   onHighlightTargets?: (targets: Set<string>) => void;
 }) {
   if (watchedPaths.length === 0) {
@@ -49,11 +55,17 @@ export function WatchColumn({
               node={node}
               path={path}
               isActive={path === '' || activePaths.has(path)}
+              isTransitionTarget={
+                highlightedTargetIds?.has(normalizeStateNodeId(node.id)) ??
+                false
+              }
+              isZoomed={zoomAnchors?.has(path) ?? false}
               showLifecycleBadges={showLifecycleBadges}
               canMoveUp={index > 0}
               canMoveDown={index < watchedPaths.length - 1}
               onMoveUp={() => onMove(path, -1)}
               onMoveDown={() => onMove(path, 1)}
+              onToggleZoom={() => onToggleZoom?.(path, false)}
               onClose={() => onUnwatch(path)}
               onHighlightTargets={onHighlightTargets}
             />
@@ -68,22 +80,28 @@ function WatchNode({
   node,
   path,
   isActive,
+  isTransitionTarget,
+  isZoomed,
   showLifecycleBadges,
   canMoveUp,
   canMoveDown,
   onMoveUp,
   onMoveDown,
+  onToggleZoom,
   onClose,
   onHighlightTargets,
 }: {
   node: StateNodeDefinition;
   path: string;
   isActive: boolean;
+  isTransitionTarget: boolean;
+  isZoomed: boolean;
   showLifecycleBadges: boolean;
   canMoveUp: boolean;
   canMoveDown: boolean;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  onToggleZoom: () => void;
   onClose: () => void;
   onHighlightTargets?: (targets: Set<string>) => void;
 }) {
@@ -107,11 +125,30 @@ function WatchNode({
         isActive ? 'node--active' : '',
         isFinal ? 'node--final' : '',
         detailsOpen ? 'node--watch-open' : '',
+        isTransitionTarget ? 'node--transition-target' : '',
+        isZoomed ? 'node--watch-zoomed' : '',
       ]
         .filter(Boolean)
         .join(' ')}
     >
       <div className="node__watch-controls">
+        <button
+          type="button"
+          className={[
+            'node__watch-btn',
+            'node__watch-btn--zoom',
+            isZoomed ? 'node__watch-btn--active' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          aria-label={isZoomed ? 'Clear graph zoom' : 'Zoom in graph'}
+          aria-pressed={isZoomed}
+          title={isZoomed ? 'Clear graph zoom' : 'Zoom in graph'}
+          onClick={onToggleZoom}
+        >
+          z
+          <span className="node__badge-label">zoom</span>
+        </button>
         <button
           type="button"
           className="node__watch-btn"
@@ -206,32 +243,6 @@ function WatchNode({
           </span>
           <span className="node__key">{node.key}</span>
         </button>
-        {eventKeys.length > 0 && (
-          <span className="node__events">
-            <span className="node__events-label">on:</span>{' '}
-            {eventKeys.map((eventKey, index) => (
-              <span key={eventKey}>
-                {index > 0 && <span className="node__event-separator">, </span>}
-                <HoverTip
-                  className="node__event"
-                  label={eventKey}
-                  items={formatOnTransitionDetails(eventKey, node.on[eventKey])}
-                  placement="below"
-                  align="left"
-                  onActiveChange={(active) =>
-                    onHighlightTargets?.(
-                      active
-                        ? getOnTransitionTargetIds(node.on[eventKey])
-                        : new Set(),
-                    )
-                  }
-                >
-                  {eventKey}
-                </HoverTip>
-              </span>
-            ))}
-          </span>
-        )}
       </div>
 
       {detailsOpen && (
@@ -294,8 +305,17 @@ function WatchNode({
             const lines = formatAllOnTransitions(eventKey, node.on[eventKey]);
             if (lines.length === 0) return null;
             return (
-              <div key={eventKey}>
-                <dt>on {eventKey}</dt>
+              <div
+                key={eventKey}
+                className="node__watch-on"
+                onMouseEnter={() =>
+                  onHighlightTargets?.(
+                    getOnTransitionTargetIds(node.on[eventKey]),
+                  )
+                }
+                onMouseLeave={() => onHighlightTargets?.(new Set())}
+              >
+                <dt>on</dt>
                 <dd>
                   <ul>
                     {lines.map((item) => (
