@@ -14,6 +14,16 @@ Format for each entry:
 
 ---
 
+## 2026-07-17 — Watch column for fixed-size node inspection
+
+**Context:** Graph zoom is good for structure, but watching a few states for active/inactive changes and config details is awkward when those nodes shrink with the overview zoom.
+
+**Decision:** Alt-click (Alt-Enter) toggles a node into a collapsible left “Watched” column. Watch cards use a fixed readable size (no zoom), omit child nodes, show active styling, and expand collapsible path/id/type/tags/entry/exit/after/`on` details. Each card has a circular up/down/close control cluster (badge-style). Watches are ordered lists keyed by actor session; Shift/Cmd/Ctrl remain exclusive zoom.
+
+**Rationale:** Alt was the free modifier after zoom claimed Shift/Cmd/Ctrl. A dedicated column keeps focus nodes readable while the graph stays overview-first. Up/down before drag-and-drop keeps reordering obvious and accessible.
+
+---
+
 ## 2026-07-17 — Zoom styles scoped per node; label is “range”
 
 **Context:** Changing zoom range updated node padding/margins, but keys/events stayed large because selectors like `.node--zoom-large .node__key` matched nested small nodes under a large ancestor.

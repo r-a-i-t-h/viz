@@ -136,18 +136,43 @@
 
 .viz__panels {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+  grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr) minmax(16rem, 22rem);
   gap: 1.25rem;
   align-items: start;
 }
 
-.viz--side-collapsed .viz__panels {
+.viz--side-collapsed.viz--watch-open .viz__panels {
+  grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
+}
+
+.viz--side-open.viz--watch-collapsed .viz__panels {
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+}
+
+.viz--side-collapsed.viz--watch-collapsed .viz__panels {
   grid-template-columns: minmax(0, 1fr);
 }
 
+@media (max-width: 1100px) {
+  .viz--side-open.viz--watch-open .viz__panels {
+    grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr);
+  }
+
+  .viz--side-open.viz--watch-open .viz__panel--side {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 860px) {
-  .viz__panels {
+  .viz__panels,
+  .viz--side-collapsed.viz--watch-open .viz__panels,
+  .viz--side-open.viz--watch-collapsed .viz__panels,
+  .viz--side-open.viz--watch-open .viz__panels {
     grid-template-columns: 1fr;
+  }
+
+  .viz--side-open.viz--watch-open .viz__panel--side {
+    grid-column: auto;
   }
 }
 
@@ -167,6 +192,27 @@
   /* Cap height so a tall graph scrolls inside the panel rather than
      stretching the page indefinitely. */
   max-height: min(70vh, 48rem);
+}
+
+.viz__panel--watch {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: min(70vh, 48rem);
+  overflow: auto;
+}
+
+.viz__watch-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.viz__watch-item {
+  margin: 0;
 }
 
 .viz__panel--tree > h3 {
@@ -383,10 +429,142 @@
   outline-offset: 1px;
 }
 
+.node--watched {
+  box-shadow: inset 0 0 0 1px rgba(156, 205, 255, 0.35);
+}
+
 .node--active {
   border-color: #4ade80;
   background: #14251a;
   box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.25);
+}
+
+.node--watched.node--active {
+  box-shadow:
+    0 0 0 1px rgba(74, 222, 128, 0.25),
+    inset 0 0 0 1px rgba(156, 205, 255, 0.35);
+}
+
+/* Fixed-size watch cards — never participate in graph zoom. */
+.node--watch {
+  width: 100%;
+  max-width: 100%;
+  font-size: 0.85rem;
+  padding: 0.55rem 0.7rem 0.65rem;
+  margin: 0;
+  cursor: default;
+  /* Room for control + badge clusters on the top edge. */
+  padding-top: 0.85rem;
+}
+
+.node--watch .node__key {
+  font-size: 1rem;
+}
+
+.node__watch-controls {
+  position: absolute;
+  top: 0;
+  left: 0.45rem;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 0.2rem;
+  z-index: 2;
+}
+
+.node__watch-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid #3a4358;
+  background: #1a2030;
+  color: #cbd3e1;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  position: relative;
+}
+
+.node__watch-btn:hover:not(:disabled) {
+  background: #2b3348;
+}
+
+.node__watch-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.node__watch-btn--close {
+  color: #fca5a5;
+  border-color: #7a3f3f;
+  background: #2a1616;
+}
+
+.node__watch-btn--close:hover:not(:disabled) {
+  background: #3a1f1f;
+}
+
+/* Badges sit top-right on watch cards; controls are top-left. */
+.node__badges--watch {
+  right: 0.45rem;
+  left: auto;
+}
+
+.node__watch-details {
+  margin-top: 0.55rem;
+  color: #9aa4b2;
+  font-size: 0.72rem;
+}
+
+.node__watch-details summary {
+  cursor: pointer;
+  user-select: none;
+  color: #cbd3e1;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.65rem;
+}
+
+.node__watch-meta {
+  margin: 0.45rem 0 0;
+  display: grid;
+  gap: 0.4rem;
+  font-family: ui-monospace, monospace;
+}
+
+.node__watch-meta > div {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  gap: 0.35rem;
+  align-items: start;
+}
+
+.node__watch-meta dt {
+  margin: 0;
+  color: #667085;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding-top: 0.1rem;
+}
+
+.node__watch-meta dd {
+  margin: 0;
+  color: #e6e9ef;
+  word-break: break-word;
+}
+
+.node__watch-meta ul {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.node__watch-meta li {
+  margin: 0.1rem 0;
 }
 
 .node--transition-target {

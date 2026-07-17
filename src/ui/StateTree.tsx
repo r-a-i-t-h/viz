@@ -28,6 +28,8 @@ interface StateTreeProps {
   zoomRadius?: number;
   showLifecycleBadges?: boolean;
   onToggleZoom?: (path: string, exclusive: boolean) => void;
+  onToggleWatch?: (path: string) => void;
+  watchedPaths?: Set<string>;
   highlightedTargetIds?: Set<string>;
   onHighlightTargets?: (targets: Set<string>) => void;
 }
@@ -35,14 +37,16 @@ interface StateTreeProps {
 /**
  * Stateful tree: starts at zoom "small". Clicking a node toggles a large
  * ±zoomRadius neighborhood anchored on it; plain clicks accumulate anchors,
- * modifier-clicks (Shift/Cmd/Ctrl) replace them all. Escape clears every
- * anchor.
+ * modifier-clicks (Shift/Cmd/Ctrl) replace them all. Alt-click watches the
+ * node in the left column. Escape clears every zoom anchor.
  */
 export function StateTree({
   node,
   activePaths,
   zoomRadius = DEFAULT_ZOOM_RADIUS,
   showLifecycleBadges = true,
+  onToggleWatch,
+  watchedPaths,
 }: {
   node: StateNodeDefinition;
   activePaths: Set<string>;
@@ -50,6 +54,10 @@ export function StateTree({
   zoomRadius?: number;
   /** Whether authored entry, exit, and after badges are visible. */
   showLifecycleBadges?: boolean;
+  /** Alt-click / Alt-Enter toggles watching this path. */
+  onToggleWatch?: (path: string) => void;
+  /** Paths currently in the watch column (for title hints). */
+  watchedPaths?: Set<string>;
 }) {
   const [zoomAnchors, setZoomAnchors] = useState<Set<string>>(() => new Set());
   const [highlightedTargetIds, setHighlightedTargetIds] = useState<Set<string>>(
@@ -90,6 +98,8 @@ export function StateTree({
       zoomRadius={zoomRadius}
       showLifecycleBadges={showLifecycleBadges}
       onToggleZoom={onToggleZoom}
+      onToggleWatch={onToggleWatch}
+      watchedPaths={watchedPaths}
       highlightedTargetIds={highlightedTargetIds}
       onHighlightTargets={setHighlightedTargetIds}
     />
@@ -105,6 +115,8 @@ function StateTreeNode({
   zoomRadius = DEFAULT_ZOOM_RADIUS,
   showLifecycleBadges = true,
   onToggleZoom,
+  onToggleWatch,
+  watchedPaths = new Set(),
   highlightedTargetIds = new Set(),
   onHighlightTargets,
 }: StateTreeProps) {
@@ -123,6 +135,7 @@ function StateTreeNode({
   const isTransitionTarget = highlightedTargetIds.has(
     normalizeStateNodeId(node.id),
   );
+  const isWatched = watchedPaths.has(path);
 
   const entryItems = formatEntryActions(node.entry);
   const exitItems = formatExitActions(node.exit);
@@ -130,12 +143,20 @@ function StateTreeNode({
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
     // Deepest node under the cursor wins (children stopPropagation first).
     event.stopPropagation();
+    if (hasWatchModifier(event)) {
+      onToggleWatch?.(path);
+      return;
+    }
     onToggleZoom?.(path, hasZoomModifier(event));
   };
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
     event.stopPropagation();
+    if (hasWatchModifier(event)) {
+      onToggleWatch?.(path);
+      return;
+    }
     onToggleZoom?.(path, hasZoomModifier(event));
   };
 
@@ -149,6 +170,7 @@ function StateTreeNode({
         isInitial ? 'node--initial' : '',
         isFinal ? 'node--final' : '',
         zoomAnchors.has(path) ? 'node--zoom-focus' : '',
+        isWatched ? 'node--watched' : '',
         isTransitionTarget ? 'node--transition-target' : '',
       ]
         .filter(Boolean)
@@ -157,11 +179,11 @@ function StateTreeNode({
       role="button"
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      title={
-        zoomAnchors.has(path)
-          ? `Click to remove this ±${zoomRadius} zoom; Shift/Cmd-click to zoom it exclusively; Esc clears all`
-          : `Click to zoom ±${zoomRadius} levels around this node; Shift/Cmd-click to zoom it exclusively`
-      }
+      title={nodeTitle({
+        zoomRadius,
+        isZoomAnchor: zoomAnchors.has(path),
+        isWatched,
+      })}
     >
       {isInitial && (
         <span className="node__initial" title="initial">
@@ -272,6 +294,8 @@ function StateTreeNode({
                 zoomRadius={zoomRadius}
                 showLifecycleBadges={showLifecycleBadges}
                 onToggleZoom={onToggleZoom}
+                onToggleWatch={onToggleWatch}
+                watchedPaths={watchedPaths}
                 highlightedTargetIds={highlightedTargetIds}
                 onHighlightTargets={onHighlightTargets}
               />
@@ -287,6 +311,30 @@ function hasZoomModifier(
   event: Pick<MouseEvent, 'metaKey' | 'ctrlKey' | 'shiftKey'>,
 ): boolean {
   return event.metaKey || event.ctrlKey || event.shiftKey;
+}
+
+function hasWatchModifier(
+  event: Pick<MouseEvent, 'altKey'>,
+): boolean {
+  return event.altKey;
+}
+
+function nodeTitle({
+  zoomRadius,
+  isZoomAnchor,
+  isWatched,
+}: {
+  zoomRadius: number;
+  isZoomAnchor: boolean;
+  isWatched: boolean;
+}): string {
+  const watchHint = isWatched
+    ? 'Alt-click to stop watching'
+    : 'Alt-click to watch';
+  const zoomHint = isZoomAnchor
+    ? `Click to remove this ±${zoomRadius} zoom; Shift/Cmd-click to zoom exclusively; Esc clears all`
+    : `Click to zoom ±${zoomRadius} levels; Shift/Cmd-click to zoom exclusively`;
+  return `${zoomHint}. ${watchHint}.`;
 }
 
 /**

@@ -45,6 +45,16 @@ export function formatOnTransitionDetails(
     .filter(Boolean);
 }
 
+/** Full `on` transition lines for detail panes (not only guard/action cases). */
+export function formatAllOnTransitions(
+  eventType: string,
+  transitions: unknown,
+): string[] {
+  return asTransitionList(transitions)
+    .map((transition) => formatOnTransition(eventType, transition))
+    .filter(Boolean);
+}
+
 /** Target node ids for highlighting while an `on` event is hovered. */
 export function getOnTransitionTargetIds(transitions: unknown): Set<string> {
   const ids = new Set<string>();

@@ -15,6 +15,7 @@ Capture still happens via raw `inspect` + `actorRef.logic.definition` — not `@
 - [x] Multi-machine actor registry + selection dropdown
 - [x] Raw JSON dump of current `value` and `context`
 - [x] Two-level click zoom with configurable hop radius
+- [x] Watch column: Alt-click nodes; fixed-size cards with details + reorder
 - [x] Independent inline / popup surfaces over `postMessage`
 
 ## Transitions & conditions

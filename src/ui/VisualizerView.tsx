@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { StateValue } from 'xstate';
 import { activePaths, type VisualizerSnapshot } from '../viz';
 import { StateTree } from './StateTree';
+import { WatchColumn } from './WatchColumn';
 import {
   clampZoomRadius,
   DEFAULT_ZOOM_RADIUS,
@@ -33,6 +34,11 @@ export function VisualizerView({
     null,
   );
   const [sidePanelOpen, setSidePanelOpen] = useState(true);
+  const [watchPanelOpen, setWatchPanelOpen] = useState(true);
+  /** Watched node paths keyed by actor session id (order preserved). */
+  const [watchedBySession, setWatchedBySession] = useState<
+    Record<string, string[]>
+  >({});
 
   const { machines } = snapshot;
   const machine =
@@ -46,11 +52,59 @@ export function VisualizerView({
       ? new Set<string>()
       : new Set(activePaths(actorState.value as StateValue));
 
+  const sessionId = machine?.sessionId ?? '';
+  const watchedPaths = watchedBySession[sessionId] ?? [];
+  const watchedPathSet = new Set(watchedPaths);
+
+  const toggleWatch = useCallback(
+    (path: string) => {
+      if (!sessionId) return;
+      setWatchedBySession((current) => {
+        const list = current[sessionId] ?? [];
+        const next = list.includes(path)
+          ? list.filter((p) => p !== path)
+          : [...list, path];
+        return { ...current, [sessionId]: next };
+      });
+      setWatchPanelOpen(true);
+    },
+    [sessionId],
+  );
+
+  const unwatch = useCallback(
+    (path: string) => {
+      if (!sessionId) return;
+      setWatchedBySession((current) => ({
+        ...current,
+        [sessionId]: (current[sessionId] ?? []).filter((p) => p !== path),
+      }));
+    },
+    [sessionId],
+  );
+
+  const moveWatch = useCallback(
+    (path: string, direction: -1 | 1) => {
+      if (!sessionId) return;
+      setWatchedBySession((current) => {
+        const list = [...(current[sessionId] ?? [])];
+        const index = list.indexOf(path);
+        if (index < 0) return current;
+        const nextIndex = index + direction;
+        if (nextIndex < 0 || nextIndex >= list.length) return current;
+        const [item] = list.splice(index, 1);
+        list.splice(nextIndex, 0, item);
+        return { ...current, [sessionId]: list };
+      });
+    },
+    [sessionId],
+  );
+
   return (
     <div
       className={[
         'viz',
         sidePanelOpen ? 'viz--side-open' : 'viz--side-collapsed',
+        watchPanelOpen ? 'viz--watch-open' : 'viz--watch-collapsed',
       ].join(' ')}
     >
       <header className="viz__header">
@@ -69,6 +123,16 @@ export function VisualizerView({
             showLifecycleBadges={showLifecycleBadges}
             onShowLifecycleBadgesChange={setShowLifecycleBadges}
           />
+          {!watchPanelOpen && (
+            <button
+              type="button"
+              className="viz__side-toggle"
+              onClick={() => setWatchPanelOpen(true)}
+            >
+              Show watched
+              {watchedPaths.length > 0 ? ` (${watchedPaths.length})` : ''}
+            </button>
+          )}
           {!sidePanelOpen && (
             <button
               type="button"
@@ -82,6 +146,18 @@ export function VisualizerView({
       </header>
 
       <main className="viz__panels">
+        {machine && watchPanelOpen && (
+          <WatchColumn
+            root={machine.definition}
+            watchedPaths={watchedPaths}
+            activePaths={active}
+            showLifecycleBadges={showLifecycleBadges}
+            onMove={moveWatch}
+            onUnwatch={unwatch}
+            onCollapse={() => setWatchPanelOpen(false)}
+          />
+        )}
+
         <section className="viz__panel viz__panel--tree">
           <h3>Machine structure</h3>
           <div className="viz__tree-scroll">
@@ -91,6 +167,8 @@ export function VisualizerView({
                 activePaths={active}
                 zoomRadius={zoomRadius}
                 showLifecycleBadges={showLifecycleBadges}
+                onToggleWatch={toggleWatch}
+                watchedPaths={watchedPathSet}
               />
             ) : (
               <p className="viz__muted">Waiting for machine definition…</p>
