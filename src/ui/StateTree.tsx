@@ -27,6 +27,8 @@ interface StateTreeProps {
   watchedPaths?: Set<string>;
   highlightedTargetIds?: Set<string>;
   onHighlightTargets?: (targets: Set<string>) => void;
+  contextAssignIds?: Set<string>;
+  contextConsumeIds?: Set<string>;
 }
 
 /**
@@ -46,6 +48,8 @@ export function StateTree({
   onToggleZoom,
   highlightedTargetIds,
   onHighlightTargets,
+  contextAssignIds,
+  contextConsumeIds,
 }: {
   node: StateNodeDefinition;
   activePaths: Set<string>;
@@ -63,6 +67,8 @@ export function StateTree({
   /** Node ids highlighted while an `on` event is hovered (graph or watch). */
   highlightedTargetIds?: Set<string>;
   onHighlightTargets?: (targets: Set<string>) => void;
+  contextAssignIds?: Set<string>;
+  contextConsumeIds?: Set<string>;
 }) {
   return (
     <StateTreeNode
@@ -77,6 +83,8 @@ export function StateTree({
       watchedPaths={watchedPaths}
       highlightedTargetIds={highlightedTargetIds}
       onHighlightTargets={onHighlightTargets}
+      contextAssignIds={contextAssignIds}
+      contextConsumeIds={contextConsumeIds}
     />
   );
 }
@@ -94,6 +102,8 @@ function StateTreeNode({
   watchedPaths = new Set(),
   highlightedTargetIds = new Set(),
   onHighlightTargets,
+  contextAssignIds = new Set(),
+  contextConsumeIds = new Set(),
 }: StateTreeProps) {
   const childKeys = Object.keys(node.states ?? {});
   const isActive = path === '' || activePaths.has(path);
@@ -106,9 +116,10 @@ function StateTreeNode({
   const zoomLarge = [...zoomAnchors].some((anchor) =>
     isZoomLarge(path, anchor, zoomRadius),
   );
-  const isTransitionTarget = highlightedTargetIds.has(
-    normalizeStateNodeId(node.id),
-  );
+  const nodeId = normalizeStateNodeId(node.id);
+  const isTransitionTarget = highlightedTargetIds.has(nodeId);
+  const isContextAssign = contextAssignIds.has(nodeId);
+  const isContextConsume = contextConsumeIds.has(nodeId);
   const isWatched = watchedPaths.has(path);
 
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
@@ -143,6 +154,8 @@ function StateTreeNode({
         zoomAnchors.has(path) ? 'node--zoom-focus' : '',
         isWatched ? 'node--watched' : '',
         isTransitionTarget ? 'node--transition-target' : '',
+        isContextAssign ? 'node--context-assign' : '',
+        isContextConsume ? 'node--context-consume' : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -230,6 +243,8 @@ function StateTreeNode({
                 watchedPaths={watchedPaths}
                 highlightedTargetIds={highlightedTargetIds}
                 onHighlightTargets={onHighlightTargets}
+                contextAssignIds={contextAssignIds}
+                contextConsumeIds={contextConsumeIds}
               />
             );
           })}

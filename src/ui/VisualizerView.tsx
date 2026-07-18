@@ -5,6 +5,8 @@ import {
   DEFAULT_SIDE_WIDTH,
   DEFAULT_WATCH_WIDTH,
 } from './columnLayout';
+import { ContextInspector } from './ContextInspector';
+import { stateIdsForContextKey } from './contextDepHighlights';
 import { SideColumn } from './SideColumn';
 import { FoldSection } from './FoldSection';
 import { StateTree } from './StateTree';
@@ -51,6 +53,9 @@ export function VisualizerView({
   const [highlightedTargetIds, setHighlightedTargetIds] = useState<Set<string>>(
     () => new Set(),
   );
+  const [hoveredContextKey, setHoveredContextKey] = useState<string | null>(
+    null,
+  );
   const [zoomAnchors, setZoomAnchors] = useState<Set<string>>(() => new Set());
   /** Watched node paths keyed by actor session id (order preserved). */
   const [watchedBySession, setWatchedBySession] = useState<
@@ -72,6 +77,11 @@ export function VisualizerView({
   const sessionId = machine?.sessionId ?? '';
   const watchedPaths = watchedBySession[sessionId] ?? [];
   const watchedPathSet = new Set(watchedPaths);
+
+  const { assignIds: contextAssignIds, consumeIds: contextConsumeIds } =
+    hoveredContextKey
+      ? stateIdsForContextKey(machine?.contextDeps, hoveredContextKey)
+      : { assignIds: new Set<string>(), consumeIds: new Set<string>() };
 
   const toggleZoom = useCallback((path: string, exclusive: boolean) => {
     setZoomAnchors((current) => {
@@ -186,6 +196,8 @@ export function VisualizerView({
               onToggleZoom={toggleZoom}
               highlightedTargetIds={highlightedTargetIds}
               onHighlightTargets={setHighlightedTargetIds}
+              contextAssignIds={contextAssignIds}
+              contextConsumeIds={contextConsumeIds}
             />
           ) : (
             <p className="viz__muted">Waiting for machine definition…</p>
@@ -211,6 +223,8 @@ export function VisualizerView({
                 onToggleZoom={toggleZoom}
                 highlightedTargetIds={highlightedTargetIds}
                 onHighlightTargets={setHighlightedTargetIds}
+                contextAssignIds={contextAssignIds}
+                contextConsumeIds={contextConsumeIds}
               />
             ) : (
               <p className="viz__muted">Waiting for machine definition…</p>
@@ -232,9 +246,12 @@ export function VisualizerView({
             </pre>
           </FoldSection>
           <FoldSection title="Context">
-            <pre className="viz__code">
-              {JSON.stringify(actorState?.context, null, 2)}
-            </pre>
+            <ContextInspector
+              context={actorState?.context}
+              contextDeps={machine?.contextDeps}
+              hoveredKey={hoveredContextKey}
+              onHoverKey={setHoveredContextKey}
+            />
           </FoldSection>
           <FoldSection title="Context deps">
             <pre className="viz__code">

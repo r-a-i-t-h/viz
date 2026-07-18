@@ -25,6 +25,8 @@ export function WatchColumn({
   onToggleZoom,
   highlightedTargetIds,
   onHighlightTargets,
+  contextAssignIds,
+  contextConsumeIds,
 }: {
   root: StateNodeDefinition;
   watchedPaths: string[];
@@ -36,6 +38,8 @@ export function WatchColumn({
   onToggleZoom?: (path: string, exclusive: boolean) => void;
   highlightedTargetIds?: Set<string>;
   onHighlightTargets?: (targets: Set<string>) => void;
+  contextAssignIds?: Set<string>;
+  contextConsumeIds?: Set<string>;
 }) {
   if (watchedPaths.length === 0) {
     return (
@@ -50,16 +54,16 @@ export function WatchColumn({
       {watchedPaths.map((path, index) => {
         const node = findNodeByPath(root, path);
         if (!node) return null;
+        const nodeId = normalizeStateNodeId(node.id);
         return (
           <li key={path} className="viz__watch-item">
             <WatchNode
               node={node}
               path={path}
               isActive={path === '' || activePaths.has(path)}
-              isTransitionTarget={
-                highlightedTargetIds?.has(normalizeStateNodeId(node.id)) ??
-                false
-              }
+              isTransitionTarget={highlightedTargetIds?.has(nodeId) ?? false}
+              isContextAssign={contextAssignIds?.has(nodeId) ?? false}
+              isContextConsume={contextConsumeIds?.has(nodeId) ?? false}
               isZoomed={zoomAnchors?.has(path) ?? false}
               showLifecycleBadges={showLifecycleBadges}
               canMoveUp={index > 0}
@@ -82,6 +86,8 @@ function WatchNode({
   path,
   isActive,
   isTransitionTarget,
+  isContextAssign,
+  isContextConsume,
   isZoomed,
   showLifecycleBadges,
   canMoveUp,
@@ -96,6 +102,8 @@ function WatchNode({
   path: string;
   isActive: boolean;
   isTransitionTarget: boolean;
+  isContextAssign: boolean;
+  isContextConsume: boolean;
   isZoomed: boolean;
   showLifecycleBadges: boolean;
   canMoveUp: boolean;
@@ -126,6 +134,8 @@ function WatchNode({
         isFinal ? 'node--final' : '',
         detailsOpen ? 'node--watch-open' : '',
         isTransitionTarget ? 'node--transition-target' : '',
+        isContextAssign ? 'node--context-assign' : '',
+        isContextConsume ? 'node--context-consume' : '',
         isZoomed ? 'node--watch-zoomed' : '',
       ]
         .filter(Boolean)

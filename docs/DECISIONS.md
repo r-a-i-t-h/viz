@@ -14,6 +14,16 @@ Format for each entry:
 
 ---
 
+## 2026-07-18 — Context key hover highlights assign vs consume states
+
+**Context:** Dep-graph is on `CapturedMachine`; Priority 1 wants hover a context key → related states.
+
+**Decision:** Context panel lists top-level keys; hovering a key highlights graph/watch nodes from `contextDeps` edges: **red** (`node--context-assign`) for `writes`, **amber** (`node--context-consume`) for `reads`. If a state both assigns and consumes, assign wins. Keys with no edges remain visible but do not light the tree.
+
+**Rationale:** Matches the requested assign/consume colors without new chrome; reuses the same node highlight surface as transition targets.
+
+---
+
 ## 2026-07-18 — Context dep-graph from live logic + config
 
 **Context:** Priority 1 needs a static graph of which actions/guards/invokes read or write context keys, and `toPortable` strips the functions that carry that info.

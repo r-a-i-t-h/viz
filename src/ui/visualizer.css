@@ -796,6 +796,23 @@ body.viz--resizing iframe {
     0 0 12px rgba(251, 191, 36, 0.25);
 }
 
+/* Context dep-graph: assign (red) vs consume-only (amber). */
+.node--context-assign {
+  border-color: #f87171;
+  background: #2a1414;
+  box-shadow:
+    0 0 0 2px rgba(248, 113, 113, 0.5),
+    0 0 12px rgba(248, 113, 113, 0.28);
+}
+
+.node--context-consume {
+  border-color: #fbbf24;
+  background: #2a2410;
+  box-shadow:
+    0 0 0 2px rgba(251, 191, 36, 0.45),
+    0 0 12px rgba(251, 191, 36, 0.25);
+}
+
 /* Circular lifecycle badges, overlapping the top border at top-right. */
 .node__badges {
   position: absolute;
@@ -1006,6 +1023,63 @@ body.viz--resizing iframe {
   font-size: 0.78rem;
   overflow: auto;
   margin: 0;
+}
+
+.viz__context-keys {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+}
+
+.viz__context-key {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  width: 100%;
+  margin: 0;
+  padding: 0.25rem 0.45rem;
+  border: 1px solid #1e2534;
+  border-radius: 4px;
+  background: #0c0f16;
+  color: inherit;
+  text-align: left;
+  cursor: default;
+  font: inherit;
+}
+
+.viz__context-key--linked {
+  cursor: help;
+}
+
+.viz__context-key--linked:hover,
+.viz__context-key--linked:focus-visible,
+.viz__context-key--active {
+  border-color: #4b5568;
+  background: #141a26;
+  outline: none;
+}
+
+.viz__context-key-name {
+  color: #93c5fd;
+  flex: 0 0 auto;
+}
+
+.viz__context-key-name::after {
+  content: ':';
+  color: #7d879a;
+}
+
+.viz__context-key-value {
+  color: #cbd3e1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .viz__log {
