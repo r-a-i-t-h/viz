@@ -105,6 +105,8 @@ export function createVisualizerHost(
 
   const machines = new Map<string, VizMachine>();
   const frames = new Map<string, VizFrame>();
+  const previousContexts = new Map<string, unknown>();
+  const previousContextAges = new Map<string, Record<string, number>>();
   let log: VizLogEntry[] = [];
   let inlineVisible = false;
   let seq = 0;
@@ -147,11 +149,17 @@ export function createVisualizerHost(
         status?: string;
         output?: unknown;
       };
-      const frame = projectFrame(
-        logged.sessionId,
-        snapshot,
-        logged.eventType,
-      );
+      const sessionId = logged.sessionId;
+      const frame = projectFrame(sessionId, snapshot, {
+        eventType: logged.eventType,
+        previousContext: previousContexts.get(sessionId),
+        previousAges: previousContextAges.get(sessionId),
+        machine: machines.get(sessionId),
+      });
+      previousContexts.set(sessionId, snapshot.context);
+      if (frame.contextKeyAges) {
+        previousContextAges.set(sessionId, frame.contextKeyAges);
+      }
       frames.set(frame.sessionId, frame);
       bridge.sendFrame(frame);
     }
@@ -207,6 +215,8 @@ export function createVisualizerHost(
       listeners.clear();
       machines.clear();
       frames.clear();
+      previousContexts.clear();
+      previousContextAges.clear();
       log = [];
     },
   };

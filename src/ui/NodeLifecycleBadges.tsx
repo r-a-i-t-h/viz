@@ -1,9 +1,23 @@
 import { HoverTip, type HoverTipItem } from './HoverTip';
 import { depEntityId } from './contextDepHighlights';
-import type { VizBadge, VizNode, VizSymbol } from '../viz';
-import { AfterIcon, EntryIcon, ExitIcon } from './nodeIcons';
+import type { VizBadge, VizInvoke, VizNode, VizSymbol } from '../viz';
+import {
+  AfterIcon,
+  AlwaysIcon,
+  EntryIcon,
+  ExitIcon,
+  InvokeIcon,
+} from './nodeIcons';
 
-/** Entry / after / exit badge row with hover tips (graph + watch). */
+const LIFECYCLE_KINDS = new Set([
+  'entry',
+  'exit',
+  'after',
+  'always',
+  'invoke',
+]);
+
+/** Entry / after / exit / always / invoke badge row with hover tips. */
 export function NodeLifecycleBadges({
   node,
   align = 'right',
@@ -19,9 +33,7 @@ export function NodeLifecycleBadges({
   /** Highlight context keys for hovered action/guard entities. */
   onEntityHover?: (entityIds: string[]) => void;
 }) {
-  const badges = node.badges.filter(
-    (b) => b.kind === 'entry' || b.kind === 'exit' || b.kind === 'after',
-  );
+  const badges = node.badges.filter((b) => LIFECYCLE_KINDS.has(b.kind));
   if (badges.length === 0) return null;
 
   return (
@@ -58,9 +70,17 @@ function BadgeTip({
       ? EntryIcon
       : badge.kind === 'exit'
         ? ExitIcon
-        : AfterIcon;
+        : badge.kind === 'after'
+          ? AfterIcon
+          : badge.kind === 'always'
+            ? AlwaysIcon
+            : InvokeIcon;
 
   const items = tipItemsForBadge(badge, node);
+  const entityHover =
+    badge.kind === 'entry' || badge.kind === 'exit'
+      ? onEntityHover
+      : undefined;
 
   return (
     <HoverTip
@@ -77,11 +97,7 @@ function BadgeTip({
               )
           : undefined
       }
-      onEntityHover={
-        badge.kind === 'entry' || badge.kind === 'exit'
-          ? onEntityHover
-          : undefined
-      }
+      onEntityHover={entityHover}
     >
       <Icon />
       <span className="node__badge-label">{badge.label}</span>
@@ -96,7 +112,19 @@ function tipItemsForBadge(badge: VizBadge, node: VizNode): HoverTipItem[] {
   if (badge.kind === 'exit') {
     return node.details.exit.map(symbolTipItem);
   }
+  if (badge.kind === 'invoke') {
+    return node.details.invokes.flatMap(invokeTipItems);
+  }
   return badge.lines.map((label) => ({ label }));
+}
+
+function invokeTipItems(inv: VizInvoke): HoverTipItem[] {
+  const items: HoverTipItem[] = [{ label: `src ${inv.src}` }];
+  if (inv.id) items.push({ label: `id ${inv.id}` });
+  if (inv.inputSummary) items.push({ label: inv.inputSummary });
+  for (const t of inv.onDone) items.push({ label: t.line });
+  for (const t of inv.onError) items.push({ label: t.line });
+  return items;
 }
 
 function symbolTipItem(symbol: VizSymbol): HoverTipItem {

@@ -11,6 +11,7 @@ import {
 } from './contextDepHighlights';
 import { SideColumn } from './SideColumn';
 import { FoldSection } from './FoldSection';
+import { NextEventsPanel } from './NextEventsPanel';
 import { StateTree } from './StateTree';
 import { WatchColumn } from './WatchColumn';
 import {
@@ -261,10 +262,17 @@ export function VisualizerView({
               {JSON.stringify(frame?.value, null, 2)}
             </pre>
           </FoldSection>
+          <FoldSection title="Next events">
+            <NextEventsPanel
+              events={frame?.nextEvents ?? []}
+              onHighlightProviders={setHighlightedTargetIds}
+            />
+          </FoldSection>
           <FoldSection title="Context">
             <ContextInspector
               context={frame?.context}
               contextDeps={machine?.analysis.contextDeps}
+              contextKeyAges={frame?.contextKeyAges}
               hoveredKey={hoveredContextKey}
               onHoverKey={onHoverContextKey}
               assignKeys={entityAssignKeys}

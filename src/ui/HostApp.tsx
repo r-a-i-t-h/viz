@@ -20,7 +20,12 @@ type ActorEvent = Parameters<
 
 const SEND_BUTTONS: { label: string; event: ActorEvent }[] = [
   { label: 'START', event: { type: 'START' } },
+  { label: 'READY', event: { type: 'READY' } },
+  { label: 'CHECK', event: { type: 'CHECK' } },
+  { label: 'ARM', event: { type: 'ARM' } },
+  { label: 'FETCH', event: { type: 'FETCH' } },
   { label: 'TICK', event: { type: 'TICK' } },
+  { label: 'NUDGE', event: { type: 'NUDGE' } },
   { label: 'PAUSE', event: { type: 'PAUSE' } },
   { label: 'RESUME', event: { type: 'RESUME' } },
   { label: 'CYCLE', event: { type: 'CYCLE' } },

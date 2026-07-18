@@ -5,7 +5,7 @@
 
 **Code:** shared types in [`src/viz/model.ts`](../src/viz/model.ts); projector in [`src/viz/project.ts`](../src/viz/project.ts); wire in [`src/viz/bridge/protocol.ts`](../src/viz/bridge/protocol.ts).
 
-Deferred until TODO items land (projector emits empty slots today): `always` / `invoke` badges, history glyph richness, `VizFrame.contextChangedKeys`, `byId` index.
+Deferred until TODO items land (projector emits empty slots today): history glyph richness, `byId` index.
 
 ---
 

@@ -121,6 +121,13 @@ export interface VizAnalysis {
   contextDeps: ContextDepGraph;
 }
 
+/** An event the active configuration can handle, with providing state ids. */
+export interface VizNextEvent {
+  type: string;
+  /** State node ids that declare a handler (including active ancestors). */
+  providerIds: string[];
+}
+
 /** Runtime frame — projected from an inspection snapshot. */
 export interface VizFrame {
   sessionId: string;
@@ -137,6 +144,13 @@ export interface VizFrame {
   output?: unknown;
   /** Event that produced this frame, if any. */
   eventType?: string;
+  /**
+   * Events since each top-level context key last changed (0 = changed this
+   * frame). Host-tracked so popup replay stays consistent.
+   */
+  contextKeyAges?: Record<string, number>;
+  /** Named events the active configuration can handle (+ providing states). */
+  nextEvents?: VizNextEvent[];
 }
 
 /** Debug log entry (still inspection-flavored for the event log panel). */

@@ -8,6 +8,8 @@ import { assign, fromPromise, setup } from 'xstate';
  * - a `parallel` region (`running`) with two independent sub-regions
  * - deeper nesting: `running.signal.red` is itself a compound state
  * - entry / exit / after affordances for lifecycle badge overlays
+ * - `always` (eventless) gate + `invoke` with onDone/onError
+ * - parent+child both handle `NUDGE` (next-events multi-provider highlight)
  * - context dep-graph: multi-key assign, named + inline guards, invoke I/O
  *
  * Written with XState v5's `setup().createMachine()` so `actorRef.logic` exposes
@@ -28,10 +30,13 @@ export const demoMachine = setup({
       | { type: 'PAUSE' }
       | { type: 'RESUME' }
       | { type: 'TICK' }
+      | { type: 'NUDGE' }
       | { type: 'CYCLE' }
       | { type: 'TOGGLE_MODE' }
       | { type: 'DONE' }
       | { type: 'ARM' }
+      | { type: 'READY' }
+      | { type: 'CHECK' }
       | { type: 'FETCH' },
   },
   actions: {
@@ -44,6 +49,9 @@ export const demoMachine = setup({
     bumpSession: assign({
       ticks: ({ context }) => context.ticks + 1,
       label: ({ context }) => `tick-${context.ticks + 1}`,
+    }),
+    noteParentNudge: assign({
+      label: 'nudged-parent',
     }),
   },
   guards: {
@@ -73,17 +81,30 @@ export const demoMachine = setup({
       on: {
         START: 'running',
         DONE: 'done',
+        // Flip ready so the always-gate and ARM guard can fire.
+        READY: {
+          actions: assign({ ready: true }),
+        },
         // Named guard read + named multi-key assign.
         ARM: {
           guard: 'isReady',
           actions: 'bumpSession',
         },
+        // Eventless gate demo: CHECK → gate → always → running | idle.
+        CHECK: 'gate',
         // Inline guard read (toString heuristic).
         FETCH: {
           guard: ({ context }) => context.ticks > 0,
           target: 'fetching',
         },
       },
+    },
+    /** Eventless (`always`) cascade — badge + target highlight. */
+    gate: {
+      always: [
+        { guard: 'isReady', target: 'running' },
+        { target: 'idle' },
+      ],
     },
     fetching: {
       entry: assign({ fetchStatus: 'loading' }),
@@ -112,7 +133,11 @@ export const demoMachine = setup({
     // Parallel state: both regions are active simultaneously while `running`.
     running: {
       type: 'parallel',
-      on: { STOP: 'idle' },
+      on: {
+        STOP: 'idle',
+        // Same event on parent + child → next-events lists both providers.
+        NUDGE: { actions: 'noteParentNudge' },
+      },
       states: {
         // Region 1 — a simple compound engine with pause/resume.
         engine: {
@@ -127,6 +152,11 @@ export const demoMachine = setup({
                 PAUSE: 'paused',
                 TICK: {
                   actions: assign({ ticks: ({ context }) => context.ticks + 1 }),
+                },
+                NUDGE: {
+                  actions: assign({
+                    ticks: ({ context }) => context.ticks + 1,
+                  }),
                 },
               },
             },

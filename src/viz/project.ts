@@ -11,19 +11,32 @@ import type {
   StateValue,
 } from 'xstate';
 import { analyzeContextDeps } from './contextDeps';
+import { computeContextKeyAges } from './contextAges';
 import type {
   VizBadge,
   VizEvent,
   VizFrame,
+  VizInvoke,
   VizMachine,
+  VizNextEvent,
   VizNode,
   VizNodeDetails,
   VizNodeKind,
   VizSymbol,
   VizTransition,
 } from './model';
+import { collectNextEvents } from './nextEvents';
 
 const AFTER_EVENT = /^xstate\.after\./;
+const DONE_ACTOR_EVENT = /^xstate\.done\.actor\./;
+const ERROR_ACTOR_EVENT = /^xstate\.error\.actor\./;
+
+/** Live StateNode fields we read beyond the serializable definition. */
+interface LiveStateNode {
+  always?: unknown[];
+  invoke?: unknown[];
+  states?: Record<string, LiveStateNode>;
+}
 
 interface MachineActorRef {
   sessionId: string;
@@ -66,10 +79,11 @@ export function projectMachine(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     any
   >;
+  const liveRoot = (logic as { root?: LiveStateNode }).root;
   return {
     sessionId,
     label: rootDef.id || logic.id || sessionId,
-    root: projectNode(rootDef, ''),
+    root: projectNode(rootDef, '', liveRoot),
     analysis: {
       contextDeps: analyzeContextDeps(logic),
     },
@@ -84,21 +98,37 @@ export function projectFrame(
     status?: string;
     output?: unknown;
   },
-  eventType?: string,
+  options?: {
+    eventType?: string;
+    previousContext?: unknown;
+    previousAges?: Record<string, number>;
+    machine?: VizMachine;
+  },
 ): VizFrame {
   const value = snapshot.value;
   const status = normalizeStatus(snapshot.status);
+  const paths =
+    value === undefined || value === null
+      ? []
+      : activePaths(value as StateValue);
+  const contextKeyAges = computeContextKeyAges(
+    snapshot.context,
+    options?.previousContext,
+    options?.previousAges,
+  );
+  const nextEvents: VizNextEvent[] | undefined = options?.machine
+    ? collectNextEvents(options.machine.root, paths)
+    : undefined;
   return {
     sessionId,
-    activePaths:
-      value === undefined || value === null
-        ? []
-        : activePaths(value as StateValue),
+    activePaths: paths,
     context: snapshot.context,
     value,
     status,
     output: snapshot.output,
-    eventType,
+    eventType: options?.eventType,
+    contextKeyAges,
+    nextEvents,
   };
 }
 
@@ -138,6 +168,7 @@ function projectNode(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   def: XStateNodeDefinition<any, any>,
   path: string,
+  live?: LiveStateNode,
 ): VizNode {
   const kind = def.type as VizNodeKind;
   const layout =
@@ -149,15 +180,23 @@ function projectNode(
 
   const children = Object.values(def.states ?? {}).map((child) => {
     const childPath = path ? `${path}.${child.key}` : child.key;
-    return projectNode(child, childPath);
+    const liveChild = live?.states?.[child.key];
+    return projectNode(child, childPath, liveChild);
   });
 
   const entrySymbols = projectActions(def.entry);
   const exitSymbols = projectActions(def.exit);
   const afterTransitions = collectAfterTransitions(def);
-  const alwaysTransitions: VizTransition[] = []; // deferred (TODO)
+  const alwaysTransitions = collectAlwaysTransitions(live);
+  const invokes = collectInvokes(def, live);
   const events = collectEvents(def);
-  const badges = buildBadges(entrySymbols, exitSymbols, afterTransitions);
+  const badges = buildBadges(
+    entrySymbols,
+    exitSymbols,
+    afterTransitions,
+    alwaysTransitions,
+    invokes,
+  );
   const history =
     def.history === 'shallow' || def.history === 'deep'
       ? def.history
@@ -170,7 +209,7 @@ function projectNode(
     exit: exitSymbols,
     after: afterTransitions,
     always: alwaysTransitions,
-    invokes: [],
+    invokes,
     history,
   };
 
@@ -191,6 +230,8 @@ function buildBadges(
   entry: VizSymbol[],
   exit: VizSymbol[],
   after: VizTransition[],
+  always: VizTransition[],
+  invokes: VizInvoke[],
 ): VizBadge[] {
   const badges: VizBadge[] = [];
   if (entry.length > 0) {
@@ -201,12 +242,30 @@ function buildBadges(
       highlightIds: [],
     });
   }
+  if (always.length > 0) {
+    badges.push({
+      kind: 'always',
+      label: 'always',
+      lines: always.map((t) => t.line),
+      highlightIds: uniqueIds(always.flatMap((t) => t.targetIds)),
+    });
+  }
   if (after.length > 0) {
     badges.push({
       kind: 'after',
       label: 'after',
       lines: after.map((t) => t.line),
       highlightIds: uniqueIds(after.flatMap((t) => t.targetIds)),
+    });
+  }
+  if (invokes.length > 0) {
+    const highlightIds = uniqueIds(invokes.flatMap((inv) => inv.highlightIds));
+    const hasDone = invokes.some((inv) => inv.onDone.length > 0);
+    badges.push({
+      kind: 'invoke',
+      label: hasDone ? 'onDone' : 'invoke',
+      lines: invokes.flatMap(invokeBadgeLines),
+      highlightIds,
     });
   }
   if (exit.length > 0) {
@@ -220,6 +279,15 @@ function buildBadges(
   return badges;
 }
 
+function invokeBadgeLines(inv: VizInvoke): string[] {
+  const lines: string[] = [`src ${inv.src}`];
+  if (inv.id) lines.push(`id ${inv.id}`);
+  if (inv.inputSummary) lines.push(inv.inputSummary);
+  for (const t of inv.onDone) lines.push(t.line);
+  for (const t of inv.onError) lines.push(t.line);
+  return lines;
+}
+
 function collectEvents(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   def: XStateNodeDefinition<any, any>,
@@ -227,6 +295,8 @@ function collectEvents(
   const events: VizEvent[] = [];
   for (const [eventType, transitions] of Object.entries(def.on ?? {})) {
     if (AFTER_EVENT.test(eventType)) continue;
+    if (DONE_ACTOR_EVENT.test(eventType)) continue;
+    if (ERROR_ACTOR_EVENT.test(eventType)) continue;
     const list = asTransitionList(transitions).map((t) =>
       projectTransition(t, eventType),
     );
@@ -245,6 +315,81 @@ function collectEvents(
     });
   }
   return events;
+}
+
+function collectAlwaysTransitions(live?: LiveStateNode): VizTransition[] {
+  if (!live?.always || live.always.length === 0) return [];
+  return live.always.map((t) => projectTransition(t, undefined, false, true));
+}
+
+function collectInvokes(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  def: XStateNodeDefinition<any, any>,
+  live?: LiveStateNode,
+): VizInvoke[] {
+  const list = live?.invoke ?? def.invoke ?? [];
+  if (!Array.isArray(list) || list.length === 0) return [];
+
+  return list.map((raw, index) => {
+    const inv = (raw && typeof raw === 'object' ? raw : {}) as {
+      id?: unknown;
+      src?: unknown;
+      input?: unknown;
+    };
+    const id =
+      typeof inv.id === 'string' && inv.id.length > 0
+        ? inv.id
+        : `${index}`;
+    const src = formatInvokeSrc(inv.src);
+    const doneKey = `xstate.done.actor.${id}`;
+    const errorKey = `xstate.error.actor.${id}`;
+    const onDone = asTransitionList(def.on?.[doneKey]).map((t) =>
+      projectTransition(t, 'done'),
+    );
+    const onError = asTransitionList(def.on?.[errorKey]).map((t) =>
+      projectTransition(t, 'error'),
+    );
+    const highlightIds = uniqueIds([
+      ...onDone.flatMap((t) => t.targetIds),
+      ...onError.flatMap((t) => t.targetIds),
+    ]);
+    return {
+      id,
+      src,
+      inputSummary:
+        typeof inv.input === 'function'
+          ? 'input (fn)'
+          : inv.input != null
+            ? `input ${summarizeValue(inv.input)}`
+            : undefined,
+      onDone,
+      onError,
+      highlightIds,
+    };
+  });
+}
+
+function formatInvokeSrc(src: unknown): string {
+  if (typeof src === 'string') return src;
+  if (src && typeof src === 'object' && 'id' in src) {
+    const id = (src as { id: unknown }).id;
+    if (typeof id === 'string') return id;
+  }
+  return '(actor)';
+}
+
+function summarizeValue(value: unknown): string {
+  if (value == null) return String(value);
+  if (typeof value === 'string') return JSON.stringify(value);
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  try {
+    const text = JSON.stringify(value);
+    return text.length > 40 ? `${text.slice(0, 37)}…` : text;
+  } catch {
+    return '[object]';
+  }
 }
 
 function collectAfterTransitions(
@@ -268,9 +413,14 @@ function projectTransition(
   transition: unknown,
   eventType?: string,
   asAfter = false,
+  asAlways = false,
 ): VizTransition {
   if (!transition || typeof transition !== 'object') {
-    const line = eventType ? `${eventType} → ?` : '→ ?';
+    const line = asAlways
+      ? 'always → ?'
+      : eventType
+        ? `${eventType} → ?`
+        : '→ ?';
     return { targetIds: [], actions: [], line };
   }
   const t = transition as {
@@ -294,6 +444,8 @@ function projectTransition(
   const parts: string[] = [];
   if (asAfter) {
     parts.push(`after ${delayLabel ?? '?'} → ${targetLabel}`);
+  } else if (asAlways) {
+    parts.push(`always → ${targetLabel}`);
   } else {
     parts.push(`${eventType ?? '?'} → ${targetLabel}`);
   }

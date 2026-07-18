@@ -14,6 +14,28 @@ Format for each entry:
 
 ---
 
+## 2026-07-18 — Always / invoke badges from live StateNodes
+
+**Context:** Structure markers for eventless `always` and invoke `onDone`/`onError` were still empty in the projector; demos needed visible coverage.
+
+**Finding:** XState v5’s serializable `logic.definition` omits `always` entirely. Live `logic.root` / `logic.states` expose `.always` with resolved targets. Invoke metadata is on both; done/error land in `definition.on` as `xstate.done.actor.*` / `xstate.error.actor.*`.
+
+**Decision:** Walk definition for structure/events, enrich from the parallel live StateNode for `always` + `invoke`. Exclude done/error actor events from ordinary `events` and surface them under an `invoke` badge (label `onDone` when done transitions exist). Hover highlights done/error/always targets like `after`.
+
+**Rationale:** Popup stays on Viz* only; capture fails at projector build time if XState reshapes live nodes.
+
+---
+
+## 2026-07-18 — Context key ages + next-events list
+
+**Context:** Legacy viz showed how many events ago each context key changed; also needed the set of events the active configuration can handle (including ancestor bubbling).
+
+**Decision:** Host tracks shallow top-level context diffs across snapshots and emits `VizFrame.contextKeyAges` (0 = changed this frame). Projector also emits `nextEvents` with `providerIds` from active paths (ancestors already in `activePaths`, plus root). Context panel shows the age counter with a short fade; Next events panel hover highlights providing states via the existing target-highlight surface.
+
+**Rationale:** Ages must be host-side so popup replay stays consistent; next-events are portable facts on the frame, not React-only derivation.
+
+---
+
 ## 2026-07-18 — Reverse dep-graph hover: entity → context keys
 
 **Context:** Priority 1 already highlights states when hovering a context key; the other direction was still open.

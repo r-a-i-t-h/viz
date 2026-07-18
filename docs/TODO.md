@@ -54,11 +54,11 @@ Record the capture strategy in [`DECISIONS.md`](./DECISIONS.md) when implementin
 
 Badges should make it obvious that a state may transition for reasons beyond named `on` handlers. Implement by extending **`projectMachine`** (emit `VizBadge` / `details.*`), not by teaching the popup XState shapes.
 
-- [ ] **`always` (eventless)** — distinct badge; hover list + target highlight (same pattern as `after`)
-- [ ] **`invoke` + `onDone` / `onError`** — badge on the state (invoke present); **`onDone` especially** as a clear non-`on` exit path; hover: src id, id, input summary, done/error targets + highlight
+- [x] **`always` (eventless)** — distinct badge; hover list + target highlight (same pattern as `after`)
+- [x] **`invoke` + `onDone` / `onError`** — badge on the state (invoke present); **`onDone` especially** as a clear non-`on` exit path; hover: src id, id, input summary, done/error targets + highlight
 - [ ] **History states** (`shallow` / `deep`) — dedicated glyph; restore target on hover when known
 - [ ] **Named delays** — extend existing `after` hover with `setup().delays` names when present (badge already signals delayed exit)
-- [ ] **Demos** — `always`; `invoke` (promise and/or child machine) with done/error; history state
+- [x] **Demos** — `always`; `invoke` (promise) with done/error (`gate` + `fetching`); history state still open
 
 Already in this class: entry / exit / after badges.
 
@@ -66,9 +66,9 @@ Already in this class: entry / exit / after badges.
 
 ## Hover + highlight debugging
 
-- [ ] **Next events (enabled / handled set)** — list events the active configuration can handle, including those inherited via ancestor bubbling (easy to miss when reading leaf-only `on`). Hover an event → highlight providing state(s); multiple providers possible when guards split handling across nodes
+- [x] **Next events (enabled / handled set)** — list events the active configuration can handle, including those inherited via ancestor bubbling (easy to miss when reading leaf-only `on`). Hover an event → highlight providing state(s); multiple providers possible when guards split handling across nodes
 - [ ] **Transition order / cond cascade** — on hover for an event: ordered candidates (“1. guard → … 2. else → …”), not graph layout
-- [ ] **Context change fade** — highlight context keys that just changed; fade intensity over subsequent events so recency is visible (legacy viz behavior)
+- [x] **Context change fade** — highlight context keys that just changed; fade intensity over subsequent events so recency is visible (legacy viz behavior)
 - [ ] **`spawn` ↔ sessionId** — link spawned actors in context to the actor registry (highlight / select)
 - [ ] **Wildcard / partial events** — annotate in hover only (`*`, `foo.*`)
 - [ ] **`reenter` / internal vs empty target** — clarify in hover tokens only

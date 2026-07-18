@@ -73,3 +73,34 @@ export function AfterIcon() {
     </svg>
   );
 }
+
+/** Eventless / always transition glyph. */
+export function AlwaysIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+      <path
+        d="M2.5 8h7.2l-2.1-2.1L8.7 4.8 13.2 8l-4.5 3.2-1.1-1.1L9.7 8H2.5V8z"
+        fill="currentColor"
+      />
+      <path
+        d="M13.5 3.5v9"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+/** Invoke / onDone service glyph. */
+export function InvokeIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+      <path
+        d="M3 3.5h6.5v3H11V5l3 3-3 3V9.5H9.5v3H3v-9zm1.5 1.5v6h4V5h-4z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}

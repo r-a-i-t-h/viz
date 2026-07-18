@@ -34,12 +34,16 @@ export type {
   VizInvoke,
   VizLogEntry,
   VizMachine,
+  VizNextEvent,
   VizNode,
   VizNodeDetails,
   VizNodeKind,
   VizSymbol,
   VizTransition,
 } from './model';
+
+export { collectNextEvents } from './nextEvents';
+export { computeContextKeyAges } from './contextAges';
 
 export {
   analyzeContextDeps,

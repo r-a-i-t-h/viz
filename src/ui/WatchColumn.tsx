@@ -114,6 +114,11 @@ function WatchNode({
   const isFinal = node.kind === 'final';
   const afterItems = node.details.after.map((t) => t.line);
   const afterHighlightIds = node.details.after.flatMap((t) => t.targetIds);
+  const alwaysItems = node.details.always.map((t) => t.line);
+  const alwaysHighlightIds = node.details.always.flatMap((t) => t.targetIds);
+  const invokeHighlightIds = node.details.invokes.flatMap(
+    (inv) => inv.highlightIds,
+  );
   const displayPath = path === '' ? node.key : path;
 
   return (
@@ -249,6 +254,24 @@ function WatchNode({
               onEntityHover={onEntityHover}
             />
           )}
+          {alwaysItems.length > 0 && (
+            <div
+              className="node__watch-on"
+              onMouseEnter={() =>
+                onHighlightTargets?.(new Set(alwaysHighlightIds))
+              }
+              onMouseLeave={() => onHighlightTargets?.(new Set())}
+            >
+              <dt>always</dt>
+              <dd>
+                <ul>
+                  {alwaysItems.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </dd>
+            </div>
+          )}
           {afterItems.length > 0 && (
             <div
               className="node__watch-on"
@@ -263,6 +286,33 @@ function WatchNode({
                   {afterItems.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
+                </ul>
+              </dd>
+            </div>
+          )}
+          {node.details.invokes.length > 0 && (
+            <div
+              className="node__watch-on"
+              onMouseEnter={() =>
+                onHighlightTargets?.(new Set(invokeHighlightIds))
+              }
+              onMouseLeave={() => onHighlightTargets?.(new Set())}
+            >
+              <dt>invoke</dt>
+              <dd>
+                <ul>
+                  {node.details.invokes.flatMap((inv) => {
+                    const lines = [
+                      `src ${inv.src}`,
+                      inv.id ? `id ${inv.id}` : null,
+                      inv.inputSummary ?? null,
+                      ...inv.onDone.map((t) => t.line),
+                      ...inv.onError.map((t) => t.line),
+                    ].filter((line): line is string => line != null);
+                    return lines.map((item) => (
+                      <li key={`${inv.id}:${item}`}>{item}</li>
+                    ));
+                  })}
                 </ul>
               </dd>
             </div>
