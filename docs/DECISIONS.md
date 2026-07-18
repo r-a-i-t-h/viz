@@ -14,6 +14,16 @@ Format for each entry:
 
 ---
 
+## 2026-07-18 — Sketch VizPresentationModel (typed host → portable viz)
+
+**Context:** Clarifying whether moving interpretation into the iframe helps us use XState’s types so the popup need not reinvent states/transitions/actions/guards; and sketching the wire schema for Salesforce hidden-iframe → popup.
+
+**Finding/Decision:** Documented in [`VIZ-PRESENTATION-MODEL.md`](./VIZ-PRESENTATION-MODEL.md). Benefit is **not** free understanding from `@statelyai/inspect` — it is concentrating XState structural types in one `projectMachine`/`projectFrame` adapter and shipping `VizMachine`/`VizFrame` so the popup never duck-types `on` / `xstate.after` / transition shapes. Today’s UI (`lifecycleBadges`, `nodeDetails`, local `StateNodeDefinition` mirror) is exactly that reinvention on untyped portable definition JSON.
+
+**Rationale:** Same subset selection either way; the win is a typed boundary and a viz-native wire vocabulary. Prefer **build errors in the iframe projector** when XState renames/reshapes fields (e.g. a hypothetical v6) over **silent runtime gaps** in the popup where duck-typed paths like `node.entry` become undefined and badges simply disappear.
+
+---
+
 ## 2026-07-18 — Documented inspect v4 → v5 for own-rolled visualizers
 
 **Context:** Clarifying how `@xstate/inspect` (v4) differs from built-in XState v5 inspect + `@statelyai/inspect`, and which TypeScript model a custom visualizer should navigate.
