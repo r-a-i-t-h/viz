@@ -14,6 +14,16 @@ Format for each entry:
 
 ---
 
+## 2026-07-18 — Context key tooltip shows assign/consume counts
+
+**Context:** Linked context-key hover title said “Hover to highlight…” which is redundant (the tooltip only appears on hover) and doesn’t help when highlighted states are scrolled out of view.
+
+**Decision:** Title shows `N assign · M consume` from `stateIdsForContextKey` (same sets used for graph highlight). Unlinked keys keep “No dep-graph links for this key”.
+
+**Rationale:** Counts clue the user that matches exist even when some highlighted nodes aren’t visible; no extra UI chrome needed.
+
+---
+
 ## 2026-07-18 — Host-side projection to shared Viz model
 
 **Context:** Avoid popup duck-typing of portable XState JSON (`on`, `xstate.after`, homemade `StateNodeDefinition`) so a future XState reshape fails at **build time in the projector**, not as silent missing badges.

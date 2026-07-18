@@ -1,4 +1,5 @@
 import type { ContextDepGraph } from '../viz';
+import { stateIdsForContextKey } from './contextDepHighlights';
 
 /**
  * Top-level context keys as hover targets for dep-graph highlight.
@@ -41,6 +42,9 @@ export function ContextInspector({
       {entries.map(([key, value]) => {
         const linked = knownKeys.has(key);
         const active = hoveredKey === key;
+        const { assignIds, consumeIds } = linked
+          ? stateIdsForContextKey(contextDeps, key)
+          : { assignIds: new Set<string>(), consumeIds: new Set<string>() };
         return (
           <li key={key}>
             <button
@@ -58,7 +62,7 @@ export function ContextInspector({
               onBlur={() => onHoverKey(null)}
               title={
                 linked
-                  ? 'Hover to highlight states that assign or consume this key'
+                  ? `${assignIds.size} assign · ${consumeIds.size} consume`
                   : 'No dep-graph links for this key'
               }
             >
