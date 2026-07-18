@@ -40,6 +40,8 @@ No React and no visualizer CSS are required to use this API. Optional UI lives u
 
 In the PoC host page the same API is exposed as `window.viz` for console use.
 
+**Embedding into an existing app:** see [`docs/HOST-INTEGRATION.md`](./docs/HOST-INTEGRATION.md) — checklist, iframe sandbox requirements, and what the host can skip.
+
 ## Getting started
 
 ```bash
@@ -73,6 +75,7 @@ src/machine.ts    # demo machine for the PoC
 ## Project docs
 
 - [`AGENTS.md`](./AGENTS.md) — guidance for AI agents working in this repo
+- [`docs/HOST-INTEGRATION.md`](./docs/HOST-INTEGRATION.md) — host-side popup requirements for existing apps
 - [`docs/DECISIONS.md`](./docs/DECISIONS.md) — running log of findings and decisions
 - [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — host / interaction / renderer layers
 - [`docs/VIZ-PRESENTATION-MODEL.md`](./docs/VIZ-PRESENTATION-MODEL.md) — shared Viz* wire model

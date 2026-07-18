@@ -1,3 +1,13 @@
+## 2026-07-18 — Host popup integration guide
+
+**Context:** Real deployments use a (often hidden) host that only opens the popup visualizer; the PoC React shell obscures what an existing app must wire.
+
+**Decision:** Document host-only requirements in [`HOST-INTEGRATION.md`](./HOST-INTEGRATION.md): `createVisualizerHost` + `inspect` on actors + reachable `visualizerUrl` + `openPopup()` from a user gesture. Link from README, AGENTS, and ARCHITECTURE. React/CSS/inline/`subscribe` remain PoC-only; note vendor-until-published and iframe sandbox caveats.
+
+**Rationale:** The host API is the product surface; embedders need a single checklist without reading HostApp or the presentation-model package sketch.
+
+---
+
 ## 2026-07-18 — Actors, cascade, history, sanitize
 
 **Context:** Highest-value remaining features after v4-equivalent coverage: multi-actor legibility, dump completeness, cond cascade, history glyph, host sanitize.

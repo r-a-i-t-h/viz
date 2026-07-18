@@ -15,6 +15,7 @@ A Vite + React + TypeScript playground for XState v5 inspection and a **framewor
 ## Workflow
 
 - Record notable findings and decisions in `docs/DECISIONS.md` as you go — one dated entry per finding/decision, with brief context and rationale.
+- Host popup embed guide: `docs/HOST-INTEGRATION.md`.
 - Host / interaction / renderer split: `docs/ARCHITECTURE.md`.
 - Viz presentation model: `docs/VIZ-PRESENTATION-MODEL.md`.
 - Track remaining XState model coverage in `docs/TODO.md`; check items off (and add demo coverage) when implemented.

@@ -80,6 +80,7 @@ Keep `src/viz` as the **host API** only. Do not fold interaction into `Visualize
 
 ## Related
 
+- Host popup embed guide: [`HOST-INTEGRATION.md`](./HOST-INTEGRATION.md)
 - Host vs React split: `docs/DECISIONS.md` — “Visualizer is an API; React/CSS are optional”
 - Inline vs popup independence: same file — “Inline and popup visualizers are independent”
 - Model coverage backlog: `docs/TODO.md`
