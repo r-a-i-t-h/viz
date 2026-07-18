@@ -14,6 +14,16 @@ Format for each entry:
 
 ---
 
+## 2026-07-18 — Product scope: map + hover debug, not gazetteer
+
+**Context:** Reviewing `docs/TODO.md` against intended use: overview of structure, active markers, watch-based debugging — not a full XState inspector or a substitute for reading the machine config.
+
+**Decision:** Product priorities are (1) visualize the most relevant high-value structure, (2) add live debugging context via hover/watches, (3) never replace reading the declarative config. Scope the UI as a structural map with light badges for non-`on` transition sources (`after`, `always`, `invoke`/`onDone`/`onError`, history) and hover+highlight for relationships. First implementation priority is a static context dependency graph (actions, guards, invokes → context keys) when a machine is first seen. Revive legacy behaviors where they fit: context-change fade over events; “next events” including ancestor bubbling with hover showing providing state(s). Explicitly out of scope for now: first-class guard chrome, microstep UI, event-log product filtering, send-from-viz control, drawing all transition edges. Keep host-side sanitize hooks as hygiene (scrub context/events before popup relay), not UI.
+
+**Rationale:** Nesting/parallel and “you are here” matter more than linkages. Badges should flag states that can leave without a normal `on` handler. Dep-graph analysis unlocks rich debug hover without overloading the tree. Sanitize is silent host API (PII/secrets over `postMessage`), not gazetteer chrome.
+
+---
+
 ## 2026-07-17 — Layers: host API vs interaction model vs renderer
 
 **Context:** Clarifying whether zoom/highlight/watch belong inside React views or a separable model, and whether a “headless visualizer” would help bolt on other renderers later.
