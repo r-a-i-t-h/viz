@@ -16,11 +16,11 @@ Format for each entry:
 
 ## 2026-07-18 — Context key tooltip shows assign/consume counts
 
-**Context:** Linked context-key hover title said “Hover to highlight…” which is redundant (the tooltip only appears on hover) and doesn’t help when highlighted states are scrolled out of view.
+**Context:** Linked context-key hover title said “Hover to highlight…” which is redundant (the tooltip only appears on hover) and doesn’t help when highlighted states are scrolled out of view. Unlinked keys mentioned “dep-graph”, an implementation detail.
 
-**Decision:** Title shows `N assign · M consume` from `stateIdsForContextKey` (same sets used for graph highlight). Unlinked keys keep “No dep-graph links for this key”.
+**Decision:** Every context-key title shows `N assign · M consume` from `stateIdsForContextKey` (same sets used for graph highlight), including `0 assign · 0 consume` when nothing matches.
 
-**Rationale:** Counts clue the user that matches exist even when some highlighted nodes aren’t visible; no extra UI chrome needed.
+**Rationale:** Counts clue the user that matches exist even when some highlighted nodes aren’t visible; zero counts replace educational/implementation wording without new UI chrome.
 
 ---
 

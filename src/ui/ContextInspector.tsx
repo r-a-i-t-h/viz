@@ -42,9 +42,10 @@ export function ContextInspector({
       {entries.map(([key, value]) => {
         const linked = knownKeys.has(key);
         const active = hoveredKey === key;
-        const { assignIds, consumeIds } = linked
-          ? stateIdsForContextKey(contextDeps, key)
-          : { assignIds: new Set<string>(), consumeIds: new Set<string>() };
+        const { assignIds, consumeIds } = stateIdsForContextKey(
+          contextDeps,
+          key,
+        );
         return (
           <li key={key}>
             <button
@@ -60,11 +61,7 @@ export function ContextInspector({
               onMouseLeave={() => onHoverKey(null)}
               onFocus={() => onHoverKey(key)}
               onBlur={() => onHoverKey(null)}
-              title={
-                linked
-                  ? `${assignIds.size} assign · ${consumeIds.size} consume`
-                  : 'No dep-graph links for this key'
-              }
+              title={`${assignIds.size} assign · ${consumeIds.size} consume`}
             >
               <span className="viz__context-key-name">{key}</span>
               <span className="viz__context-key-value">
