@@ -3,6 +3,10 @@ import type {
   InspectionEvent,
   StateValue,
 } from 'xstate';
+import {
+  analyzeContextDeps,
+  type ContextDepGraph,
+} from './contextDeps';
 
 /**
  * The crux of the visualizer problem:
@@ -41,6 +45,8 @@ export interface CapturedMachine {
   config: unknown;
   /** The normalized definition tree — ideal for rendering. */
   definition: StateNodeDefinition;
+  /** Static context dependency graph (actions/guards/invokes ↔ keys). */
+  contextDeps: ContextDepGraph;
 }
 
 /**
@@ -78,6 +84,7 @@ export function captureMachine(event: InspectionEvent): CapturedMachine | null {
     sessionId: actorRef.sessionId,
     config: logic.config,
     definition: logic.definition as unknown as StateNodeDefinition,
+    contextDeps: analyzeContextDeps(logic),
   };
 }
 

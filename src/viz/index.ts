@@ -24,6 +24,17 @@ export {
   type StateNodeDefinition,
 } from './inspection';
 
+export {
+  analyzeContextDeps,
+  type ContextDepEdge,
+  type ContextDepGraph,
+  type ContextDepNode,
+  type DepCoverage,
+  type DepEntityKind,
+  type DepRelation,
+  type DepSite,
+} from './contextDeps';
+
 export { connectPopupReceiver } from './bridge/popupReceiver';
 export type {
   SerializableLogEntry,

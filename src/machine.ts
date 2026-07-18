@@ -1,4 +1,4 @@
-import { assign, setup } from 'xstate';
+import { assign, fromPromise, setup } from 'xstate';
 
 /**
  * A deliberately non-meaningful demo machine whose only job is to exercise the
@@ -8,13 +8,20 @@ import { assign, setup } from 'xstate';
  * - a `parallel` region (`running`) with two independent sub-regions
  * - deeper nesting: `running.signal.red` is itself a compound state
  * - entry / exit / after affordances for lifecycle badge overlays
+ * - context dep-graph: multi-key assign, named + inline guards, invoke I/O
  *
  * Written with XState v5's `setup().createMachine()` so `actorRef.logic` exposes
  * a fully-resolved `.definition` we can capture for visualization.
  */
 export const demoMachine = setup({
   types: {
-    context: {} as { ticks: number },
+    context: {} as {
+      ticks: number;
+      label: string;
+      ready: boolean;
+      fetchStatus: 'idle' | 'loading' | 'done' | 'error';
+      lastResult: string | null;
+    },
     events: {} as
       | { type: 'START' }
       | { type: 'STOP' }
@@ -23,7 +30,9 @@ export const demoMachine = setup({
       | { type: 'TICK' }
       | { type: 'CYCLE' }
       | { type: 'TOGGLE_MODE' }
-      | { type: 'DONE' },
+      | { type: 'DONE' }
+      | { type: 'ARM' }
+      | { type: 'FETCH' },
   },
   actions: {
     markIdle: () => {},
@@ -31,11 +40,32 @@ export const demoMachine = setup({
     markActive: () => {},
     clearActive: () => {},
     markFlashing: () => {},
+    /** Named multi-key assign — write targets come from implementations. */
+    bumpSession: assign({
+      ticks: ({ context }) => context.ticks + 1,
+      label: ({ context }) => `tick-${context.ticks + 1}`,
+    }),
+  },
+  guards: {
+    isReady: ({ context }) => context.ready === true,
+  },
+  actors: {
+    demoFetch: fromPromise(
+      async ({ input }: { input: { ticks: number; label: string } }) => {
+        return `ok:${input.label}:${input.ticks}`;
+      },
+    ),
   },
 }).createMachine({
   id: 'demo',
   initial: 'idle',
-  context: { ticks: 0 },
+  context: {
+    ticks: 0,
+    label: 'boot',
+    ready: false,
+    fetchStatus: 'idle',
+    lastResult: null,
+  },
   states: {
     idle: {
       entry: 'markIdle',
@@ -43,6 +73,40 @@ export const demoMachine = setup({
       on: {
         START: 'running',
         DONE: 'done',
+        // Named guard read + named multi-key assign.
+        ARM: {
+          guard: 'isReady',
+          actions: 'bumpSession',
+        },
+        // Inline guard read (toString heuristic).
+        FETCH: {
+          guard: ({ context }) => context.ticks > 0,
+          target: 'fetching',
+        },
+      },
+    },
+    fetching: {
+      entry: assign({ fetchStatus: 'loading' }),
+      invoke: {
+        src: 'demoFetch',
+        input: ({ context }) => ({
+          ticks: context.ticks,
+          label: context.label,
+        }),
+        onDone: {
+          target: 'idle',
+          actions: assign({
+            fetchStatus: 'done',
+            lastResult: ({ event }) => String(event.output),
+          }),
+        },
+        onError: {
+          target: 'idle',
+          actions: assign({
+            fetchStatus: 'error',
+            lastResult: null,
+          }),
+        },
       },
     },
     // Parallel state: both regions are active simultaneously while `running`.

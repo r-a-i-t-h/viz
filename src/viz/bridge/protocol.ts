@@ -27,6 +27,8 @@ export interface SerializableMachine {
   sessionId: string;
   config: unknown;
   definition: unknown;
+  /** Precomputed on the host; already JSON-safe (no functions). */
+  contextDeps: unknown;
 }
 
 export interface SerializableSnapshot {

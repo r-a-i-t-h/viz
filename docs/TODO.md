@@ -39,11 +39,11 @@ When a machine definition is first seen, run a static analysis over **actions, g
 
 This unlocks hover + highlight without overloading the tree:
 
-- [ ] **Pre-analysis pass** — on new machine / definition change: walk `logic.definition` (+ setup registries when available); record assign targets, guard reads, action reads, invoke `input` mappings
+- [x] **Pre-analysis pass** — on new machine / definition change: walk `logic.definition` (+ setup registries when available); record assign targets, guard reads, action reads, invoke `input` mappings
 - [ ] **Hover a context key** — highlight states/actions/guards that assign or consume it
 - [ ] **Hover an assign / guard / action** — highlight the context keys it touches
 - [ ] **Partial coverage OK** — opaque inline functions without serializable paths stay unmarked; prefer names/types/params over rehydrating functions
-- [ ] **Demo** — `assign` that mutates several context keys; guarded transitions that read context
+- [x] **Demo** — `assign` that mutates several context keys; guarded transitions that read context
 
 Record the capture strategy in [`DECISIONS.md`](./DECISIONS.md) when implementing.
 

@@ -14,6 +14,16 @@ Format for each entry:
 
 ---
 
+## 2026-07-18 — Context dep-graph from live logic + config
+
+**Context:** Priority 1 needs a static graph of which actions/guards/invokes read or write context keys, and `toPortable` strips the functions that carry that info.
+
+**Decision:** Run `analyzeContextDeps(logic)` inside `captureMachine` on the live host machine and ship a JSON `contextDeps` artifact on `CapturedMachine`. **Writes:** keys of `xstate.assign` `.assignment` (named actions resolved via `logic.implementations.actions`). **Reads:** best-effort `Function#toString` for `context.foo` / `context['foo']` on guards, action bodies, assign value fns, and invoke `input`. Walk `definition` for structure; when definition stores a stripped `{ type: 'xstate.assign' }`, fall back to the parallel authored `config` action. Prefer `definition.on` over duplicate `transitions` / `invoke.onDone` so edges are not doubled. Opaque entities (no recoverable keys) stay in the node list with `coverage: 'opaque'`.
+
+**Rationale:** Assignment maps and inline fns only exist before serialization. Partial `toString` coverage matches product scope (unmarked is OK). Config fallback is required because XState drops `.assignment` from some definition action slots (e.g. entry) while keeping it on `on` / config.
+
+---
+
 ## 2026-07-18 — Product scope: map + hover debug, not gazetteer
 
 **Context:** Reviewing `docs/TODO.md` against intended use: overview of structure, active markers, watch-based debugging — not a full XState inspector or a substitute for reading the machine config.

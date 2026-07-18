@@ -236,6 +236,11 @@ export function VisualizerView({
               {JSON.stringify(actorState?.context, null, 2)}
             </pre>
           </FoldSection>
+          <FoldSection title="Context deps">
+            <pre className="viz__code">
+              {JSON.stringify(machine?.contextDeps, null, 2)}
+            </pre>
+          </FoldSection>
           <FoldSection title="Event log">
             <ul className="viz__log">
               {snapshot.log.map((entry) => (
