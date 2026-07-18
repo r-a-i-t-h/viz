@@ -1,4 +1,4 @@
-import type { InspectionEvent } from 'xstate';
+import type { AnyEventObject, InspectionEvent, MachineContext } from 'xstate';
 import { HostBridge, type HostBridgeStatus } from './bridge/hostBridge';
 import type { VizFrame, VizLogEntry, VizMachine } from './model';
 import {
@@ -17,6 +17,14 @@ export interface VisualizerHostOptions {
   visualizerUrl: string;
   /** Max log entries retained for subscribers and popup replay. @default 100 */
   maxLogEntries?: number;
+  /**
+   * Scrub context before frames are stored / sent over postMessage.
+   * Runs after actor-ref enrichment so spawn↔sessionId markers can survive
+   * if the hook leaves those keys intact.
+   */
+  sanitizeContext?: (context: MachineContext) => MachineContext;
+  /** Scrub events before logging event types (and any future event payloads). */
+  sanitizeEvent?: (event: AnyEventObject) => AnyEventObject;
 }
 
 /**
@@ -28,7 +36,7 @@ export interface VisualizerSnapshot {
   /**
    * Every machine-backed actor observed so far (registration order).
    * Each `@xstate.actor` inspection event adds one; a UI with more than one
-   * should offer a selector.
+   * should offer a selector (prefer parent/child tree when links exist).
    */
   machines: VizMachine[];
   /** Latest projected frame per sessionId. */
@@ -133,12 +141,15 @@ export function createVisualizerHost(
   const inspect = (event: InspectionEvent) => {
     const resolved = machineLogicFromEvent(event);
     if (resolved) {
-      const machine = projectMachine(resolved.logic, resolved.sessionId);
+      const machine = projectMachine(resolved.logic, resolved.sessionId, {
+        parentSessionId: resolved.parentSessionId,
+        input: resolved.input,
+      });
       machines.set(machine.sessionId, machine);
       bridge.sendMachine(machine);
     }
 
-    const logged = summarizeInspectionEvent(event, seq++);
+    const logged = summarizeInspectionEvent(event, seq++, options.sanitizeEvent);
     log = [logged, ...log].slice(0, maxLogEntries);
     bridge.sendLog(logged);
 
@@ -148,6 +159,7 @@ export function createVisualizerHost(
         context?: unknown;
         status?: string;
         output?: unknown;
+        children?: Record<string, unknown>;
       };
       const sessionId = logged.sessionId;
       const frame = projectFrame(sessionId, snapshot, {
@@ -155,8 +167,14 @@ export function createVisualizerHost(
         previousContext: previousContexts.get(sessionId),
         previousAges: previousContextAges.get(sessionId),
         machine: machines.get(sessionId),
+        sanitizeContext: options.sanitizeContext
+          ? (ctx) =>
+              options.sanitizeContext!(
+                (ctx ?? {}) as MachineContext,
+              ) as unknown
+          : undefined,
       });
-      previousContexts.set(sessionId, snapshot.context);
+      previousContexts.set(sessionId, frame.context);
       if (frame.contextKeyAges) {
         previousContextAges.set(sessionId, frame.contextKeyAges);
       }
@@ -227,6 +245,7 @@ export function createVisualizerHost(
 function summarizeInspectionEvent(
   event: InspectionEvent,
   seq: number,
+  sanitizeEvent?: (event: AnyEventObject) => AnyEventObject,
 ): VizLogEntry {
   const actorRef = event.actorRef as { sessionId?: string };
   const base: VizLogEntry = {
@@ -237,7 +256,10 @@ function summarizeInspectionEvent(
   };
 
   if ('event' in event && event.event) {
-    base.eventType = event.event.type;
+    const scrubbed = sanitizeEvent
+      ? sanitizeEvent(event.event as AnyEventObject)
+      : event.event;
+    base.eventType = scrubbed.type;
   }
   if ('snapshot' in event && event.snapshot) {
     const snapshot = event.snapshot as { value?: unknown };

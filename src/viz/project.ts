@@ -13,6 +13,7 @@ import type {
 import { analyzeContextDeps } from './contextDeps';
 import { computeContextKeyAges } from './contextAges';
 import type {
+  VizActorRefMarker,
   VizBadge,
   VizEvent,
   VizFrame,
@@ -36,17 +37,29 @@ interface LiveStateNode {
   always?: unknown[];
   invoke?: unknown[];
   states?: Record<string, LiveStateNode>;
+  parent?: { id?: string };
+  target?: unknown;
 }
 
 interface MachineActorRef {
   sessionId: string;
   logic?: AnyStateMachine;
+  id?: string;
+  _parent?: { sessionId?: string };
+  options?: { input?: unknown };
   getSnapshot?: () => {
     value?: unknown;
     context?: unknown;
     status?: VizFrame['status'];
     output?: unknown;
   };
+}
+
+export interface ResolvedMachineActor {
+  sessionId: string;
+  logic: AnyStateMachine;
+  parentSessionId?: string;
+  input?: unknown;
 }
 
 function asMachineActorRef(actorRef: unknown): MachineActorRef | null {
@@ -59,19 +72,31 @@ function asMachineActorRef(actorRef: unknown): MachineActorRef | null {
 /** Resolve machine logic from an `@xstate.actor` inspection event. */
 export function machineLogicFromEvent(
   event: InspectionEvent,
-): { sessionId: string; logic: AnyStateMachine } | null {
+): ResolvedMachineActor | null {
   if (event.type !== '@xstate.actor') return null;
   const actorRef = asMachineActorRef(event.actorRef);
   const logic = actorRef?.logic;
   if (!actorRef || !logic || typeof logic.definition === 'undefined') {
     return null;
   }
-  return { sessionId: actorRef.sessionId, logic };
+  const parentSessionId = actorRef._parent?.sessionId;
+  const input = actorRef.options?.input;
+  return {
+    sessionId: actorRef.sessionId,
+    logic,
+    parentSessionId:
+      typeof parentSessionId === 'string' ? parentSessionId : undefined,
+    input,
+  };
 }
 
 export function projectMachine(
   logic: AnyStateMachine,
   sessionId: string,
+  options?: {
+    parentSessionId?: string;
+    input?: unknown;
+  },
 ): VizMachine {
   const rootDef = logic.definition as XStateNodeDefinition<
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -83,6 +108,8 @@ export function projectMachine(
   return {
     sessionId,
     label: rootDef.id || logic.id || sessionId,
+    parentSessionId: options?.parentSessionId,
+    input: options?.input,
     root: projectNode(rootDef, '', liveRoot),
     analysis: {
       contextDeps: analyzeContextDeps(logic),
@@ -97,12 +124,18 @@ export function projectFrame(
     context?: unknown;
     status?: string;
     output?: unknown;
+    children?: Record<string, unknown>;
   },
   options?: {
     eventType?: string;
     previousContext?: unknown;
     previousAges?: Record<string, number>;
     machine?: VizMachine;
+    /**
+     * Optional scrub after actor-ref enrichment (host sanitizeContext).
+     * Receives already-portable context.
+     */
+    sanitizeContext?: (context: unknown) => unknown;
   },
 ): VizFrame {
   const value = snapshot.value;
@@ -111,8 +144,13 @@ export function projectFrame(
     value === undefined || value === null
       ? []
       : activePaths(value as StateValue);
+  const childSessionById = childSessionIndex(snapshot.children);
+  let context = portableizeContext(snapshot.context, childSessionById);
+  if (options?.sanitizeContext && context != null) {
+    context = options.sanitizeContext(context);
+  }
   const contextKeyAges = computeContextKeyAges(
-    snapshot.context,
+    context,
     options?.previousContext,
     options?.previousAges,
   );
@@ -122,7 +160,7 @@ export function projectFrame(
   return {
     sessionId,
     activePaths: paths,
-    context: snapshot.context,
+    context,
     value,
     status,
     output: snapshot.output,
@@ -130,6 +168,86 @@ export function projectFrame(
     contextKeyAges,
     nextEvents,
   };
+}
+
+/** Map child actor id → sessionId from a live snapshot.children bag. */
+function childSessionIndex(
+  children: Record<string, unknown> | undefined,
+): Map<string, string> {
+  const map = new Map<string, string>();
+  if (!children) return map;
+  for (const [id, ref] of Object.entries(children)) {
+    if (ref && typeof ref === 'object' && 'sessionId' in ref) {
+      const sessionId = (ref as { sessionId: unknown }).sessionId;
+      if (typeof sessionId === 'string') map.set(id, sessionId);
+    }
+  }
+  return map;
+}
+
+/**
+ * Replace live ActorRefs with {@link VizActorRefMarker} so sessionId survives
+ * JSON / postMessage. Uses live sessionId when present; falls back to
+ * snapshot.children lookup via `id` / toJSON shape.
+ */
+export function portableizeContext(
+  context: unknown,
+  childSessionById: Map<string, string> = new Map(),
+): unknown {
+  return walkPortable(context, childSessionById, new WeakSet());
+}
+
+function walkPortable(
+  value: unknown,
+  childSessionById: Map<string, string>,
+  seen: WeakSet<object>,
+): unknown {
+  const marker = asActorRefMarker(value, childSessionById);
+  if (marker) return marker;
+  if (value == null || typeof value !== 'object') return value;
+  if (seen.has(value)) return '[Circular]';
+  seen.add(value);
+  if (Array.isArray(value)) {
+    return value.map((item) => walkPortable(item, childSessionById, seen));
+  }
+  const out: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+    out[key] = walkPortable(child, childSessionById, seen);
+  }
+  return out;
+}
+
+function asActorRefMarker(
+  value: unknown,
+  childSessionById: Map<string, string>,
+): VizActorRefMarker | null {
+  if (!value || typeof value !== 'object') return null;
+  const obj = value as Record<string, unknown>;
+
+  if (
+    typeof obj.sessionId === 'string' &&
+    (typeof obj.send === 'function' ||
+      typeof obj.getSnapshot === 'function' ||
+      obj.xstate$$type === 1)
+  ) {
+    const id =
+      typeof obj.id === 'string'
+        ? obj.id
+        : typeof obj.sessionId === 'string'
+          ? obj.sessionId
+          : '?';
+    return { __viz: 'actorRef', sessionId: obj.sessionId, id };
+  }
+
+  // Already-serialized ActorRef shape from toJSON / prior stringify.
+  if (obj.xstate$$type === 1 && typeof obj.id === 'string') {
+    const sessionId = childSessionById.get(obj.id);
+    if (sessionId) {
+      return { __viz: 'actorRef', sessionId, id: obj.id };
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -190,17 +308,24 @@ function projectNode(
   const alwaysTransitions = collectAlwaysTransitions(live);
   const invokes = collectInvokes(def, live);
   const events = collectEvents(def);
+  const history =
+    kind === 'history'
+      ? def.history === 'deep'
+        ? 'deep'
+        : 'shallow'
+      : def.history === 'shallow' || def.history === 'deep'
+        ? def.history
+        : undefined;
+  const historyHighlightIds = historyRestoreTargets(def, live);
   const badges = buildBadges(
     entrySymbols,
     exitSymbols,
     afterTransitions,
     alwaysTransitions,
     invokes,
+    history,
+    historyHighlightIds,
   );
-  const history =
-    def.history === 'shallow' || def.history === 'deep'
-      ? def.history
-      : undefined;
 
   const details: VizNodeDetails = {
     path,
@@ -232,6 +357,8 @@ function buildBadges(
   after: VizTransition[],
   always: VizTransition[],
   invokes: VizInvoke[],
+  history: 'shallow' | 'deep' | undefined,
+  historyHighlightIds: string[],
 ): VizBadge[] {
   const badges: VizBadge[] = [];
   if (entry.length > 0) {
@@ -240,6 +367,19 @@ function buildBadges(
       label: 'entry',
       lines: entry.map(symbolLine),
       highlightIds: [],
+    });
+  }
+  if (history) {
+    badges.push({
+      kind: 'history',
+      label: history === 'deep' ? 'deep' : 'hist',
+      lines: [
+        `${history} history`,
+        historyHighlightIds.length > 0
+          ? `restore → ${historyHighlightIds.map(shortId).join(', ')}`
+          : 'restore → (last configuration)',
+      ],
+      highlightIds: historyHighlightIds,
     });
   }
   if (always.length > 0) {
@@ -277,6 +417,31 @@ function buildBadges(
     });
   }
   return badges;
+}
+
+/**
+ * Static restore targets for history hover: explicit `target` when configured,
+ * otherwise the owning compound parent (runtime restores last config there).
+ */
+function historyRestoreTargets(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  def: XStateNodeDefinition<any, any>,
+  live?: LiveStateNode,
+): string[] {
+  const fromDef = extractTargetIds(
+    (def as { target?: unknown }).target ?? live?.target,
+  );
+  if (fromDef.length > 0) return fromDef;
+  const parentId = live?.parent?.id;
+  if (typeof parentId === 'string') {
+    return [normalizeStateNodeId(parentId)];
+  }
+  return [];
+}
+
+function shortId(id: string): string {
+  const parts = id.split('.');
+  return parts[parts.length - 1] || id;
 }
 
 function invokeBadgeLines(inv: VizInvoke): string[] {

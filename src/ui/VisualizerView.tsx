@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { VisualizerSnapshot } from '../viz';
+import type { VizFrame, VizMachine, VisualizerSnapshot } from '../viz';
 import {
   DEFAULT_SIDE_WIDTH,
   DEFAULT_WATCH_WIDTH,
@@ -173,9 +173,10 @@ export function VisualizerView({
             <h2 className="viz__title">{title}</h2>
             {connection && <StatusPill state={connection} />}
           </div>
-          {machines.length > 1 && (
+          {machines.length > 0 && (
             <ActorSelect
               machines={machines}
+              frames={snapshot.frames}
               selectedSessionId={machine?.sessionId ?? ''}
               onChange={setSelectedSessionId}
             />
@@ -225,6 +226,13 @@ export function VisualizerView({
             {machine
               ? `${machine.label} (${machine.sessionId})`
               : 'Machine structure'}
+            {frame && (
+              <span
+                className={`viz__actor-status viz__actor-status--${frame.status}`}
+              >
+                {frame.status}
+              </span>
+            )}
           </h3>
           <div className="viz__tree-scroll">
             {machine ? (
@@ -262,10 +270,14 @@ export function VisualizerView({
               {JSON.stringify(frame?.value, null, 2)}
             </pre>
           </FoldSection>
+          <FoldSection title="Status / output">
+            <StatusOutputDump frame={frame} machine={machine} />
+          </FoldSection>
           <FoldSection title="Next events">
             <NextEventsPanel
               events={frame?.nextEvents ?? []}
               onHighlightProviders={setHighlightedTargetIds}
+              onEntityHover={onEntityHover}
             />
           </FoldSection>
           <FoldSection title="Context">
@@ -277,6 +289,7 @@ export function VisualizerView({
               onHoverKey={onHoverContextKey}
               assignKeys={entityAssignKeys}
               consumeKeys={entityConsumeKeys}
+              onSelectActor={setSelectedSessionId}
             />
           </FoldSection>
           <FoldSection title="Context deps">
@@ -310,6 +323,52 @@ export function VisualizerView({
   );
 }
 
+function StatusOutputDump({
+  frame,
+  machine,
+}: {
+  frame: VizFrame | undefined;
+  machine: VizMachine | undefined;
+}) {
+  if (!frame && machine?.input === undefined) {
+    return <p className="viz__muted">No frame yet.</p>;
+  }
+  return (
+    <dl className="viz__dump-meta">
+      <div>
+        <dt>status</dt>
+        <dd>
+          <span
+            className={`viz__actor-status viz__actor-status--${frame?.status ?? 'active'}`}
+          >
+            {frame?.status ?? '—'}
+          </span>
+        </dd>
+      </div>
+      {machine?.input !== undefined && (
+        <div>
+          <dt>input</dt>
+          <dd>
+            <pre className="viz__code viz__code--inline">
+              {JSON.stringify(machine.input, null, 2)}
+            </pre>
+          </dd>
+        </div>
+      )}
+      {frame?.status === 'done' || frame?.output !== undefined ? (
+        <div>
+          <dt>output</dt>
+          <dd>
+            <pre className="viz__code viz__code--inline">
+              {JSON.stringify(frame?.output ?? null, null, 2)}
+            </pre>
+          </dd>
+        </div>
+      ) : null}
+    </dl>
+  );
+}
+
 function StatusPill({ state }: { state: ConnectionStatus }) {
   const label =
     state === 'connected'
@@ -330,15 +389,25 @@ function StatusPill({ state }: { state: ConnectionStatus }) {
   );
 }
 
+type ActorOption = {
+  sessionId: string;
+  label: string;
+  depth: number;
+  status: VizFrame['status'];
+};
+
 function ActorSelect({
   machines,
+  frames,
   selectedSessionId,
   onChange,
 }: {
-  machines: VisualizerSnapshot['machines'];
+  machines: VizMachine[];
+  frames: Record<string, VizFrame>;
   selectedSessionId: string;
   onChange: (sessionId: string) => void;
 }) {
+  const options = flattenActorTree(machines, frames);
   return (
     <label className="viz__actor-select">
       <span className="viz__actor-select-label">Actor</span>
@@ -346,14 +415,50 @@ function ActorSelect({
         value={selectedSessionId}
         onChange={(event) => onChange(event.target.value)}
       >
-        {machines.map((m) => (
-          <option key={m.sessionId} value={m.sessionId}>
-            {m.label} ({m.sessionId})
+        {options.map((opt) => (
+          <option key={opt.sessionId} value={opt.sessionId}>
+            {`${'· '.repeat(opt.depth)}${opt.label} (${opt.sessionId}) [${opt.status}]`}
           </option>
         ))}
       </select>
     </label>
   );
+}
+
+/** Shallow parent→child forest from `parentSessionId`, registration order within siblings. */
+function flattenActorTree(
+  machines: VizMachine[],
+  frames: Record<string, VizFrame>,
+): ActorOption[] {
+  const byId = new Map(machines.map((m) => [m.sessionId, m]));
+  const children = new Map<string, VizMachine[]>();
+  const roots: VizMachine[] = [];
+
+  for (const machine of machines) {
+    const parentId = machine.parentSessionId;
+    if (parentId && byId.has(parentId)) {
+      const list = children.get(parentId) ?? [];
+      list.push(machine);
+      children.set(parentId, list);
+    } else {
+      roots.push(machine);
+    }
+  }
+
+  const options: ActorOption[] = [];
+  function walk(machine: VizMachine, depth: number) {
+    options.push({
+      sessionId: machine.sessionId,
+      label: machine.label,
+      depth,
+      status: frames[machine.sessionId]?.status ?? 'active',
+    });
+    for (const child of children.get(machine.sessionId) ?? []) {
+      walk(child, depth + 1);
+    }
+  }
+  for (const root of roots) walk(root, 0);
+  return options;
 }
 
 function AppearanceSettings({

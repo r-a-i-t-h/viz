@@ -1,6 +1,34 @@
 import { assign, fromPromise, setup } from 'xstate';
 
 /**
+ * Spawned child — appears under the demo actor in the registry tree and as a
+ * clickable `worker` context ref.
+ */
+export const workerMachine = setup({
+  types: {
+    context: {} as { tag: string },
+    input: {} as { tag: string },
+    events: {} as { type: 'PING' } | { type: 'FINISH' },
+  },
+}).createMachine({
+  id: 'worker',
+  context: ({ input }) => ({ tag: input?.tag ?? 'anon' }),
+  initial: 'idle',
+  states: {
+    idle: {
+      on: { PING: 'busy' },
+    },
+    busy: {
+      on: { FINISH: 'done' },
+    },
+    done: {
+      type: 'final',
+      output: ({ context }) => ({ tag: context.tag, ok: true }),
+    },
+  },
+});
+
+/**
  * A deliberately non-meaningful demo machine whose only job is to exercise the
  * structural features a visualizer must render:
  *
@@ -9,6 +37,8 @@ import { assign, fromPromise, setup } from 'xstate';
  * - deeper nesting: `running.signal.red` is itself a compound state
  * - entry / exit / after affordances for lifecycle badge overlays
  * - `always` (eventless) gate + `invoke` with onDone/onError
+ * - history state under `running.signal` (RESTORE)
+ * - `spawn` child into `context.worker` on START
  * - parent+child both handle `NUDGE` (next-events multi-provider highlight)
  * - context dep-graph: multi-key assign, named + inline guards, invoke I/O
  *
@@ -23,6 +53,8 @@ export const demoMachine = setup({
       ready: boolean;
       fetchStatus: 'idle' | 'loading' | 'done' | 'error';
       lastResult: string | null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      worker: any;
     },
     events: {} as
       | { type: 'START' }
@@ -37,7 +69,8 @@ export const demoMachine = setup({
       | { type: 'ARM' }
       | { type: 'READY' }
       | { type: 'CHECK' }
-      | { type: 'FETCH' },
+      | { type: 'FETCH' }
+      | { type: 'RESTORE' },
   },
   actions: {
     markIdle: () => {},
@@ -53,6 +86,13 @@ export const demoMachine = setup({
     noteParentNudge: assign({
       label: 'nudged-parent',
     }),
+    spawnWorker: assign({
+      worker: ({ spawn, context }) =>
+        spawn('worker', {
+          id: 'worker',
+          input: { tag: `w-${context.ticks}` },
+        }),
+    }),
   },
   guards: {
     isReady: ({ context }) => context.ready === true,
@@ -63,6 +103,7 @@ export const demoMachine = setup({
         return `ok:${input.label}:${input.ticks}`;
       },
     ),
+    worker: workerMachine,
   },
 }).createMachine({
   id: 'demo',
@@ -73,13 +114,17 @@ export const demoMachine = setup({
     ready: false,
     fetchStatus: 'idle',
     lastResult: null,
+    worker: null,
   },
   states: {
     idle: {
       entry: 'markIdle',
       exit: 'clearIdle',
       on: {
-        START: 'running',
+        START: {
+          target: 'running',
+          actions: 'spawnWorker',
+        },
         DONE: 'done',
         // Flip ready so the always-gate and ARM guard can fire.
         READY: {
@@ -168,6 +213,10 @@ export const demoMachine = setup({
         // Region 2 — a signal that cycles and nests a compound `red` state.
         signal: {
           initial: 'green',
+          on: {
+            // Restore last signal leaf via shallow history.
+            RESTORE: '.hist',
+          },
           states: {
             green: { on: { CYCLE: 'amber' } },
             amber: {
@@ -186,21 +235,25 @@ export const demoMachine = setup({
                 },
               },
             },
+            hist: {
+              type: 'history',
+              history: 'shallow',
+            },
           },
         },
       },
     },
     done: {
       type: 'final',
+      output: ({ context }) => ({
+        ticks: context.ticks,
+        label: context.label,
+      }),
     },
   },
 });
 
-/**
- * A second, self-driving machine so the PoC always has multiple actors — it
- * cycles on `after` delays with no external events, exercising the viz's
- * actor-selection dropdown.
- */
+
 export const blinkerMachine = setup({}).createMachine({
   id: 'blinker',
   initial: 'off',

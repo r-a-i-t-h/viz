@@ -6,6 +6,7 @@ import {
   AlwaysIcon,
   EntryIcon,
   ExitIcon,
+  HistoryIcon,
   InvokeIcon,
 } from './nodeIcons';
 
@@ -15,9 +16,10 @@ const LIFECYCLE_KINDS = new Set([
   'after',
   'always',
   'invoke',
+  'history',
 ]);
 
-/** Entry / after / exit / always / invoke badge row with hover tips. */
+/** Entry / after / exit / always / invoke / history badge row with hover tips. */
 export function NodeLifecycleBadges({
   node,
   align = 'right',
@@ -74,7 +76,9 @@ function BadgeTip({
           ? AfterIcon
           : badge.kind === 'always'
             ? AlwaysIcon
-            : InvokeIcon;
+            : badge.kind === 'history'
+              ? HistoryIcon
+              : InvokeIcon;
 
   const items = tipItemsForBadge(badge, node);
   const entityHover =

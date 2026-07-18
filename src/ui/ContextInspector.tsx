@@ -1,5 +1,9 @@
 import { useState } from 'react';
-import type { ContextDepGraph } from '../viz';
+import {
+  isVizActorRefMarker,
+  type ContextDepGraph,
+  type VizActorRefMarker,
+} from '../viz';
 import { stateIdsForContextKey } from './contextDepHighlights';
 
 /** Fade highlight window: age 0 is hottest; ages beyond this look idle. */
@@ -10,6 +14,7 @@ type ContextSort = 'name' | 'age';
 /**
  * Top-level context keys as hover targets for dep-graph highlight.
  * Nested values stay JSON-stringified; only root keys are interactive.
+ * Actor-ref markers link to the registry via click.
  */
 export function ContextInspector({
   context,
@@ -19,6 +24,7 @@ export function ContextInspector({
   onHoverKey,
   assignKeys,
   consumeKeys,
+  onSelectActor,
 }: {
   context: unknown;
   contextDeps?: ContextDepGraph;
@@ -29,6 +35,8 @@ export function ContextInspector({
   /** Keys highlighted from hovering an action / guard / invoke. */
   assignKeys?: Set<string>;
   consumeKeys?: Set<string>;
+  /** Select a spawned/invoked actor from a context actor-ref marker. */
+  onSelectActor?: (sessionId: string) => void;
 }) {
   const [sortBy, setSortBy] = useState<ContextSort>('name');
 
@@ -103,6 +111,7 @@ export function ContextInspector({
           const isAssign = assignKeys?.has(key) ?? false;
           const isConsume = consumeKeys?.has(key) ?? false;
           const age = contextKeyAges?.[key];
+          const actorRef = isVizActorRefMarker(value) ? value : null;
           const { assignIds, consumeIds } = stateIdsForContextKey(
             contextDeps,
             key,
@@ -121,6 +130,7 @@ export function ContextInspector({
                   active ? 'viz__context-key--active' : '',
                   isAssign ? 'viz__context-key--assign' : '',
                   isConsume ? 'viz__context-key--consume' : '',
+                  actorRef ? 'viz__context-key--actor' : '',
                   ageClass,
                 ]
                   .filter(Boolean)
@@ -129,15 +139,24 @@ export function ContextInspector({
                 onMouseLeave={() => onHoverKey(null)}
                 onFocus={() => onHoverKey(key)}
                 onBlur={() => onHoverKey(null)}
+                onClick={() => {
+                  if (actorRef && onSelectActor) {
+                    onSelectActor(actorRef.sessionId);
+                  }
+                }}
                 title={
-                  age != null
-                    ? `${assignIds.size} assign · ${consumeIds.size} consume · changed ${age} event${age === 1 ? '' : 's'} ago`
-                    : `${assignIds.size} assign · ${consumeIds.size} consume`
+                  actorRef
+                    ? actorRefTitle(actorRef, age, assignIds.size, consumeIds.size)
+                    : age != null
+                      ? `${assignIds.size} assign · ${consumeIds.size} consume · changed ${age} event${age === 1 ? '' : 's'} ago`
+                      : `${assignIds.size} assign · ${consumeIds.size} consume`
                 }
               >
                 <span className="viz__context-key-name">{key}</span>
                 <span className="viz__context-key-value">
-                  {JSON.stringify(value)}
+                  {actorRef
+                    ? formatActorRef(actorRef)
+                    : JSON.stringify(value)}
                 </span>
                 {age != null && (
                   <span
@@ -154,4 +173,22 @@ export function ContextInspector({
       </ul>
     </div>
   );
+}
+
+function formatActorRef(ref: VizActorRefMarker): string {
+  return `actor:${ref.id} (${ref.sessionId})`;
+}
+
+function actorRefTitle(
+  ref: VizActorRefMarker,
+  age: number | undefined,
+  assignCount: number,
+  consumeCount: number,
+): string {
+  const base = `Select actor ${ref.id} · ${ref.sessionId}`;
+  const deps = `${assignCount} assign · ${consumeCount} consume`;
+  if (age != null) {
+    return `${base} · ${deps} · changed ${age} event${age === 1 ? '' : 's'} ago`;
+  }
+  return `${base} · ${deps}`;
 }

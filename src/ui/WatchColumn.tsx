@@ -4,7 +4,7 @@ import { depEntityId } from './contextDepHighlights';
 import { DisclosureChevron } from './DisclosureChevron';
 import { findNodeByPath } from './findNodeByPath';
 import { NodeLifecycleBadges } from './NodeLifecycleBadges';
-import { FinalStateIcon } from './nodeIcons';
+import { FinalStateIcon, HistoryStateIcon } from './nodeIcons';
 
 export function WatchColumn({
   root,
@@ -112,6 +112,7 @@ function WatchNode({
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const isFinal = node.kind === 'final';
+  const isHistory = node.kind === 'history';
   const afterItems = node.details.after.map((t) => t.line);
   const afterHighlightIds = node.details.after.flatMap((t) => t.targetIds);
   const alwaysItems = node.details.always.map((t) => t.line);
@@ -129,6 +130,7 @@ function WatchNode({
         `node--${node.kind}`,
         isActive ? 'node--active' : '',
         isFinal ? 'node--final' : '',
+        isHistory ? 'node--history' : '',
         detailsOpen ? 'node--watch-open' : '',
         isTransitionTarget ? 'node--transition-target' : '',
         isContextAssign ? 'node--context-assign' : '',
@@ -205,6 +207,19 @@ function WatchNode({
           <span className="node__final-icon" title="final">
             <FinalStateIcon />
             <span className="node__badge-label">final</span>
+          </span>
+        )}
+        {isHistory && (
+          <span
+            className="node__history-icon"
+            title={
+              node.details.history === 'deep' ? 'deep history' : 'shallow history'
+            }
+          >
+            <HistoryStateIcon />
+            <span className="node__badge-label">
+              {node.details.history === 'deep' ? 'deep' : 'hist'}
+            </span>
           </span>
         )}
         <button

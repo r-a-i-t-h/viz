@@ -21,11 +21,13 @@ export {
   machineLogicFromEvent,
   projectFrame,
   projectMachine,
+  portableizeContext,
   activePaths,
   normalizeStateNodeId,
 } from './project';
 
 export type {
+  VizActorRefMarker,
   VizAnalysis,
   VizBadge,
   VizBadgeKind,
@@ -35,6 +37,7 @@ export type {
   VizLogEntry,
   VizMachine,
   VizNextEvent,
+  VizNextEventCandidate,
   VizNode,
   VizNodeDetails,
   VizNodeKind,
@@ -42,6 +45,7 @@ export type {
   VizTransition,
 } from './model';
 
+export { isVizActorRefMarker } from './model';
 export { collectNextEvents } from './nextEvents';
 export { computeContextKeyAges } from './contextAges';
 

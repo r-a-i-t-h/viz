@@ -56,9 +56,9 @@ Badges should make it obvious that a state may transition for reasons beyond nam
 
 - [x] **`always` (eventless)** — distinct badge; hover list + target highlight (same pattern as `after`)
 - [x] **`invoke` + `onDone` / `onError`** — badge on the state (invoke present); **`onDone` especially** as a clear non-`on` exit path; hover: src id, id, input summary, done/error targets + highlight
-- [ ] **History states** (`shallow` / `deep`) — dedicated glyph; restore target on hover when known
+- [x] **History states** (`shallow` / `deep`) — dedicated glyph; restore target on hover when known
 - [ ] **Named delays** — extend existing `after` hover with `setup().delays` names when present (badge already signals delayed exit)
-- [x] **Demos** — `always`; `invoke` (promise) with done/error (`gate` + `fetching`); history state still open
+- [x] **Demos** — `always`; `invoke` (promise) with done/error (`gate` + `fetching`); history (`running.signal.hist` + RESTORE); spawn (`worker` on START)
 
 Already in this class: entry / exit / after badges.
 
@@ -67,9 +67,9 @@ Already in this class: entry / exit / after badges.
 ## Hover + highlight debugging
 
 - [x] **Next events (enabled / handled set)** — list events the active configuration can handle, including those inherited via ancestor bubbling (easy to miss when reading leaf-only `on`). Hover an event → highlight providing state(s); multiple providers possible when guards split handling across nodes
-- [ ] **Transition order / cond cascade** — on hover for an event: ordered candidates (“1. guard → … 2. else → …”), not graph layout
+- [x] **Transition order / cond cascade** — on hover for an event: ordered candidates (“1. guard → … 2. else → …”), not graph layout
 - [x] **Context change fade** — highlight context keys that just changed; fade intensity over subsequent events so recency is visible (legacy viz behavior)
-- [ ] **`spawn` ↔ sessionId** — link spawned actors in context to the actor registry (highlight / select)
+- [x] **`spawn` ↔ sessionId** — link spawned actors in context to the actor registry (highlight / select)
 - [ ] **Wildcard / partial events** — annotate in hover only (`*`, `foo.*`)
 - [ ] **`reenter` / internal vs empty target** — clarify in hover tokens only
 
@@ -79,12 +79,12 @@ Already in this class: entry / exit / after badges.
 
 Structure and “you are here” across sessions — not a full actor debugger.
 
-- [ ] **Actor status** — active / done / error on registry entries
+- [x] **Actor status** — active / done / error on registry entries
 - [ ] **Non-machine actors** — promise / callback / observable / transition actors in the registry (even without a state tree)
-- [ ] **Parent / child actor tree** — shallow hierarchy once invoke/spawn badges exist (prefer over only a flat select)
-- [ ] **Final `output`** — when snapshot status is `done`, surface beside / instead of only context in the dump
-- [ ] **Machine / actor `input`** — show at registration (and in invoke hover); not graph chrome
-- [ ] **Demo** — `spawn` child
+- [x] **Parent / child actor tree** — shallow hierarchy once invoke/spawn badges exist (prefer over only a flat select)
+- [x] **Final `output`** — when snapshot status is `done`, surface beside / instead of only context in the dump
+- [x] **Machine / actor `input`** — show at registration (and in invoke hover); not graph chrome
+- [x] **Demo** — `spawn` child
 
 ---
 
@@ -92,7 +92,7 @@ Structure and “you are here” across sessions — not a full actor debugger.
 
 Silent host-side options; no tree chrome.
 
-- [ ] **Sanitize hooks** — host API options akin to Stately’s `sanitizeContext` / `sanitizeEvent` before popup/`postMessage` relay (scrub PII/secrets from dumps)
+- [x] **Sanitize hooks** — host API options akin to Stately’s `sanitizeContext` / `sanitizeEvent` before popup/`postMessage` relay (scrub PII/secrets from dumps)
 - [ ] **Builtin vs authored actions** — keep filtering injected `xstate.*` noise; surface intentional builtins in hover lists
 
 ---

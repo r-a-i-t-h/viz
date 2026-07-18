@@ -30,6 +30,7 @@ const SEND_BUTTONS: { label: string; event: ActorEvent }[] = [
   { label: 'RESUME', event: { type: 'RESUME' } },
   { label: 'CYCLE', event: { type: 'CYCLE' } },
   { label: 'TOGGLE_MODE', event: { type: 'TOGGLE_MODE' } },
+  { label: 'RESTORE', event: { type: 'RESTORE' } },
   { label: 'STOP', event: { type: 'STOP' } },
   { label: 'DONE', event: { type: 'DONE' } },
 ];

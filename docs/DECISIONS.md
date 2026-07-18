@@ -1,18 +1,19 @@
-# Findings & decisions
+## 2026-07-18 — Actors, cascade, history, sanitize
 
-A running log of things we learn and choices we make in this project. Newest entries first.
+**Context:** Highest-value remaining features after v4-equivalent coverage: multi-actor legibility, dump completeness, cond cascade, history glyph, host sanitize.
 
-Format for each entry:
+**Finding/Decision:**
+- Capture `actorRef._parent?.sessionId` and `options.input` on `@xstate.actor`; store on `VizMachine.parentSessionId` / `input`. Actor select is a shallow indented forest with per-frame status.
+- Before portable frames, walk live context (+ `snapshot.children` id→sessionId) and replace ActorRefs with `{ __viz: 'actorRef', sessionId, id }` so spawn links survive JSON; Context panel click selects that session.
+- `VizFrame.status` / `output` and machine `input` surface in a Status/output dump panel.
+- `collectNextEvents` emits ordered `candidates` + `highlightIds` (providers ∪ targets); Next events hover shows numbered cond cascade.
+- History nodes emit a `history` badge + H glyph; hover highlights explicit target or owning parent.
+- Host options `sanitizeContext` / `sanitizeEvent` (Stately-shaped): context sanitize runs after actor-ref enrichment; event sanitize applies before log `eventType`.
 
-```
-## YYYY-MM-DD — Short title
-
-**Context:** why this came up
-**Finding/Decision:** what we learned or chose
-**Rationale:** why (and alternatives considered, if any)
-```
+**Rationale:** Multi-actor shape is the biggest usefulness jump; dump/cascade/history are cheap completeness; sanitize is embedding hygiene without tree chrome.
 
 ---
+
 
 ## 2026-07-18 — Always / invoke badges from live StateNodes
 

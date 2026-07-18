@@ -9,10 +9,33 @@ export interface VizMachine {
   sessionId: string;
   /** Display name (machine id or fallback). */
   label: string;
+  /** Parent actor session when this machine was invoked/spawned. */
+  parentSessionId?: string;
+  /** Actor input captured at registration (portable / sanitized). */
+  input?: unknown;
   /** Machine root as a tree. */
   root: VizNode;
   /** Static analyses computed against live logic on the host. */
   analysis: VizAnalysis;
+}
+
+/**
+ * Portable stand-in for a live ActorRef in scrubbed context.
+ * Host replaces refs before postMessage so sessionId survives JSON.
+ */
+export interface VizActorRefMarker {
+  __viz: 'actorRef';
+  sessionId: string;
+  id: string;
+}
+
+export function isVizActorRefMarker(value: unknown): value is VizActorRefMarker {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    (value as VizActorRefMarker).__viz === 'actorRef' &&
+    typeof (value as VizActorRefMarker).sessionId === 'string'
+  );
 }
 
 export interface VizNode {
@@ -121,11 +144,25 @@ export interface VizAnalysis {
   contextDeps: ContextDepGraph;
 }
 
+/** Ordered transition candidate for next-events / cond cascade. */
+export interface VizNextEventCandidate {
+  providerId: string;
+  targetIds: string[];
+  guard?: VizSymbol;
+  actions: VizSymbol[];
+  /** Preformatted one-line summary (`1.` prefix added in UI). */
+  line: string;
+}
+
 /** An event the active configuration can handle, with providing state ids. */
 export interface VizNextEvent {
   type: string;
   /** State node ids that declare a handler (including active ancestors). */
   providerIds: string[];
+  /** Guard cascade across providers (definition order within each provider). */
+  candidates: VizNextEventCandidate[];
+  /** Providers + candidate targets — for hover highlight. */
+  highlightIds: string[];
 }
 
 /** Runtime frame — projected from an inspection snapshot. */

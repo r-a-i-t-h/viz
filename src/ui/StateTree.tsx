@@ -6,7 +6,11 @@ import type { VizEvent, VizNode } from '../viz';
 import { depEntityId } from './contextDepHighlights';
 import { HoverTip, type HoverTipItem } from './HoverTip';
 import { NodeLifecycleBadges } from './NodeLifecycleBadges';
-import { FinalStateIcon, InitialArrowIcon } from './nodeIcons';
+import {
+  FinalStateIcon,
+  HistoryStateIcon,
+  InitialArrowIcon,
+} from './nodeIcons';
 import { DEFAULT_ZOOM_RADIUS, isZoomLarge } from './zoom';
 
 interface StateTreeProps {
@@ -103,6 +107,7 @@ function StateTreeNode({
   const isActive = path === '' || activePaths.has(path);
   const childLayout = node.layout === 'none' ? 'sequential' : node.layout;
   const isFinal = node.kind === 'final';
+  const isHistory = node.kind === 'history';
   const initialChildIds = new Set(node.initialChildIds);
   const zoomLarge = [...zoomAnchors].some((anchor) =>
     isZoomLarge(path, anchor, zoomRadius),
@@ -140,6 +145,7 @@ function StateTreeNode({
         isActive ? 'node--active' : '',
         isInitial ? 'node--initial' : '',
         isFinal ? 'node--final' : '',
+        isHistory ? 'node--history' : '',
         zoomAnchors.has(path) ? 'node--zoom-focus' : '',
         isWatched ? 'node--watched' : '',
         isTransitionTarget ? 'node--transition-target' : '',
@@ -174,6 +180,19 @@ function StateTreeNode({
           <span className="node__final-icon" title="final">
             <FinalStateIcon />
             <span className="node__badge-label">final</span>
+          </span>
+        )}
+        {isHistory && (
+          <span
+            className="node__history-icon"
+            title={
+              node.details.history === 'deep' ? 'deep history' : 'shallow history'
+            }
+          >
+            <HistoryStateIcon />
+            <span className="node__badge-label">
+              {node.details.history === 'deep' ? 'deep' : 'hist'}
+            </span>
           </span>
         )}
         <span className="node__key">{node.key}</span>
@@ -241,12 +260,13 @@ function StateTreeNode({
   );
 }
 
-/** Tip rows: target summary, then each guard/action as its own entity. */
+/** Tip rows: numbered cond cascade, then each guard/action as its own entity. */
 function eventTipItems(ev: VizEvent): HoverTipItem[] {
   const items: HoverTipItem[] = [];
-  for (const transition of ev.transitions) {
-    if (transition.guard == null && transition.actions.length === 0) continue;
-    items.push({ label: transition.line.split(' · ')[0] ?? transition.line });
+  ev.transitions.forEach((transition, index) => {
+    items.push({
+      label: `${index + 1}. ${transition.line.split(' · ')[0] ?? transition.line}`,
+    });
     if (transition.guard) {
       items.push({
         label: `if ${transition.guard.name}`,
@@ -259,7 +279,7 @@ function eventTipItems(ev: VizEvent): HoverTipItem[] {
         entityId: depEntityId(action) ?? undefined,
       });
     }
-  }
+  });
   return items;
 }
 

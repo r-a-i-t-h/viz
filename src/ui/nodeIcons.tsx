@@ -41,6 +41,33 @@ export function FinalStateIcon() {
   );
 }
 
+/** History-state glyph: ring with H (shallow/deep distinguished via badge). */
+export function HistoryStateIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+      <circle
+        cx="8"
+        cy="8"
+        r="6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <text
+        x="8"
+        y="11"
+        textAnchor="middle"
+        fontSize="8"
+        fontWeight="700"
+        fill="currentColor"
+        fontFamily="ui-sans-serif, system-ui, sans-serif"
+      >
+        H
+      </text>
+    </svg>
+  );
+}
+
 export function EntryIcon() {
   return (
     <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
@@ -101,6 +128,33 @@ export function InvokeIcon() {
         d="M3 3.5h6.5v3H11V5l3 3-3 3V9.5H9.5v3H3v-9zm1.5 1.5v6h4V5h-4z"
         fill="currentColor"
       />
+    </svg>
+  );
+}
+
+/** History badge glyph (compact). */
+export function HistoryIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+      <circle
+        cx="8"
+        cy="8"
+        r="5.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <text
+        x="8"
+        y="11"
+        textAnchor="middle"
+        fontSize="7.5"
+        fontWeight="700"
+        fill="currentColor"
+        fontFamily="ui-sans-serif, system-ui, sans-serif"
+      >
+        H
+      </text>
     </svg>
   );
 }

@@ -5,7 +5,7 @@
 
 **Code:** shared types in [`src/viz/model.ts`](../src/viz/model.ts); projector in [`src/viz/project.ts`](../src/viz/project.ts); wire in [`src/viz/bridge/protocol.ts`](../src/viz/bridge/protocol.ts).
 
-Deferred until TODO items land (projector emits empty slots today): history glyph richness, `byId` index.
+Deferred until TODO items land (projector emits empty slots today): `byId` index.
 
 ---
 
@@ -117,6 +117,10 @@ interface VizMachine {
   sessionId: string;
   /** Display name (machine id or fallback). */
   label: string;
+  /** Parent actor session when invoked/spawned. */
+  parentSessionId?: string;
+  /** Actor input at registration. */
+  input?: unknown;
   /** Machine root as a tree. */
   root: VizNode;
   /**
@@ -265,15 +269,9 @@ interface VizFrame {
 }
 ```
 
-Optional later (still host-projected):
+Optional later (still host-projected): —
 
-```ts
-interface VizFrameExtras {
-  /** Events the active configuration can handle + providing node ids. */
-  nextEvents?: Array<{ type: string; providerIds: string[] }>;
-}
-```
-
+`nextEvents` now includes ordered `candidates` (cond cascade) and `highlightIds` (providers ∪ targets). See `VizNextEvent` in `src/viz/model.ts`.
 ---
 
 ## Schema — registry (multi-actor)
