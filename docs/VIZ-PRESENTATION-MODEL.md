@@ -1,7 +1,11 @@
-# VizPresentationModel — wire schema sketch
+# VizPresentationModel — wire schema
 
-**Status:** design sketch (2026-07-18). Not yet implemented.  
+**Status:** core implemented (2026-07-18).  
 **Related:** [`INSPECT-V4-VS-V5.md`](./INSPECT-V4-VS-V5.md), [`ARCHITECTURE.md`](./ARCHITECTURE.md), [`TODO.md`](./TODO.md).
+
+**Code:** shared types in [`src/viz/model.ts`](../src/viz/model.ts); projector in [`src/viz/project.ts`](../src/viz/project.ts); wire in [`src/viz/bridge/protocol.ts`](../src/viz/bridge/protocol.ts).
+
+Deferred until TODO items land (projector emits empty slots today): `always` / `invoke` badges, history glyph richness, `VizFrame.contextChangedKeys`, `byId` index.
 
 ---
 

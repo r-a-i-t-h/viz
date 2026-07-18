@@ -14,6 +14,16 @@ Format for each entry:
 
 ---
 
+## 2026-07-18 — Host-side projection to shared Viz model
+
+**Context:** Avoid popup duck-typing of portable XState JSON (`on`, `xstate.after`, homemade `StateNodeDefinition`) so a future XState reshape fails at **build time in the projector**, not as silent missing badges.
+
+**Decision:** Implemented. Terminology: **inspection** = XState inspect stream; **projection** = `projectMachine` / `projectFrame` over live `logic`; **viz model** = shared `Viz*` types. Host stores/sends `VizMachine` / `VizFrame` (`@viz.machine` / `@viz.frame`). UI consumes only `VizNode` badges/events/details. Removed `inspection.ts` mirror, `nodeDetails.ts`, `lifecycleBadges.ts`.
+
+**Rationale:** One XState-facing module; iframe and popup share TS types for create/consume of the viz model over `postMessage`.
+
+---
+
 ## 2026-07-18 — Sketch VizPresentationModel (typed host → portable viz)
 
 **Context:** Clarifying whether moving interpretation into the iframe helps us use XState’s types so the popup need not reinvent states/transitions/actions/guards; and sketching the wire schema for Salesforce hidden-iframe → popup.

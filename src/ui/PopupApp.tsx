@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import {
   connectPopupReceiver,
-  type CapturedMachine,
-  type LoggedEvent,
+  type VizLogEntry,
+  type VizMachine,
   type VisualizerSnapshot,
 } from '../viz';
 import {
@@ -12,14 +12,14 @@ import {
 import './visualizer.css';
 
 /**
- * Popup page — receives portable payloads via postMessage and renders with the
- * optional React visualizer UI.
+ * Popup page — receives projected Viz* payloads via postMessage and renders
+ * with the optional React visualizer UI.
  */
 export default function PopupApp() {
   const [connection, setConnection] = useState<ConnectionStatus>('waiting');
   const [snapshot, setSnapshot] = useState<VisualizerSnapshot>({
     machines: [],
-    actorStates: {},
+    frames: {},
     log: [],
     inlineVisible: false,
     popupStatus: 'idle',
@@ -36,7 +36,7 @@ export default function PopupApp() {
         case '@viz.machine':
           setConnection('connected');
           setSnapshot((prev) => {
-            const machine = message.payload as CapturedMachine;
+            const machine = message.payload as VizMachine;
             const existing = prev.machines.findIndex(
               (m) => m.sessionId === machine.sessionId,
             );
@@ -47,17 +47,13 @@ export default function PopupApp() {
             return { ...prev, machines, popupStatus: 'connected' };
           });
           break;
-        case '@viz.snapshot':
+        case '@viz.frame':
           setConnection('connected');
           setSnapshot((prev) => ({
             ...prev,
-            actorStates: {
-              ...prev.actorStates,
-              [message.payload.sessionId]: {
-                value: message.payload.value,
-                context: message.payload.context,
-                eventType: message.payload.eventType,
-              },
+            frames: {
+              ...prev.frames,
+              [message.payload.sessionId]: message.payload,
             },
             popupStatus: 'connected',
           }));
@@ -66,7 +62,7 @@ export default function PopupApp() {
           setConnection('connected');
           setSnapshot((prev) => ({
             ...prev,
-            log: [message.payload as LoggedEvent, ...prev.log].slice(0, 40),
+            log: [message.payload as VizLogEntry, ...prev.log].slice(0, 40),
             popupStatus: 'connected',
           }));
           break;

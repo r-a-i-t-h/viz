@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { StateValue } from 'xstate';
-import { activePaths, type VisualizerSnapshot } from '../viz';
+import type { VisualizerSnapshot } from '../viz';
 import {
   DEFAULT_SIDE_WIDTH,
   DEFAULT_WATCH_WIDTH,
@@ -65,14 +64,9 @@ export function VisualizerView({
   const { machines } = snapshot;
   const machine =
     machines.find((m) => m.sessionId === selectedSessionId) ?? machines[0];
-  const actorState = machine
-    ? snapshot.actorStates[machine.sessionId]
-    : undefined;
+  const frame = machine ? snapshot.frames[machine.sessionId] : undefined;
 
-  const active =
-    actorState?.value === undefined
-      ? new Set<string>()
-      : new Set(activePaths(actorState.value as StateValue));
+  const active = new Set(frame?.activePaths ?? []);
 
   const sessionId = machine?.sessionId ?? '';
   const watchedPaths = watchedBySession[sessionId] ?? [];
@@ -80,7 +74,10 @@ export function VisualizerView({
 
   const { assignIds: contextAssignIds, consumeIds: contextConsumeIds } =
     hoveredContextKey
-      ? stateIdsForContextKey(machine?.contextDeps, hoveredContextKey)
+      ? stateIdsForContextKey(
+          machine?.analysis.contextDeps,
+          hoveredContextKey,
+        )
       : { assignIds: new Set<string>(), consumeIds: new Set<string>() };
 
   const toggleZoom = useCallback((path: string, exclusive: boolean) => {
@@ -186,7 +183,7 @@ export function VisualizerView({
         >
           {machine ? (
             <WatchColumn
-              root={machine.definition}
+              root={machine.root}
               watchedPaths={watchedPaths}
               activePaths={active}
               showLifecycleBadges={showLifecycleBadges}
@@ -207,13 +204,13 @@ export function VisualizerView({
         <section className="viz__panel viz__panel--tree">
           <h3>
             {machine
-              ? `${machine.definition.id} (${machine.sessionId})`
+              ? `${machine.label} (${machine.sessionId})`
               : 'Machine structure'}
           </h3>
           <div className="viz__tree-scroll">
             {machine ? (
               <StateTree
-                node={machine.definition}
+                node={machine.root}
                 activePaths={active}
                 zoomRadius={zoomRadius}
                 showLifecycleBadges={showLifecycleBadges}
@@ -242,20 +239,20 @@ export function VisualizerView({
         >
           <FoldSection title="Current state">
             <pre className="viz__code">
-              {JSON.stringify(actorState?.value, null, 2)}
+              {JSON.stringify(frame?.value, null, 2)}
             </pre>
           </FoldSection>
           <FoldSection title="Context">
             <ContextInspector
-              context={actorState?.context}
-              contextDeps={machine?.contextDeps}
+              context={frame?.context}
+              contextDeps={machine?.analysis.contextDeps}
               hoveredKey={hoveredContextKey}
               onHoverKey={setHoveredContextKey}
             />
           </FoldSection>
           <FoldSection title="Context deps">
             <pre className="viz__code">
-              {JSON.stringify(machine?.contextDeps, null, 2)}
+              {JSON.stringify(machine?.analysis.contextDeps, null, 2)}
             </pre>
           </FoldSection>
           <FoldSection title="Event log">
@@ -322,7 +319,7 @@ function ActorSelect({
       >
         {machines.map((m) => (
           <option key={m.sessionId} value={m.sessionId}>
-            {m.definition.id} ({m.sessionId})
+            {m.label} ({m.sessionId})
           </option>
         ))}
       </select>

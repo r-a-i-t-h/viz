@@ -1,15 +1,15 @@
-import type { StateNodeDefinition } from '../viz';
+import type { VizNode } from '../viz';
 
-/** Resolve a dot-path (`""` = root, `"a.b"` = nested) against a definition tree. */
+/** Resolve a dot-path (`""` = root, `"a.b"` = nested) against a VizNode tree. */
 export function findNodeByPath(
-  root: StateNodeDefinition,
+  root: VizNode,
   path: string,
-): StateNodeDefinition | null {
+): VizNode | null {
   if (path === '') return root;
-
-  let current: StateNodeDefinition = root;
-  for (const key of path.split('.')) {
-    const next = current.states?.[key];
+  const parts = path.split('.');
+  let current: VizNode = root;
+  for (const part of parts) {
+    const next = current.children.find((child) => child.key === part);
     if (!next) return null;
     current = next;
   }

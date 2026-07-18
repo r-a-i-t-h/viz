@@ -23,7 +23,7 @@ export function connectPopupReceiver(onMessage: PopupMessageHandler): () => void
     const data = event.data;
     if (
       data.type === '@viz.machine' ||
-      data.type === '@viz.snapshot' ||
+      data.type === '@viz.frame' ||
       data.type === '@viz.log' ||
       data.type === '@viz.closed'
     ) {

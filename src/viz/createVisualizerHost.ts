@@ -1,11 +1,11 @@
 import type { InspectionEvent } from 'xstate';
 import { HostBridge, type HostBridgeStatus } from './bridge/hostBridge';
+import type { VizFrame, VizLogEntry, VizMachine } from './model';
 import {
-  captureMachine,
-  summarizeEvent,
-  type CapturedMachine,
-  type LoggedEvent,
-} from './inspection';
+  machineLogicFromEvent,
+  projectFrame,
+  projectMachine,
+} from './project';
 
 export type { HostBridgeStatus };
 
@@ -19,16 +19,10 @@ export interface VisualizerHostOptions {
   maxLogEntries?: number;
 }
 
-/** Latest observed state for one actor session. */
-export interface ActorStateData {
-  value: unknown;
-  context: unknown;
-  eventType?: string;
-}
-
 /**
  * Portable snapshot of everything a visualizer UI needs.
  * Framework-agnostic — React (or anything else) can subscribe and render.
+ * Machines and frames are already projected (Viz*), not raw XState shapes.
  */
 export interface VisualizerSnapshot {
   /**
@@ -36,10 +30,10 @@ export interface VisualizerSnapshot {
    * Each `@xstate.actor` inspection event adds one; a UI with more than one
    * should offer a selector.
    */
-  machines: CapturedMachine[];
-  /** Latest state per sessionId. */
-  actorStates: Record<string, ActorStateData>;
-  log: LoggedEvent[];
+  machines: VizMachine[];
+  /** Latest projected frame per sessionId. */
+  frames: Record<string, VizFrame>;
+  log: VizLogEntry[];
   /** Whether an in-page visualizer surface should be shown (caller decides how). */
   inlineVisible: boolean;
   popupStatus: HostBridgeStatus;
@@ -70,7 +64,7 @@ export type VisualizerListener = (snapshot: VisualizerSnapshot) => void;
 export interface VisualizerHost {
   /**
    * Pass to `createActor(machine, { inspect: host.inspect })`.
-   * Every new machine actor (root or spawned/invoked) is captured from its
+   * Every new machine actor (root or spawned/invoked) is projected from its
    * `@xstate.actor` event and forwarded to the popup / subscribers.
    */
   readonly inspect: (event: InspectionEvent) => void;
@@ -109,9 +103,9 @@ export function createVisualizerHost(
   const maxLogEntries = options.maxLogEntries ?? 100;
   const listeners = new Set<VisualizerListener>();
 
-  const machines = new Map<string, CapturedMachine>();
-  const actorStates = new Map<string, ActorStateData>();
-  let log: LoggedEvent[] = [];
+  const machines = new Map<string, VizMachine>();
+  const frames = new Map<string, VizFrame>();
+  let log: VizLogEntry[] = [];
   let inlineVisible = false;
   let seq = 0;
 
@@ -128,22 +122,21 @@ export function createVisualizerHost(
 
   const getSnapshot = (): VisualizerSnapshot => ({
     machines: [...machines.values()],
-    actorStates: Object.fromEntries(actorStates),
+    frames: Object.fromEntries(frames),
     log,
     inlineVisible,
     popupStatus: bridge.getStatus(),
   });
 
   const inspect = (event: InspectionEvent) => {
-    // Every @xstate.actor registration with machine logic is captured and
-    // forwarded — root actors and spawned/invoked children alike.
-    const captured = captureMachine(event);
-    if (captured) {
-      machines.set(captured.sessionId, captured);
-      bridge.sendMachine(captured);
+    const resolved = machineLogicFromEvent(event);
+    if (resolved) {
+      const machine = projectMachine(resolved.logic, resolved.sessionId);
+      machines.set(machine.sessionId, machine);
+      bridge.sendMachine(machine);
     }
 
-    const logged = summarizeEvent(event, seq++);
+    const logged = summarizeInspectionEvent(event, seq++);
     log = [logged, ...log].slice(0, maxLogEntries);
     bridge.sendLog(logged);
 
@@ -151,19 +144,16 @@ export function createVisualizerHost(
       const snapshot = event.snapshot as {
         value?: unknown;
         context?: unknown;
+        status?: string;
+        output?: unknown;
       };
-      const state: ActorStateData = {
-        value: snapshot.value,
-        context: snapshot.context,
-        eventType: logged.eventType,
-      };
-      actorStates.set(logged.sessionId, state);
-      bridge.sendSnapshot({
-        sessionId: logged.sessionId,
-        value: snapshot.value,
-        context: snapshot.context,
-        eventType: logged.eventType,
-      });
+      const frame = projectFrame(
+        logged.sessionId,
+        snapshot,
+        logged.eventType,
+      );
+      frames.set(frame.sessionId, frame);
+      bridge.sendFrame(frame);
     }
 
     emit();
@@ -179,13 +169,11 @@ export function createVisualizerHost(
     },
 
     showInline() {
-      if (inlineVisible) return;
       inlineVisible = true;
       emit();
     },
 
     hideInline() {
-      if (!inlineVisible) return;
       inlineVisible = false;
       emit();
     },
@@ -215,10 +203,36 @@ export function createVisualizerHost(
     },
 
     dispose() {
-      listeners.clear();
       bridge.dispose();
+      listeners.clear();
+      machines.clear();
+      frames.clear();
+      log = [];
     },
   };
 
   return host;
+}
+
+function summarizeInspectionEvent(
+  event: InspectionEvent,
+  seq: number,
+): VizLogEntry {
+  const actorRef = event.actorRef as { sessionId?: string };
+  const base: VizLogEntry = {
+    seq,
+    type: event.type,
+    sessionId: actorRef?.sessionId ?? '(unknown)',
+    at: Date.now(),
+  };
+
+  if ('event' in event && event.event) {
+    base.eventType = event.event.type;
+  }
+  if ('snapshot' in event && event.snapshot) {
+    const snapshot = event.snapshot as { value?: unknown };
+    base.value = snapshot.value;
+  }
+
+  return base;
 }

@@ -12,18 +12,19 @@ Priorities, in order:
 
 **Avoid:** first-class chrome for every guard/action/meta detail; drawing all transition linkages by default; turning the UI into a step debugger or remote control surface.
 
-Capture still happens via raw `inspect` + `actorRef.logic.definition` — not `@statelyai/inspect` traversal helpers. New features should extend that local interrogation layer (`src/viz/inspection.ts`, `src/ui/lifecycleBadges.ts`, `src/ui/nodeDetails.ts`, `src/ui/StateTree.tsx`).
+Capture: raw `inspect` on the host → **projection** (`projectMachine` / `projectFrame` in `src/viz/project.ts`) → shared `Viz*` model (`src/viz/model.ts`) over `postMessage`. New structure/badge features extend the **projector** (typed against XState), not popup duck-typing. See [`VIZ-PRESENTATION-MODEL.md`](./VIZ-PRESENTATION-MODEL.md).
 
 ---
 
 ## Already covered (baseline)
 
+- [x] Host-side projection to `VizMachine` / `VizFrame` (popup consumes Viz* only)
 - [x] Compound / sequential layout (top-down)
 - [x] Parallel regions (left-to-right)
 - [x] Atomic / final glyphs; initial arrow
 - [x] Entry / exit / after badges + hover lists
 - [x] `on` events: target highlight; hover when guards or actions exist
-- [x] Active-state overlay from snapshot `value`
+- [x] Active-state overlay from projected `VizFrame.activePaths`
 - [x] Multi-machine actor registry + selection dropdown
 - [x] Raw JSON dump of current `value` and `context`
 - [x] Two-level click zoom with configurable hop radius
@@ -51,7 +52,7 @@ Record the capture strategy in [`DECISIONS.md`](./DECISIONS.md) when implementin
 
 ## Structure markers (non-`on` transition sources)
 
-Badges should make it obvious that a state may transition for reasons beyond named `on` handlers.
+Badges should make it obvious that a state may transition for reasons beyond named `on` handlers. Implement by extending **`projectMachine`** (emit `VizBadge` / `details.*`), not by teaching the popup XState shapes.
 
 - [ ] **`always` (eventless)** — distinct badge; hover list + target highlight (same pattern as `after`)
 - [ ] **`invoke` + `onDone` / `onError`** — badge on the state (invoke present); **`onDone` especially** as a clear non-`on` exit path; hover: src id, id, input summary, done/error targets + highlight
@@ -112,6 +113,6 @@ Do not schedule these unless product scope changes:
 
 ## Notes
 
-- Prefer definition-driven structure (from `logic.definition`) over re-parsing stringified Stately `definition` blobs.
+- Prefer definition-driven structure in the **projector** (from `logic.definition`) over re-parsing stringified Stately `definition` blobs.
 - Executable implementations from `setup()` will never round-trip over `postMessage`; UI should display **names / types / params**, not attempt to rehydrate functions.
-- When adding a capability, record the capture strategy (which inspection event / which `logic` field) in [`DECISIONS.md`](./DECISIONS.md).
+- When adding a capability, record the capture strategy (which inspection event / which `logic` field / which `Viz*` field) in [`DECISIONS.md`](./DECISIONS.md).

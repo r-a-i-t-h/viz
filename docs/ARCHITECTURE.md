@@ -6,7 +6,8 @@ How inspection, interaction, and rendering split today — and when a further ex
 
 | Term | Meaning | Where today |
 |------|---------|-------------|
-| **Host API** | Framework-agnostic inspect + snapshot store + popup/inline launch. What real embeds depend on. | `src/viz/` (`createVisualizerHost`, bridge, `inspection`) |
+| **Host API** | Framework-agnostic inspect + projection + snapshot store + popup/inline launch. What real embeds depend on. | `src/viz/` (`createVisualizerHost`, bridge, `project`, `model`) |
+| **Projection** | Walk live XState `logic` (official types) → shared `VizMachine` / `VizFrame`. | `src/viz/project.ts` |
 | **Interaction model** | Presentation/session behavior over a snapshot: zoom anchors, transition highlights, watches, selected actor, panel prefs. | React `useState` in `VisualizerView` (+ pure helpers under `src/ui/`) |
 | **Renderer** | DOM/UI that displays host snapshot + interaction state. | Optional React PoC in `src/ui/` |
 
@@ -18,16 +19,17 @@ Avoid “headless visualizer” alone — the host is already headless. A future
 
 ```text
 XState inspect
-  → Host API (machines, actorStates, log, inline/popup status)
-       → VisualizerSnapshot
+  → Host API (projectMachine / projectFrame → VizMachine / VizFrame)
+       → VisualizerSnapshot (machines, frames, log, …)
             ├─ HostApp / PopupApp subscribe or postMessage
             └─ Renderer: VisualizerView
                  ├─ Interaction state (React-owned)
-                 ├─ Pure helpers (zoom, nodeDetails, activePaths, …)
+                 ├─ Pure helpers (zoom, …) over Viz* only
                  └─ Presentational tree / watch / chrome
 ```
 
-- **Domain/runtime** lives only in the host snapshot. No zoom, highlight, or watches there.
+- **Domain/runtime** lives only in the host snapshot as already-projected `Viz*` models. No zoom, highlight, or watches there.
+- UI must not import XState structural types; only `VizMachine` / `VizFrame` / `VizNode`.
 - **Shared interaction state** is lifted in `VisualizerView` and passed as props/callbacks into `StateTree` / `WatchColumn`.
 - **Leaf-local** UI (hover tip open, watch-card disclosure, fold open, resize gesture) stays in components.
 - Inline and popup each mount their own `VisualizerView`, so interaction state is **not** shared across surfaces.
@@ -39,10 +41,12 @@ This is a React-owned view-model at the view root — not buried imperative DOM 
 Pure functions that any interaction model / renderer can reuse:
 
 - Zoom neighborhood math (`zoom.ts`)
-- Transition target id resolution (`nodeDetails.ts`)
-- Active path derivation (`activePaths` in `inspection.ts`)
+- Finding a node by path on `VizNode.children` (`findNodeByPath.ts`)
+- Context-dep highlight id sets (`contextDepHighlights.ts`)
 - Watch list mutate/reorder (logic today inline in `VisualizerView`)
-- “Definition + interaction state → presentation facts” (active, zoom-large, transition-target, watched)
+- “VizNode + interaction state → presentation facts” (active, zoom-large, transition-target, watched)
+
+Active paths and transition/badge target ids are **precomputed in the projector**, not derived in the UI.
 
 ## What stays renderer-bound
 

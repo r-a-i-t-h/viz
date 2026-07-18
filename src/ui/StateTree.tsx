@@ -2,19 +2,14 @@ import {
   type KeyboardEvent,
   type MouseEvent,
 } from 'react';
-import type { StateNodeDefinition } from '../viz';
+import type { VizNode } from '../viz';
 import { HoverTip } from './HoverTip';
 import { NodeLifecycleBadges } from './NodeLifecycleBadges';
-import {
-  formatOnTransitionDetails,
-  getOnTransitionTargetIds,
-  normalizeStateNodeId,
-} from './nodeDetails';
 import { FinalStateIcon, InitialArrowIcon } from './nodeIcons';
 import { DEFAULT_ZOOM_RADIUS, isZoomLarge } from './zoom';
 
 interface StateTreeProps {
-  node: StateNodeDefinition;
+  node: VizNode;
   activePaths: Set<string>;
   path?: string;
   /** True when this node is the parent's initial child. */
@@ -51,20 +46,14 @@ export function StateTree({
   contextAssignIds,
   contextConsumeIds,
 }: {
-  node: StateNodeDefinition;
+  node: VizNode;
   activePaths: Set<string>;
-  /** Neighborhood radius in parent/child levels (±). Controllable from the visualizer UI. */
   zoomRadius?: number;
-  /** Whether authored entry, exit, and after badges are visible. */
   showLifecycleBadges?: boolean;
-  /** Alt-click / Alt-Enter toggles watching this path. */
   onToggleWatch?: (path: string) => void;
-  /** Paths currently in the watch column (for title hints). */
   watchedPaths?: Set<string>;
-  /** Zoom anchor paths owned by the parent view (shared with watch). */
   zoomAnchors: Set<string>;
   onToggleZoom: (path: string, exclusive: boolean) => void;
-  /** Node ids highlighted while an `on` event is hovered (graph or watch). */
   highlightedTargetIds?: Set<string>;
   onHighlightTargets?: (targets: Set<string>) => void;
   contextAssignIds?: Set<string>;
@@ -105,25 +94,19 @@ function StateTreeNode({
   contextAssignIds = new Set(),
   contextConsumeIds = new Set(),
 }: StateTreeProps) {
-  const childKeys = Object.keys(node.states ?? {});
   const isActive = path === '' || activePaths.has(path);
-  const eventKeys = Object.keys(node.on ?? {}).filter(
-    (key) => !key.startsWith('xstate.after.'),
-  );
-  const childLayout = node.type === 'parallel' ? 'parallel' : 'sequential';
-  const isFinal = node.type === 'final';
-  const initialChildIds = resolveInitialChildIds(node);
+  const childLayout = node.layout === 'none' ? 'sequential' : node.layout;
+  const isFinal = node.kind === 'final';
+  const initialChildIds = new Set(node.initialChildIds);
   const zoomLarge = [...zoomAnchors].some((anchor) =>
     isZoomLarge(path, anchor, zoomRadius),
   );
-  const nodeId = normalizeStateNodeId(node.id);
-  const isTransitionTarget = highlightedTargetIds.has(nodeId);
-  const isContextAssign = contextAssignIds.has(nodeId);
-  const isContextConsume = contextConsumeIds.has(nodeId);
+  const isTransitionTarget = highlightedTargetIds.has(node.id);
+  const isContextAssign = contextAssignIds.has(node.id);
+  const isContextConsume = contextConsumeIds.has(node.id);
   const isWatched = watchedPaths.has(path);
 
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
-    // Deepest node under the cursor wins (children stopPropagation first).
     event.stopPropagation();
     if (hasWatchModifier(event)) {
       onToggleWatch?.(path);
@@ -146,7 +129,7 @@ function StateTreeNode({
     <div
       className={[
         'node',
-        `node--${node.type}`,
+        `node--${node.kind}`,
         zoomLarge ? 'node--zoom-large' : 'node--zoom-small',
         isActive ? 'node--active' : '',
         isInitial ? 'node--initial' : '',
@@ -187,53 +170,48 @@ function StateTreeNode({
           </span>
         )}
         <span className="node__key">{node.key}</span>
-        {eventKeys.length > 0 && (
+        {node.events.length > 0 && (
           <span className="node__events">
             <span className="node__events-label">on:</span>{' '}
-            {eventKeys.map((eventKey, index) => {
-              const transitions = node.on[eventKey];
-              return (
-                <span key={eventKey}>
-                  {index > 0 && <span className="node__event-separator">, </span>}
-                  <HoverTip
-                    className="node__event"
-                    label={eventKey}
-                    items={formatOnTransitionDetails(eventKey, transitions)}
-                    placement="below"
-                    align="left"
-                    onActiveChange={(active) =>
-                      onHighlightTargets?.(
-                        active
-                          ? getOnTransitionTargetIds(transitions)
-                          : new Set(),
-                      )
-                    }
-                  >
-                    {eventKey}
-                  </HoverTip>
-                </span>
-              );
-            })}
+            {node.events.map((ev, index) => (
+              <span key={ev.type}>
+                {index > 0 && <span className="node__event-separator">, </span>}
+                <HoverTip
+                  className="node__event"
+                  label={ev.type}
+                  items={ev.hoverLines}
+                  placement="below"
+                  align="left"
+                  onActiveChange={(active) =>
+                    onHighlightTargets?.(
+                      active ? new Set(ev.highlightIds) : new Set(),
+                    )
+                  }
+                >
+                  {ev.type}
+                </HoverTip>
+              </span>
+            ))}
           </span>
         )}
       </div>
 
-      {childKeys.length > 0 && (
+      {node.children.length > 0 && (
         <div
           className={`node__children node__children--${childLayout}`}
           data-layout={childLayout}
         >
-          {childKeys.map((key) => {
-            const child = node.states[key];
-            const childPath = path ? `${path}.${key}` : key;
+          {node.children.map((child) => {
+            const childPath = path ? `${path}.${child.key}` : child.key;
             return (
               <StateTreeNode
-                key={key}
+                key={child.key}
                 node={child}
                 activePaths={activePaths}
                 path={childPath}
                 isInitial={
-                  initialChildIds.has(child.id) || initialChildIds.has(key)
+                  initialChildIds.has(child.id) ||
+                  initialChildIds.has(child.key)
                 }
                 zoomAnchors={zoomAnchors}
                 zoomRadius={zoomRadius}
@@ -264,33 +242,4 @@ function hasWatchModifier(
   event: Pick<MouseEvent, 'altKey'>,
 ): boolean {
   return event.altKey;
-}
-
-/**
- * Resolve which child ids/keys are the parent's initial target(s).
- * After portable serialization, targets are id strings like `#demo.idle`.
- */
-function resolveInitialChildIds(node: StateNodeDefinition): Set<string> {
-  const ids = new Set<string>();
-  const target = node.initial?.target;
-  if (!target) return ids;
-
-  for (const item of target) {
-    if (typeof item === 'string') {
-      ids.add(item);
-      const bare = item.replace(/^#/, '').split('.').pop();
-      if (bare) ids.add(bare);
-      continue;
-    }
-    if (item && typeof item === 'object' && 'id' in item) {
-      const id = (item as { id: unknown }).id;
-      if (typeof id === 'string') {
-        ids.add(id);
-        const bare = id.replace(/^#/, '').split('.').pop();
-        if (bare) ids.add(bare);
-      }
-    }
-  }
-
-  return ids;
 }

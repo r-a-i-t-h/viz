@@ -56,8 +56,8 @@ npm run dev
 ## Layout
 
 ```
-src/viz/          # framework-agnostic API (createVisualizerHost, bridge, inspection)
-src/ui/           # optional React renderers + visualizer.css
+src/viz/          # host API (createVisualizerHost, project, model, bridge)
+src/ui/           # optional React renderers + visualizer.css (Viz* only)
 src/machine.ts    # demo machine for the PoC
 ```
 
@@ -74,4 +74,6 @@ src/machine.ts    # demo machine for the PoC
 
 - [`AGENTS.md`](./AGENTS.md) — guidance for AI agents working in this repo
 - [`docs/DECISIONS.md`](./docs/DECISIONS.md) — running log of findings and decisions
+- [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — host / interaction / renderer layers
+- [`docs/VIZ-PRESENTATION-MODEL.md`](./docs/VIZ-PRESENTATION-MODEL.md) — shared Viz* wire model
 - [`docs/TODO.md`](./docs/TODO.md) — remaining XState model surface for the visualizer

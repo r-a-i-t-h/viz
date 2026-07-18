@@ -1,5 +1,7 @@
-import type { ContextDepGraph } from '../viz';
-import { normalizeStateNodeId } from './nodeDetails';
+import {
+  normalizeStateNodeId,
+  type ContextDepGraph,
+} from '../viz';
 
 /** State node ids that assign vs only consume a context key (assign wins on overlap). */
 export function stateIdsForContextKey(

@@ -1,17 +1,8 @@
 import { useState } from 'react';
-import type { StateNodeDefinition } from '../viz';
+import type { VizNode } from '../viz';
 import { DisclosureChevron } from './DisclosureChevron';
 import { findNodeByPath } from './findNodeByPath';
 import { NodeLifecycleBadges } from './NodeLifecycleBadges';
-import {
-  formatAfterTransitions,
-  formatAllOnTransitions,
-  formatEntryActions,
-  formatExitActions,
-  getAfterTransitionTargetIds,
-  getOnTransitionTargetIds,
-  normalizeStateNodeId,
-} from './nodeDetails';
 import { FinalStateIcon } from './nodeIcons';
 
 export function WatchColumn({
@@ -28,7 +19,7 @@ export function WatchColumn({
   contextAssignIds,
   contextConsumeIds,
 }: {
-  root: StateNodeDefinition;
+  root: VizNode;
   watchedPaths: string[];
   activePaths: Set<string>;
   showLifecycleBadges: boolean;
@@ -54,16 +45,15 @@ export function WatchColumn({
       {watchedPaths.map((path, index) => {
         const node = findNodeByPath(root, path);
         if (!node) return null;
-        const nodeId = normalizeStateNodeId(node.id);
         return (
           <li key={path} className="viz__watch-item">
             <WatchNode
               node={node}
               path={path}
               isActive={path === '' || activePaths.has(path)}
-              isTransitionTarget={highlightedTargetIds?.has(nodeId) ?? false}
-              isContextAssign={contextAssignIds?.has(nodeId) ?? false}
-              isContextConsume={contextConsumeIds?.has(nodeId) ?? false}
+              isTransitionTarget={highlightedTargetIds?.has(node.id) ?? false}
+              isContextAssign={contextAssignIds?.has(node.id) ?? false}
+              isContextConsume={contextConsumeIds?.has(node.id) ?? false}
               isZoomed={zoomAnchors?.has(path) ?? false}
               showLifecycleBadges={showLifecycleBadges}
               canMoveUp={index > 0}
@@ -98,7 +88,7 @@ function WatchNode({
   onClose,
   onHighlightTargets,
 }: {
-  node: StateNodeDefinition;
+  node: VizNode;
   path: string;
   isActive: boolean;
   isTransitionTarget: boolean;
@@ -115,13 +105,11 @@ function WatchNode({
   onHighlightTargets?: (targets: Set<string>) => void;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const isFinal = node.type === 'final';
-  const eventKeys = Object.keys(node.on ?? {}).filter(
-    (key) => !key.startsWith('xstate.after.'),
-  );
-  const entryItems = formatEntryActions(node.entry);
-  const exitItems = formatExitActions(node.exit);
-  const afterItems = formatAfterTransitions(node.on, node.transitions);
+  const isFinal = node.kind === 'final';
+  const entryItems = node.details.entry.map((s) => s.name);
+  const exitItems = node.details.exit.map((s) => s.name);
+  const afterItems = node.details.after.map((t) => t.line);
+  const afterHighlightIds = node.details.after.flatMap((t) => t.targetIds);
   const displayPath = path === '' ? node.key : path;
 
   return (
@@ -129,7 +117,7 @@ function WatchNode({
       className={[
         'node',
         'node--watch',
-        `node--${node.type}`,
+        `node--${node.kind}`,
         isActive ? 'node--active' : '',
         isFinal ? 'node--final' : '',
         detailsOpen ? 'node--watch-open' : '',
@@ -234,12 +222,12 @@ function WatchNode({
           </div>
           <div>
             <dt>type</dt>
-            <dd>{node.type}</dd>
+            <dd>{node.kind}</dd>
           </div>
-          {node.tags.length > 0 && (
+          {node.details.tags.length > 0 && (
             <div>
               <dt>tags</dt>
-              <dd>{node.tags.join(', ')}</dd>
+              <dd>{node.details.tags.join(', ')}</dd>
             </div>
           )}
           {entryItems.length > 0 && (
@@ -270,9 +258,7 @@ function WatchNode({
             <div
               className="node__watch-on"
               onMouseEnter={() =>
-                onHighlightTargets?.(
-                  getAfterTransitionTargetIds(node.on, node.transitions),
-                )
+                onHighlightTargets?.(new Set(afterHighlightIds))
               }
               onMouseLeave={() => onHighlightTargets?.(new Set())}
             >
@@ -286,24 +272,21 @@ function WatchNode({
               </dd>
             </div>
           )}
-          {eventKeys.map((eventKey) => {
-            const lines = formatAllOnTransitions(eventKey, node.on[eventKey]);
-            if (lines.length === 0) return null;
+          {node.events.map((ev) => {
+            if (ev.detailLines.length === 0) return null;
             return (
               <div
-                key={eventKey}
+                key={ev.type}
                 className="node__watch-on"
                 onMouseEnter={() =>
-                  onHighlightTargets?.(
-                    getOnTransitionTargetIds(node.on[eventKey]),
-                  )
+                  onHighlightTargets?.(new Set(ev.highlightIds))
                 }
                 onMouseLeave={() => onHighlightTargets?.(new Set())}
               >
                 <dt>on</dt>
                 <dd>
                   <ul>
-                    {lines.map((item) => (
+                    {ev.detailLines.map((item) => (
                       <li key={item}>{item}</li>
                     ))}
                   </ul>
@@ -343,4 +326,3 @@ function CloseIcon() {
     </svg>
   );
 }
-

@@ -77,7 +77,7 @@ That normalized tree is the ideal viz substrate: node kinds (incl. parallel vs c
 
 **Live** `StateNode` / `TransitionDefinition` still hold object refs (`target: StateNode[]`, `source`, guards/actions as functions). Excellent in-process; useless across `postMessage` without sanitizing to names/ids/params.
 
-This repo mirrors a practical subset as `StateNodeDefinition` in `src/viz/inspection.ts` and captures via `captureMachine()` on `@xstate.actor`.
+This repo **projects** `logic.definition` on the host into a shared `VizMachine` (`src/viz/project.ts` / `src/viz/model.ts`) and overlays `VizFrame.activePaths` from snapshots — see [`VIZ-PRESENTATION-MODEL.md`](./VIZ-PRESENTATION-MODEL.md).
 
 ### Current state (runtime)
 
@@ -91,7 +91,7 @@ This repo mirrors a practical subset as `StateNodeDefinition` in `src/viz/inspec
 
 `StateValue` is unchanged in spirit: a string for atomic/leaf selection, or a nested object for compound/parallel regions.
 
-Active overlay without live `_nodes` (e.g. after serialization): flatten `snapshot.value` into paths — see `activePaths()` in `src/viz/inspection.ts`.
+Active overlay without live `_nodes` (e.g. after serialization): flatten `snapshot.value` into paths in the **projector** (`activePaths` → `VizFrame.activePaths`).
 
 ---
 
@@ -230,7 +230,7 @@ Optional depth (in-process only, or specialized events)
 - Popup / embed: host captures first, then ships portable JSON over `postMessage` — live `actorRef` / functions never cross the boundary.
 - Deliberately **not** depending on `@statelyai/inspect` traversal (there is none); the package remains a reference for wire patterns only.
 
-See also `docs/TODO.md`: new features extend the local interrogation layer (`inspection.ts`, badges, node details), not Stately helpers.
+See also `docs/TODO.md`: new features extend the **projector** (`project.ts`), not Stately helpers or popup XState parsers.
 
 ---
 

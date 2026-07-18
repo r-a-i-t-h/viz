@@ -14,38 +14,18 @@
  * 1. Host opens the popup via `window.open` (must be a user gesture).
  * 2. Popup loads and posts `@viz.hello` to `window.opener`.
  * 3. Host marks the link connected and replays deferred payloads
- *    (machine definition + latest snapshot), then streams live updates.
+ *    (VizMachine + latest VizFrame), then streams live updates.
+ *
+ * Payloads are already-projected viz models — not raw XState definitions.
  */
+
+import type { VizFrame, VizLogEntry, VizMachine } from '../model';
 
 export const VIZ_CHANNEL = 'viz' as const;
 export const VIZ_PROTOCOL_VERSION = 1 as const;
 
 /** Namespaced window name so a second open focuses the same popup. */
 export const VIZ_WINDOW_NAME = 'viz-inspector';
-
-export interface SerializableMachine {
-  sessionId: string;
-  config: unknown;
-  definition: unknown;
-  /** Precomputed on the host; already JSON-safe (no functions). */
-  contextDeps: unknown;
-}
-
-export interface SerializableSnapshot {
-  sessionId: string;
-  value: unknown;
-  context: unknown;
-  eventType?: string;
-}
-
-export interface SerializableLogEntry {
-  seq: number;
-  type: string;
-  sessionId: string;
-  eventType?: string;
-  value?: unknown;
-  at: number;
-}
 
 /** Messages the popup sends to the host. */
 export type VizUpstreamMessage =
@@ -64,17 +44,17 @@ export type VizDownstreamMessage =
   | {
       channel: typeof VIZ_CHANNEL;
       type: '@viz.machine';
-      payload: SerializableMachine;
+      payload: VizMachine;
     }
   | {
       channel: typeof VIZ_CHANNEL;
-      type: '@viz.snapshot';
-      payload: SerializableSnapshot;
+      type: '@viz.frame';
+      payload: VizFrame;
     }
   | {
       channel: typeof VIZ_CHANNEL;
       type: '@viz.log';
-      payload: SerializableLogEntry;
+      payload: VizLogEntry;
     }
   | {
       channel: typeof VIZ_CHANNEL;
@@ -96,8 +76,8 @@ export function isVizMessage(data: unknown): data is VizMessage {
 
 /**
  * Structured-clone / postMessage–safe serialization.
- * Drops functions and other non-JSON values that appear on state-node
- * definitions (guards, actions, transition objects).
+ * Drops functions and other non-JSON values (should already be gone after
+ * projection, but kept as a safety net).
  */
 export function toPortable<T>(value: T): T {
   return JSON.parse(

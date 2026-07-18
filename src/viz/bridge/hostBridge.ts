@@ -2,12 +2,10 @@ import {
   isVizMessage,
   toPortable,
   VIZ_WINDOW_NAME,
-  type SerializableLogEntry,
-  type SerializableMachine,
-  type SerializableSnapshot,
   type VizDownstreamMessage,
   type VizUpstreamMessage,
 } from './protocol';
+import type { VizFrame, VizLogEntry, VizMachine } from '../model';
 
 export type HostBridgeStatus = 'idle' | 'opening' | 'awaiting-hello' | 'connected' | 'blocked';
 
@@ -20,16 +18,16 @@ export interface HostBridgeOptions {
 }
 
 /**
- * Opens a popup visualizer and forwards serializable inspection payloads to it
+ * Opens a popup visualizer and forwards projected viz payloads to it
  * via `postMessage`. Designed to run inside a (possibly cross-origin) iframe.
  */
 export class HostBridge {
   private popup: Window | null = null;
   private status: HostBridgeStatus = 'idle';
-  /** Latest machine definition per sessionId — all replayed on (re)connect. */
+  /** Latest VizMachine per sessionId — all replayed on (re)connect. */
   private machines = new Map<string, VizDownstreamMessage>();
-  /** Latest snapshot per sessionId — all replayed on (re)connect. */
-  private snapshots = new Map<string, VizDownstreamMessage>();
+  /** Latest VizFrame per sessionId — all replayed on (re)connect. */
+  private frames = new Map<string, VizDownstreamMessage>();
   private deferredLogs: VizDownstreamMessage[] = [];
   private readonly maxLogDeferred: number;
   private readonly visualizerUrl: string;
@@ -98,7 +96,7 @@ export class HostBridge {
     return true;
   }
 
-  sendMachine(machine: SerializableMachine): void {
+  sendMachine(machine: VizMachine): void {
     const message: VizDownstreamMessage = {
       channel: 'viz',
       type: '@viz.machine',
@@ -108,17 +106,17 @@ export class HostBridge {
     if (this.status === 'connected') this.post(message);
   }
 
-  sendSnapshot(snapshot: SerializableSnapshot): void {
+  sendFrame(frame: VizFrame): void {
     const message: VizDownstreamMessage = {
       channel: 'viz',
-      type: '@viz.snapshot',
-      payload: toPortable(snapshot),
+      type: '@viz.frame',
+      payload: toPortable(frame),
     };
-    this.snapshots.set(snapshot.sessionId, message);
+    this.frames.set(frame.sessionId, message);
     if (this.status === 'connected') this.post(message);
   }
 
-  sendLog(entry: SerializableLogEntry): void {
+  sendLog(entry: VizLogEntry): void {
     const message: VizDownstreamMessage = {
       channel: 'viz',
       type: '@viz.log',
@@ -143,7 +141,7 @@ export class HostBridge {
 
   private replay(): void {
     for (const msg of this.machines.values()) this.post(msg);
-    for (const msg of this.snapshots.values()) this.post(msg);
+    for (const msg of this.frames.values()) this.post(msg);
     for (const msg of this.deferredLogs) this.post(msg);
   }
 

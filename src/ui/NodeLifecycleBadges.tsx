@@ -1,11 +1,5 @@
 import { HoverTip } from './HoverTip';
-import { nodeLifecycleFlags } from './lifecycleBadges';
-import {
-  formatAfterTransitions,
-  formatEntryActions,
-  formatExitActions,
-  getAfterTransitionTargetIds,
-} from './nodeDetails';
+import type { VizBadge, VizNode } from '../viz';
 import { AfterIcon, EntryIcon, ExitIcon } from './nodeIcons';
 
 /** Entry / after / exit badge row with hover tips (graph + watch). */
@@ -15,69 +9,65 @@ export function NodeLifecycleBadges({
   className,
   onHighlightTargets,
 }: {
-  node: {
-    entry?: unknown[] | undefined;
-    exit?: unknown[] | undefined;
-    on?: Record<string, unknown> | undefined;
-    transitions?: unknown[] | undefined;
-  };
+  node: VizNode;
   align?: 'left' | 'right';
   className?: string;
-  /** Highlight `after` transition targets while the after badge is hovered. */
+  /** Highlight badge transition targets while hovered. */
   onHighlightTargets?: (targets: Set<string>) => void;
 }) {
-  const lifecycle = nodeLifecycleFlags(node);
-  if (!lifecycle.entry && !lifecycle.exit && !lifecycle.after) return null;
-
-  const entryItems = formatEntryActions(node.entry);
-  const exitItems = formatExitActions(node.exit);
-  const afterItems = formatAfterTransitions(node.on, node.transitions);
+  const badges = node.badges.filter(
+    (b) => b.kind === 'entry' || b.kind === 'exit' || b.kind === 'after',
+  );
+  if (badges.length === 0) return null;
 
   return (
     <div className={['node__badges', className].filter(Boolean).join(' ')}>
-      {lifecycle.entry && (
-        <HoverTip
-          className="node__badge node__badge--entry"
-          label="entry"
-          items={entryItems}
-          placement="below"
+      {badges.map((badge) => (
+        <BadgeTip
+          key={badge.kind}
+          badge={badge}
           align={align}
-        >
-          <EntryIcon />
-          <span className="node__badge-label">entry</span>
-        </HoverTip>
-      )}
-      {lifecycle.after && (
-        <HoverTip
-          className="node__badge node__badge--after"
-          label="after"
-          items={afterItems}
-          placement="below"
-          align={align}
-          onActiveChange={(active) =>
-            onHighlightTargets?.(
-              active
-                ? getAfterTransitionTargetIds(node.on, node.transitions)
-                : new Set(),
-            )
-          }
-        >
-          <AfterIcon />
-          <span className="node__badge-label">after</span>
-        </HoverTip>
-      )}
-      {lifecycle.exit && (
-        <HoverTip
-          className="node__badge node__badge--exit"
-          label="exit"
-          items={exitItems}
-          placement="below"
-          align={align}
-        >
-          <ExitIcon />
-          <span className="node__badge-label">exit</span>
-        </HoverTip>
-      )}
+          onHighlightTargets={onHighlightTargets}
+        />
+      ))}
     </div>
+  );
+}
+
+function BadgeTip({
+  badge,
+  align,
+  onHighlightTargets,
+}: {
+  badge: VizBadge;
+  align: 'left' | 'right';
+  onHighlightTargets?: (targets: Set<string>) => void;
+}) {
+  const Icon =
+    badge.kind === 'entry'
+      ? EntryIcon
+      : badge.kind === 'exit'
+        ? ExitIcon
+        : AfterIcon;
+
+  return (
+    <HoverTip
+      className={`node__badge node__badge--${badge.kind}`}
+      label={badge.label}
+      items={badge.lines}
+      placement="below"
+      align={align}
+      onActiveChange={
+        badge.highlightIds.length > 0
+          ? (active) =>
+              onHighlightTargets?.(
+                active ? new Set(badge.highlightIds) : new Set(),
+              )
+          : undefined
+      }
+    >
+      <Icon />
+      <span className="node__badge-label">{badge.label}</span>
+    </HoverTip>
   );
 }

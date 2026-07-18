@@ -4,10 +4,12 @@
  * Real host apps (hidden iframe) typically only depend on this module:
  * attach `inspect` to an actor, call `openPopup()` from a user gesture.
  * No React and no visualizer CSS are required.
+ *
+ * Inspection = XState inspect stream.
+ * Projection = walk live logic → Viz* model (host-side only).
  */
 export {
   createVisualizerHost,
-  type ActorStateData,
   type VisualizerHost,
   type VisualizerHostOptions,
   type VisualizerListener,
@@ -16,13 +18,28 @@ export {
 } from './createVisualizerHost';
 
 export {
+  machineLogicFromEvent,
+  projectFrame,
+  projectMachine,
   activePaths,
-  captureMachine,
-  summarizeEvent,
-  type CapturedMachine,
-  type LoggedEvent,
-  type StateNodeDefinition,
-} from './inspection';
+  normalizeStateNodeId,
+} from './project';
+
+export type {
+  VizAnalysis,
+  VizBadge,
+  VizBadgeKind,
+  VizEvent,
+  VizFrame,
+  VizInvoke,
+  VizLogEntry,
+  VizMachine,
+  VizNode,
+  VizNodeDetails,
+  VizNodeKind,
+  VizSymbol,
+  VizTransition,
+} from './model';
 
 export {
   analyzeContextDeps,
@@ -36,8 +53,3 @@ export {
 } from './contextDeps';
 
 export { connectPopupReceiver } from './bridge/popupReceiver';
-export type {
-  SerializableLogEntry,
-  SerializableMachine,
-  SerializableSnapshot,
-} from './bridge/protocol';
