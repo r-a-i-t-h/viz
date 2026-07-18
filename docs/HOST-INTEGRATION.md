@@ -1,17 +1,15 @@
 # Host-side requirements for popup visualizer
 
-Real embeds only need the framework-agnostic host API in `src/viz/`: create a host, pass `inspect` into actors, serve a `visualizer.html` page, and call `openPopup()` from a user gesture. React, CSS, and inline viz are PoC-only.
+Real embeds only need **`@viz/host`** (which depends on **`@viz/protocol`**): create a host, pass `inspect` into actors, point at a hosted visualizer URL, and call `openPopup()` from a user gesture. React, CSS, and inline viz are PoC-only (`apps/demo` / `apps/visualizer`).
 
 ## What the host actually needs
 
-A real app does **not** mount React visualizer UI. It only depends on [`src/viz/`](../src/viz/) and XState v5:
-
 ```ts
 import { createActor } from 'xstate';
-import { createVisualizerHost } from './viz'; // today: copy/vendor this module; not published
+import { createVisualizerHost } from '@viz/host';
 
 const viz = createVisualizerHost({
-  visualizerUrl: new URL('visualizer.html', location.href).href,
+  visualizerUrl: 'https://your-viz-host/viz.html',
   // optional: maxLogEntries, sanitizeContext, sanitizeEvent
 });
 
@@ -26,13 +24,11 @@ actor.stop();
 viz.dispose();
 ```
 
-That is the full product surface for hosts ([`README.md`](../README.md), [`createVisualizerHost.ts`](../src/viz/createVisualizerHost.ts)).
-
 ```text
 XState inspect
-  → createVisualizerHost (projectMachine / projectFrame)
-       → VisualizerSnapshot
-            ├─ openPopup() → visualizer.html via postMessage
+  → @viz/host (projectMachine / projectFrame)
+       → VisualizerSnapshot (@viz/protocol)
+            ├─ openPopup() → visualizer app via postMessage
             └─ subscribe()  → optional inline PoC only
 ```
 
@@ -45,15 +41,15 @@ Lifecycle:
 
 ## Checklist for an existing app
 
-1. **Ship / import the host API** — everything under `src/viz/` (no React). Peer dependency: **xstate v5**. There is no npm package yet (`private: true`); vendor the module or path-import it until a package split lands.
+1. **Depend on `@viz/host`** — pulls `@viz/protocol` as a dependency. Peer: **xstate v5**. Packages are private workspaces today; consume via workspace / `npm link` / path until published.
 
-2. **Serve a popup page** — something equivalent to [`visualizer.html`](../visualizer.html) that loads the popup receiver + UI (`connectPopupReceiver` + React PoC today). The host only needs a reachable URL; pass it as `visualizerUrl`. Cross-origin popup pages are fine (protocol uses `postMessage` with `*`).
+2. **Point at a popup page** — a deployed visualizer build (from this repo’s `viz.html` + `assets/`) that speaks `@viz.*`. Pass its absolute URL as `visualizerUrl`. It can live in any subdirectory (or another origin); keep the HTML and `assets/` folder together. Asset URLs are relative (`base: './'`), so domain-root hosting is not required.
 
 3. **Wire inspect on every actor you care about** — pass the same `viz.inspect` into each `createActor(..., { inspect })`. No separate `attachActor()`. Spawned/invoked machine children that emit `@xstate.actor` are picked up automatically.
 
 4. **Call `openPopup()` from a user gesture** — click/keydown. Especially important when the host runs in an iframe (popup blockers). Check the boolean return / `getPopupStatus()` for `'blocked'`.
 
-5. **If the host is in a hidden iframe** (intended real shape; see [`embed.html`](../embed.html)) — sandbox needs `allow-scripts`, `allow-popups`, and usually `allow-popups-to-escape-sandbox`. Outer page triggers open via a gesture that reaches into the iframe (no parent→iframe bridge is built yet; PoC buttons live inside the host page).
+5. **If the host is in a hidden iframe** (see root [`embed.html`](../embed.html)) — sandbox needs `allow-scripts`, `allow-popups`, and usually `allow-popups-to-escape-sandbox`.
 
 6. **Optional hygiene** — `sanitizeContext` / `sanitizeEvent` before frames/logs cross the wire; `dispose()` on shutdown; stop actors yourself (host dispose does not stop them).
 
@@ -61,30 +57,25 @@ Lifecycle:
 
 | Skip | Why |
 |------|-----|
-| React / [`src/ui/`](../src/ui/) | Renderer only; popup page owns UI |
+| React / `apps/visualizer` | Renderer only; popup page owns UI |
 | `visualizer.css` / inline `showInline` | PoC conveniences |
 | `subscribe()` | Only if you mirror status or render inline |
 | `@statelyai/inspect` | Unused; raw XState `inspect` only |
+| Direct `@viz/protocol` import | Optional — `@viz/host` re-exports Viz* types |
+
+## Package boundary
+
+| Package | In the target app? |
+|---------|-------------------|
+| `@viz/protocol` | Transitive (shared Viz* + wire) |
+| `@viz/host` | Direct dependency |
+| `apps/visualizer` | No — host separately; only `visualizerUrl` |
 
 ## Realistic caveats today
 
-- **Not a published package** — you copy/vendor `src/viz` (and still need to host the popup HTML/UI from this repo or a rebuild of it).
-- **Popup UI is still this repo’s React app** — host API is headless; the visualizer window is not.
+- **Not published to npm yet** — private workspaces; use `npm run build:packages` then link/path-install `@viz/host`.
 - **One-way inspection** — no send-event-back-to-actor from the viz.
 - **Secrets** — sanitize hooks are opt-in; default posts projected context over `postMessage`.
-
-## Minimal “existing app” shape
-
-```text
-Your app (or hidden iframe)
-  createVisualizerHost + createActor({ inspect })
-  button / shortcut → viz.openPopup()
-
-visualizer.html (same or other origin)
-  connectPopupReceiver → render Viz* snapshot
-```
-
-Canonical reference wiring: [`src/ui/HostApp.tsx`](../src/ui/HostApp.tsx) (ignore the React shell and inline path; keep only host create + inspect + `openPopup`). Deployment sketch: [`embed.html`](../embed.html).
 
 ## Related
 

@@ -5,14 +5,21 @@ import react from '@vitejs/plugin-react'
 
 const root = path.dirname(fileURLToPath(import.meta.url))
 
-// https://vite.dev/config/
+// Multi-page: demo host + independently hostable visualizer (+ embed shell).
+// Relative base so viz.html (+ assets) can be served from any subdirectory.
 export default defineConfig({
+  base: './',
   plugins: [react()],
+  server: {
+    fs: {
+      allow: [root],
+    },
+  },
   build: {
     rollupOptions: {
       input: {
         main: path.resolve(root, 'index.html'),
-        visualizer: path.resolve(root, 'visualizer.html'),
+        visualizer: path.resolve(root, 'viz.html'),
         embed: path.resolve(root, 'embed.html'),
       },
     },

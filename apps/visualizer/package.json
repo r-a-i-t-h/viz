@@ -1,0 +1,19 @@
+{
+  "name": "@viz/visualizer",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./ui": "./src/ui/VisualizerView.tsx"
+  },
+  "dependencies": {
+    "@viz/protocol": "*",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "~6.0.2"
+  }
+}

@@ -1,3 +1,23 @@
+## 2026-07-19 — Visualizer build is subdirectory-safe
+
+**Context:** Independently hosted visualizer may be served under a path prefix (not domain root). Absolute `/assets/…` URLs broke that.
+
+**Decision:** Vite `base: './'` so built `viz.html` references assets relatively. Deploy the HTML alongside its `assets/` folder anywhere (or on another origin); pass that absolute page URL as `visualizerUrl`.
+
+**Rationale:** Matches “visualizer hosted completely independently” without requiring a fixed deploy path.
+
+---
+
+## 2026-07-19 — Monorepo package split
+
+**Context:** Host and visualizer should share only Viz*/wire types; the visualizer will be hosted independently; consuming apps need a linkable host library.
+
+**Decision:** npm workspaces with `@viz/protocol` (Viz* + `@viz.*` + `connectPopupReceiver`), `@viz/host` (inspect/project/HostBridge; depends on protocol; peer xstate), `apps/visualizer` (React UI, protocol only), and `apps/demo` (PoC host). Root Vite still serves `/`, `/viz.html`, `/embed.html`. Packages emit `dist/` via `npm run build:packages`.
+
+**Rationale:** Enforces the host↔viz boundary in package deps; demo stays for local development; real apps take `@viz/host` (+ transitive protocol) and a separate visualizer URL.
+
+---
+
 ## 2026-07-18 — Host popup integration guide
 
 **Context:** Real deployments use a (often hidden) host that only opens the popup visualizer; the PoC React shell obscures what an existing app must wire.

@@ -3,7 +3,7 @@
 **Status:** core implemented (2026-07-18).  
 **Related:** [`INSPECT-V4-VS-V5.md`](./INSPECT-V4-VS-V5.md), [`ARCHITECTURE.md`](./ARCHITECTURE.md), [`TODO.md`](./TODO.md).
 
-**Code:** shared types in [`src/viz/model.ts`](../src/viz/model.ts); projector in [`src/viz/project.ts`](../src/viz/project.ts); wire in [`src/viz/bridge/protocol.ts`](../src/viz/bridge/protocol.ts).
+**Code:** shared types in [`packages/protocol`](../packages/protocol); projector in [`packages/host`](../packages/host); wire in protocol `protocol.ts`.
 
 Deferred until TODO items land (projector emits empty slots today): `byId` index.
 
@@ -271,7 +271,7 @@ interface VizFrame {
 
 Optional later (still host-projected): —
 
-`nextEvents` now includes ordered `candidates` (cond cascade) and `highlightIds` (providers ∪ targets). See `VizNextEvent` in `src/viz/model.ts`.
+`nextEvents` now includes ordered `candidates` (cond cascade) and `highlightIds` (providers ∪ targets). See `VizNextEvent` in `@viz/protocol`.
 ---
 
 ## Schema — registry (multi-actor)
@@ -307,18 +307,21 @@ interface VizActorListItem {
 ## Package split (iframe vs popup bundles)
 
 ```text
-@viz/host          // iframe: createVisualizerHost, inspect, projectMachine, bridge
-  depends on: xstate (types + runtime logic access)
+@viz/host          // createVisualizerHost, inspect, projectMachine, HostBridge
+  depends on: @viz/protocol, peer xstate
 
-@viz/protocol      // shared: VizMachine, VizFrame, message types only
-  depends on: nothing (or tiny)
+@viz/protocol      // VizMachine, VizFrame, message types, connectPopupReceiver
+  depends on: nothing
 
-@viz/ui            // popup: React renderer
+apps/visualizer    // popup React renderer
   depends on: @viz/protocol
-  does NOT depend on: xstate
+  does NOT depend on: xstate / @viz/host
+
+apps/demo          // PoC machine host
+  depends on: @viz/host (+ @viz/visualizer for inline only)
 ```
 
-PoC host page may depend on both for inline viz; Salesforce iframe ships `@viz/host` only.
+Implemented as npm workspaces under `packages/` and `apps/`.
 
 ---
 

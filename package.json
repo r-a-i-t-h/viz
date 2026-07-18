@@ -3,17 +3,16 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "oxlint",
+    "build:packages": "npm run build -w @viz/protocol && npm run build -w @viz/host",
+    "dev": "npm run build:packages && vite",
+    "build": "npm run build:packages && tsc -b && vite build",
+    "lint": "oxlint packages apps",
     "preview": "vite preview"
-  },
-  "dependencies": {
-    "@statelyai/inspect": "^0.7.2",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
-    "xstate": "^5.32.5"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",

@@ -77,7 +77,7 @@ That normalized tree is the ideal viz substrate: node kinds (incl. parallel vs c
 
 **Live** `StateNode` / `TransitionDefinition` still hold object refs (`target: StateNode[]`, `source`, guards/actions as functions). Excellent in-process; useless across `postMessage` without sanitizing to names/ids/params.
 
-This repo **projects** `logic.definition` on the host into a shared `VizMachine` (`src/viz/project.ts` / `src/viz/model.ts`) and overlays `VizFrame.activePaths` from snapshots — see [`VIZ-PRESENTATION-MODEL.md`](./VIZ-PRESENTATION-MODEL.md).
+This repo **projects** `logic.definition` on the host into a shared `VizMachine` (`@viz/host` / `@viz/protocol`) and overlays `VizFrame.activePaths` from snapshots — see [`VIZ-PRESENTATION-MODEL.md`](./VIZ-PRESENTATION-MODEL.md).
 
 ### Current state (runtime)
 
@@ -224,7 +224,7 @@ Optional depth (in-process only, or specialized events)
 
 ## How this repo applies it
 
-- Host API (`src/viz/`): raw `inspect` observer via `createVisualizerHost()`.
+- Host API (`@viz/host`): raw `inspect` observer via `createVisualizerHost()`.
 - On `@xstate.actor`: `captureMachine()` reads `actorRef.logic.definition` (+ `config`, context dep-graph).
 - On `@xstate.snapshot`: store `value` / context; UI overlays active paths onto the stored definition tree.
 - Popup / embed: host captures first, then ships portable JSON over `postMessage` — live `actorRef` / functions never cross the boundary.

@@ -1,46 +1,36 @@
 # viz
 
-A Vite + React + TypeScript playground for exploring [XState](https://www.npmjs.com/package/xstate) inspection and a **framework-agnostic visualizer API** that can open a popup over `window.postMessage`.
+npm workspaces monorepo for XState v5 inspection:
 
-In real deployments the machine host is typically a hidden iframe that **does not ship visualizer UI** — it only calls `viz.openPopup()` from a user gesture. React rendering in this repo is a PoC convenience.
+| Package / app | Role |
+| --- | --- |
+| [`@viz/protocol`](./packages/protocol) | Shared `Viz*` model + `@viz.*` wire protocol (no XState) |
+| [`@viz/host`](./packages/host) | Host library: `inspect` → project → popup bridge (depends on protocol; peer `xstate`) |
+| [`apps/visualizer`](./apps/visualizer) | Independently hostable visualizer UI (`viz.html`) |
+| [`apps/demo`](./apps/demo) | PoC machine host (`index.html` / `embed.html`) |
 
-## Stack
-
-- [Vite](https://vite.dev/) — dev server and bundler
-- [React 19](https://react.dev/) — optional PoC UI only (`src/ui/`)
-- [XState v5](https://stately.ai/docs/xstate) — state machines and actors
-- [@statelyai/inspect](https://stately.ai/docs/inspector) — reference / related tooling
+Real embeds install **`@viz/host`** (which depends on `@viz/protocol`) and point `visualizerUrl` at a deployed visualizer. React under the visualizer app is not required on the machine host.
 
 ## API (what real hosts use)
 
 ```ts
 import { createActor } from 'xstate';
-import { createVisualizerHost } from './viz';
+import { createVisualizerHost } from '@viz/host';
 
 const viz = createVisualizerHost({
-  visualizerUrl: new URL('visualizer.html', location.href).href,
+  visualizerUrl: 'https://your-viz-host/viz.html',
 });
 
 const actor = createActor(machine, { inspect: viz.inspect });
 actor.start();
 
-// From a user gesture (button, parent message → click, console in PoC):
+// From a user gesture:
 viz.openPopup();
 
-// Optional in-page surface (subscribers decide whether to render):
-viz.showInline();
-viz.hideInline();
-viz.toggleInline();
-
-viz.subscribe((snapshot) => { /* … */ });
 viz.dispose();
 ```
 
-No React and no visualizer CSS are required to use this API. Optional UI lives under `src/ui/` and imports `visualizer.css` only when mounted.
-
-In the PoC host page the same API is exposed as `window.viz` for console use.
-
-**Embedding into an existing app:** see [`docs/HOST-INTEGRATION.md`](./docs/HOST-INTEGRATION.md) — checklist, iframe sandbox requirements, and what the host can skip.
+**Embedding guide:** [`docs/HOST-INTEGRATION.md`](./docs/HOST-INTEGRATION.md).
 
 ## Getting started
 
@@ -51,26 +41,28 @@ npm run dev
 
 | URL | Role |
 | --- | --- |
-| http://localhost:5173/ | PoC host — machine + API. Buttons call `viz.*`; console works too. |
-| http://localhost:5173/visualizer.html | Popup visualizer page. |
-| http://localhost:5173/embed.html | Outer page with a hidden iframe host (`?visible=1` to show it). |
+| http://localhost:5173/ | Demo host — machine + API |
+| http://localhost:5173/viz.html | Visualizer page (popup target) |
+| http://localhost:5173/embed.html | Outer page with a hidden iframe host (`?visible=1` to show it) |
 
 ## Layout
 
 ```
-src/viz/          # host API (createVisualizerHost, project, model, bridge)
-src/ui/           # optional React renderers + visualizer.css (Viz* only)
-src/machine.ts    # demo machine for the PoC
+packages/protocol/   # @viz/protocol — Viz* + wire
+packages/host/       # @viz/host — createVisualizerHost, project, HostBridge
+apps/visualizer/     # popup/inline React UI (protocol only)
+apps/demo/           # PoC host page + demo machines
 ```
 
 ## Scripts
 
-| Script            | Description                         |
-| ----------------- | ----------------------------------- |
-| `npm run dev`     | Start the dev server                |
-| `npm run build`   | Type-check and build for production |
-| `npm run preview` | Preview the production build        |
-| `npm run lint`    | Run oxlint                          |
+| Script | Description |
+| --- | --- |
+| `npm run dev` | Build packages, start Vite |
+| `npm run build` | Build packages + apps |
+| `npm run build:packages` | Emit `dist/` for `@viz/protocol` and `@viz/host` |
+| `npm run preview` | Preview the production build |
+| `npm run lint` | Run oxlint |
 
 ## Project docs
 
