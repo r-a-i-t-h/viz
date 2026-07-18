@@ -14,6 +14,16 @@ Format for each entry:
 
 ---
 
+## 2026-07-18 — Documented inspect v4 → v5 for own-rolled visualizers
+
+**Context:** Clarifying how `@xstate/inspect` (v4) differs from built-in XState v5 inspect + `@statelyai/inspect`, and which TypeScript model a custom visualizer should navigate.
+
+**Finding/Decision:** Wrote a detailed reference at [`INSPECT-V4-VS-V5.md`](./INSPECT-V4-VS-V5.md). Core takeaway: neither package provides graph-traversal helpers; structure comes from `actorRef.logic.definition` (`StateNodeDefinition`); runtime from `MachineSnapshot` / `StateValue`. Raw v5 `InspectionEvent`s do not embed the machine graph; `@statelyai/inspect` stringifies authored `logic.config` for transport, not the normalized definition.
+
+**Rationale:** Captures the research once so future model-coverage work (see `TODO.md`) does not rediscover the capture strategy.
+
+---
+
 ## 2026-07-18 — Context key hover highlights assign vs consume states
 
 **Context:** Dep-graph is on `CapturedMachine`; Priority 1 wants hover a context key → related states.
