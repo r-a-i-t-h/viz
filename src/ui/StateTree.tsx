@@ -2,8 +2,9 @@ import {
   type KeyboardEvent,
   type MouseEvent,
 } from 'react';
-import type { VizNode } from '../viz';
-import { HoverTip } from './HoverTip';
+import type { VizEvent, VizNode } from '../viz';
+import { depEntityId } from './contextDepHighlights';
+import { HoverTip, type HoverTipItem } from './HoverTip';
 import { NodeLifecycleBadges } from './NodeLifecycleBadges';
 import { FinalStateIcon, InitialArrowIcon } from './nodeIcons';
 import { DEFAULT_ZOOM_RADIUS, isZoomLarge } from './zoom';
@@ -22,6 +23,7 @@ interface StateTreeProps {
   watchedPaths?: Set<string>;
   highlightedTargetIds?: Set<string>;
   onHighlightTargets?: (targets: Set<string>) => void;
+  onEntityHover?: (entityIds: string[]) => void;
   contextAssignIds?: Set<string>;
   contextConsumeIds?: Set<string>;
 }
@@ -43,6 +45,7 @@ export function StateTree({
   onToggleZoom,
   highlightedTargetIds,
   onHighlightTargets,
+  onEntityHover,
   contextAssignIds,
   contextConsumeIds,
 }: {
@@ -56,6 +59,7 @@ export function StateTree({
   onToggleZoom: (path: string, exclusive: boolean) => void;
   highlightedTargetIds?: Set<string>;
   onHighlightTargets?: (targets: Set<string>) => void;
+  onEntityHover?: (entityIds: string[]) => void;
   contextAssignIds?: Set<string>;
   contextConsumeIds?: Set<string>;
 }) {
@@ -72,6 +76,7 @@ export function StateTree({
       watchedPaths={watchedPaths}
       highlightedTargetIds={highlightedTargetIds}
       onHighlightTargets={onHighlightTargets}
+      onEntityHover={onEntityHover}
       contextAssignIds={contextAssignIds}
       contextConsumeIds={contextConsumeIds}
     />
@@ -91,6 +96,7 @@ function StateTreeNode({
   watchedPaths = new Set(),
   highlightedTargetIds = new Set(),
   onHighlightTargets,
+  onEntityHover,
   contextAssignIds = new Set(),
   contextConsumeIds = new Set(),
 }: StateTreeProps) {
@@ -159,6 +165,7 @@ function StateTreeNode({
           node={node}
           align="right"
           onHighlightTargets={onHighlightTargets}
+          onEntityHover={onEntityHover}
         />
       )}
 
@@ -179,7 +186,7 @@ function StateTreeNode({
                 <HoverTip
                   className="node__event"
                   label={ev.type}
-                  items={ev.hoverLines}
+                  items={eventTipItems(ev)}
                   placement="below"
                   align="left"
                   onActiveChange={(active) =>
@@ -187,6 +194,7 @@ function StateTreeNode({
                       active ? new Set(ev.highlightIds) : new Set(),
                     )
                   }
+                  onEntityHover={onEntityHover}
                 >
                   {ev.type}
                 </HoverTip>
@@ -221,6 +229,7 @@ function StateTreeNode({
                 watchedPaths={watchedPaths}
                 highlightedTargetIds={highlightedTargetIds}
                 onHighlightTargets={onHighlightTargets}
+                onEntityHover={onEntityHover}
                 contextAssignIds={contextAssignIds}
                 contextConsumeIds={contextConsumeIds}
               />
@@ -230,6 +239,28 @@ function StateTreeNode({
       )}
     </div>
   );
+}
+
+/** Tip rows: target summary, then each guard/action as its own entity. */
+function eventTipItems(ev: VizEvent): HoverTipItem[] {
+  const items: HoverTipItem[] = [];
+  for (const transition of ev.transitions) {
+    if (transition.guard == null && transition.actions.length === 0) continue;
+    items.push({ label: transition.line.split(' · ')[0] ?? transition.line });
+    if (transition.guard) {
+      items.push({
+        label: `if ${transition.guard.name}`,
+        entityId: depEntityId(transition.guard) ?? undefined,
+      });
+    }
+    for (const action of transition.actions) {
+      items.push({
+        label: `do ${action.name}`,
+        entityId: depEntityId(action) ?? undefined,
+      });
+    }
+  }
+  return items;
 }
 
 function hasZoomModifier(

@@ -10,11 +10,16 @@ export function ContextInspector({
   contextDeps,
   hoveredKey,
   onHoverKey,
+  assignKeys,
+  consumeKeys,
 }: {
   context: unknown;
   contextDeps?: ContextDepGraph;
   hoveredKey: string | null;
   onHoverKey: (key: string | null) => void;
+  /** Keys highlighted from hovering an action / guard / invoke. */
+  assignKeys?: Set<string>;
+  consumeKeys?: Set<string>;
 }) {
   if (context == null) {
     return <pre className="viz__code">null</pre>;
@@ -42,6 +47,8 @@ export function ContextInspector({
       {entries.map(([key, value]) => {
         const linked = knownKeys.has(key);
         const active = hoveredKey === key;
+        const isAssign = assignKeys?.has(key) ?? false;
+        const isConsume = consumeKeys?.has(key) ?? false;
         const { assignIds, consumeIds } = stateIdsForContextKey(
           contextDeps,
           key,
@@ -54,6 +61,8 @@ export function ContextInspector({
                 'viz__context-key',
                 linked ? 'viz__context-key--linked' : '',
                 active ? 'viz__context-key--active' : '',
+                isAssign ? 'viz__context-key--assign' : '',
+                isConsume ? 'viz__context-key--consume' : '',
               ]
                 .filter(Boolean)
                 .join(' ')}

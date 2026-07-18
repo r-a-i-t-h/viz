@@ -14,6 +14,16 @@ Format for each entry:
 
 ---
 
+## 2026-07-18 — Reverse dep-graph hover: entity → context keys
+
+**Context:** Priority 1 already highlights states when hovering a context key; the other direction was still open.
+
+**Decision:** Hovering an action/guard (entry/exit tip rows, event tip `if`/`do` rows, watch-card symbols) looks up `contextDeps` edges from that entity and highlights Context panel keys: **red** assign (`writes`), **amber** consume (`reads`); assign wins on overlap. Tip open = union of listed entities; hovering a tip row narrows to that entity. Interactive tip popups use `pointer-events` + a short close delay so the cursor can cross the gap into the portaled list.
+
+**Rationale:** Same assign/consume colors as the forward direction, no new tree chrome; entity ids stay `action:…` / `guard:…` matching the analyzer.
+
+---
+
 ## 2026-07-18 — Context key tooltip shows assign/consume counts
 
 **Context:** Linked context-key hover title said “Hover to highlight…” which is redundant (the tooltip only appears on hover) and doesn’t help when highlighted states are scrolled out of view. Unlinked keys mentioned “dep-graph”, an implementation detail.

@@ -42,7 +42,7 @@ This unlocks hover + highlight without overloading the tree:
 
 - [x] **Pre-analysis pass** — on new machine / definition change: walk `logic.definition` (+ setup registries when available); record assign targets, guard reads, action reads, invoke `input` mappings
 - [x] **Hover a context key** — highlight states/actions/guards that assign or consume it
-- [ ] **Hover an assign / guard / action** — highlight the context keys it touches
+- [x] **Hover an assign / guard / action** — highlight the context keys it touches
 - [x] **Partial coverage OK** — opaque inline functions without serializable paths stay unmarked; prefer names/types/params over rehydrating functions
 - [x] **Demo** — `assign` that mutates several context keys; guarded transitions that read context
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import type { VizNode } from '../viz';
+import type { VizEvent, VizNode, VizSymbol } from '../viz';
+import { depEntityId } from './contextDepHighlights';
 import { DisclosureChevron } from './DisclosureChevron';
 import { findNodeByPath } from './findNodeByPath';
 import { NodeLifecycleBadges } from './NodeLifecycleBadges';
@@ -16,6 +17,7 @@ export function WatchColumn({
   onToggleZoom,
   highlightedTargetIds,
   onHighlightTargets,
+  onEntityHover,
   contextAssignIds,
   contextConsumeIds,
 }: {
@@ -29,6 +31,7 @@ export function WatchColumn({
   onToggleZoom?: (path: string, exclusive: boolean) => void;
   highlightedTargetIds?: Set<string>;
   onHighlightTargets?: (targets: Set<string>) => void;
+  onEntityHover?: (entityIds: string[]) => void;
   contextAssignIds?: Set<string>;
   contextConsumeIds?: Set<string>;
 }) {
@@ -63,6 +66,7 @@ export function WatchColumn({
               onToggleZoom={() => onToggleZoom?.(path, false)}
               onClose={() => onUnwatch(path)}
               onHighlightTargets={onHighlightTargets}
+              onEntityHover={onEntityHover}
             />
           </li>
         );
@@ -87,6 +91,7 @@ function WatchNode({
   onToggleZoom,
   onClose,
   onHighlightTargets,
+  onEntityHover,
 }: {
   node: VizNode;
   path: string;
@@ -103,11 +108,10 @@ function WatchNode({
   onToggleZoom: () => void;
   onClose: () => void;
   onHighlightTargets?: (targets: Set<string>) => void;
+  onEntityHover?: (entityIds: string[]) => void;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const isFinal = node.kind === 'final';
-  const entryItems = node.details.entry.map((s) => s.name);
-  const exitItems = node.details.exit.map((s) => s.name);
   const afterItems = node.details.after.map((t) => t.line);
   const afterHighlightIds = node.details.after.flatMap((t) => t.targetIds);
   const displayPath = path === '' ? node.key : path;
@@ -187,6 +191,7 @@ function WatchNode({
           align="left"
           className="node__badges--watch"
           onHighlightTargets={onHighlightTargets}
+          onEntityHover={onEntityHover}
         />
       )}
 
@@ -230,29 +235,19 @@ function WatchNode({
               <dd>{node.details.tags.join(', ')}</dd>
             </div>
           )}
-          {entryItems.length > 0 && (
-            <div>
-              <dt>entry</dt>
-              <dd>
-                <ul>
-                  {entryItems.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </dd>
-            </div>
+          {node.details.entry.length > 0 && (
+            <SymbolList
+              label="entry"
+              symbols={node.details.entry}
+              onEntityHover={onEntityHover}
+            />
           )}
-          {exitItems.length > 0 && (
-            <div>
-              <dt>exit</dt>
-              <dd>
-                <ul>
-                  {exitItems.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </dd>
-            </div>
+          {node.details.exit.length > 0 && (
+            <SymbolList
+              label="exit"
+              symbols={node.details.exit}
+              onEntityHover={onEntityHover}
+            />
           )}
           {afterItems.length > 0 && (
             <div
@@ -272,30 +267,123 @@ function WatchNode({
               </dd>
             </div>
           )}
-          {node.events.map((ev) => {
-            if (ev.detailLines.length === 0) return null;
-            return (
-              <div
-                key={ev.type}
-                className="node__watch-on"
-                onMouseEnter={() =>
-                  onHighlightTargets?.(new Set(ev.highlightIds))
-                }
-                onMouseLeave={() => onHighlightTargets?.(new Set())}
-              >
-                <dt>on</dt>
-                <dd>
-                  <ul>
-                    {ev.detailLines.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </dd>
-              </div>
-            );
-          })}
+          {node.events.map((ev) => (
+            <EventDetail
+              key={ev.type}
+              event={ev}
+              onHighlightTargets={onHighlightTargets}
+              onEntityHover={onEntityHover}
+            />
+          ))}
         </dl>
       )}
+    </div>
+  );
+}
+
+function SymbolList({
+  label,
+  symbols,
+  onEntityHover,
+}: {
+  label: string;
+  symbols: VizSymbol[];
+  onEntityHover?: (entityIds: string[]) => void;
+}) {
+  return (
+    <div>
+      <dt>{label}</dt>
+      <dd>
+        <ul>
+          {symbols.map((symbol) => (
+            <SymbolItem
+              key={`${symbol.kind}:${symbol.name}`}
+              symbol={symbol}
+              onEntityHover={onEntityHover}
+            />
+          ))}
+        </ul>
+      </dd>
+    </div>
+  );
+}
+
+function SymbolItem({
+  symbol,
+  onEntityHover,
+}: {
+  symbol: VizSymbol;
+  onEntityHover?: (entityIds: string[]) => void;
+}) {
+  const entityId = depEntityId(symbol);
+  const text = symbol.detail
+    ? `${symbol.name} (${symbol.detail})`
+    : symbol.name;
+
+  if (!entityId || !onEntityHover) {
+    return <li>{text}</li>;
+  }
+
+  return (
+    <li>
+      <button
+        type="button"
+        className="node__watch-entity"
+        onMouseEnter={() => onEntityHover([entityId])}
+        onMouseLeave={() => onEntityHover([])}
+        onFocus={() => onEntityHover([entityId])}
+        onBlur={() => onEntityHover([])}
+      >
+        {text}
+      </button>
+    </li>
+  );
+}
+
+function EventDetail({
+  event,
+  onHighlightTargets,
+  onEntityHover,
+}: {
+  event: VizEvent;
+  onHighlightTargets?: (targets: Set<string>) => void;
+  onEntityHover?: (entityIds: string[]) => void;
+}) {
+  if (event.detailLines.length === 0) return null;
+
+  const entityIds = event.transitions.flatMap((t) => {
+    const ids: string[] = [];
+    if (t.guard) {
+      const id = depEntityId(t.guard);
+      if (id) ids.push(id);
+    }
+    for (const action of t.actions) {
+      const id = depEntityId(action);
+      if (id) ids.push(id);
+    }
+    return ids;
+  });
+
+  return (
+    <div
+      className="node__watch-on"
+      onMouseEnter={() => {
+        onHighlightTargets?.(new Set(event.highlightIds));
+        if (entityIds.length > 0) onEntityHover?.(entityIds);
+      }}
+      onMouseLeave={() => {
+        onHighlightTargets?.(new Set());
+        onEntityHover?.([]);
+      }}
+    >
+      <dt>on</dt>
+      <dd>
+        <ul>
+          {event.detailLines.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </dd>
     </div>
   );
 }

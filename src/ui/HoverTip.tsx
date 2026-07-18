@@ -8,9 +8,15 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 
+export type HoverTipItem = {
+  label: string;
+  /** Dep-graph entity id (`action:…` / `guard:…`) for reverse key highlight. */
+  entityId?: string;
+};
+
 interface HoverTipProps {
   label: string;
-  items: string[];
+  items: Array<string | HoverTipItem>;
   children: ReactNode;
   /** Extra class on the trigger wrapper (e.g. badge colour). */
   className?: string;
@@ -24,10 +30,17 @@ interface HoverTipProps {
   align?: 'left' | 'center' | 'right';
   /** Reports hover/focus state even when there is no popup content. */
   onActiveChange?: (active: boolean) => void;
+  /**
+   * Fired when the tip highlights a dep-graph entity: union of all item
+   * entity ids while the tip is open, or a single id while hovering a row.
+   */
+  onEntityHover?: (entityIds: string[]) => void;
 }
 
 const VIEW_MARGIN = 8;
 const GAP = 8;
+/** Allow moving from trigger into the portaled popup across the gap. */
+const CLOSE_DELAY_MS = 120;
 
 /**
  * Hover/focus popup with a titled bullet list. Portaled to `document.body`
@@ -42,23 +55,88 @@ export function HoverTip({
   placement = 'below',
   align = 'center',
   onActiveChange,
+  onEntityHover,
 }: HoverTipProps) {
   const rootRef = useRef<HTMLSpanElement>(null);
   const popupRef = useRef<HTMLSpanElement>(null);
-  const [active, setActive] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const onEntityHoverRef = useRef(onEntityHover);
+  onEntityHoverRef.current = onEntityHover;
+  const onActiveChangeRef = useRef(onActiveChange);
+  onActiveChangeRef.current = onActiveChange;
 
-  const setActiveState = useCallback(
-    (next: boolean) => {
-      setActive(next);
-      onActiveChange?.(next);
+  const [active, setActive] = useState(false);
+  const [hoveredItemIndex, setHoveredItemIndex] = useState<number | null>(null);
+
+  const normalized = items.map(normalizeItem);
+  const interactive =
+    onEntityHover != null &&
+    normalized.some((item) => item.entityId != null && item.entityId.length > 0);
+
+  const emitEntities = useCallback((index: number | null, isActive: boolean) => {
+    const emit = onEntityHoverRef.current;
+    if (!emit) return;
+    if (!isActive) {
+      emit([]);
+      return;
+    }
+    const current = itemsRef.current.map(normalizeItem);
+    if (index != null) {
+      const id = current[index]?.entityId;
+      emit(id ? [id] : []);
+      return;
+    }
+    emit(
+      current
+        .map((item) => item.entityId)
+        .filter((id): id is string => id != null && id.length > 0),
+    );
+  }, []);
+
+  const clearCloseTimer = useCallback(() => {
+    if (closeTimerRef.current == null) return;
+    clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = null;
+  }, []);
+
+  const open = useCallback(() => {
+    clearCloseTimer();
+    setActive((prev) => {
+      if (!prev) {
+        onActiveChangeRef.current?.(true);
+        emitEntities(null, true);
+      }
+      return true;
+    });
+  }, [clearCloseTimer, emitEntities]);
+
+  const scheduleClose = useCallback(() => {
+    clearCloseTimer();
+    closeTimerRef.current = setTimeout(() => {
+      closeTimerRef.current = null;
+      setActive(false);
+      setHoveredItemIndex(null);
+      onActiveChangeRef.current?.(false);
+      emitEntities(null, false);
+    }, CLOSE_DELAY_MS);
+  }, [clearCloseTimer, emitEntities]);
+
+  useEffect(() => () => clearCloseTimer(), [clearCloseTimer]);
+
+  const hoverItem = useCallback(
+    (index: number | null) => {
+      setHoveredItemIndex(index);
+      emitEntities(index, true);
     },
-    [onActiveChange],
+    [emitEntities],
   );
 
   const reposition = useCallback(() => {
     const trigger = rootRef.current;
     const popup = popupRef.current;
-    if (!trigger || !popup || items.length === 0) return;
+    if (!trigger || !popup || normalized.length === 0) return;
 
     const triggerRect = trigger.getBoundingClientRect();
     // Measure while on-screen but invisible so height/width are accurate.
@@ -104,12 +182,12 @@ export function HoverTip({
     popup.style.left = `${Math.round(left)}px`;
     popup.style.visibility = '';
     popup.style.opacity = '';
-  }, [align, items.length, placement]);
+  }, [align, normalized.length, placement]);
 
   useLayoutEffect(() => {
-    if (!active || items.length === 0) return;
+    if (!active || normalized.length === 0) return;
     reposition();
-  }, [active, items, reposition]);
+  }, [active, normalized, reposition]);
 
   useEffect(() => {
     if (!active) return;
@@ -123,18 +201,42 @@ export function HoverTip({
   }, [active, reposition]);
 
   const popup =
-    active && items.length > 0
+    active && normalized.length > 0
       ? createPortal(
           <span
             ref={popupRef}
-            className="hover-tip__popup hover-tip__popup--open"
+            className={[
+              'hover-tip__popup',
+              'hover-tip__popup--open',
+              interactive ? 'hover-tip__popup--interactive' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
             role="tooltip"
+            onMouseEnter={open}
+            onMouseLeave={scheduleClose}
           >
             <span className="hover-tip__title">{label}</span>
             <ul className="hover-tip__list">
-              {items.map((item, index) => (
-                <li key={`${index}-${item}`}>{item}</li>
-              ))}
+              {normalized.map((item, index) => {
+                const linked = interactive && item.entityId != null;
+                return (
+                  <li
+                    key={`${index}-${item.label}`}
+                    className={
+                      linked
+                        ? hoveredItemIndex === index
+                          ? 'hover-tip__item hover-tip__item--active'
+                          : 'hover-tip__item hover-tip__item--linked'
+                        : undefined
+                    }
+                    onMouseEnter={linked ? () => hoverItem(index) : undefined}
+                    onMouseLeave={linked ? () => hoverItem(null) : undefined}
+                  >
+                    {item.label}
+                  </li>
+                );
+              })}
             </ul>
           </span>,
           document.body,
@@ -146,14 +248,18 @@ export function HoverTip({
       ref={rootRef}
       className={['hover-tip', className].filter(Boolean).join(' ')}
       tabIndex={0}
-      onMouseEnter={() => setActiveState(true)}
-      onMouseLeave={() => setActiveState(false)}
-      onFocus={() => setActiveState(true)}
-      onBlur={() => setActiveState(false)}
+      onMouseEnter={open}
+      onMouseLeave={scheduleClose}
+      onFocus={open}
+      onBlur={scheduleClose}
       onClick={(event) => event.stopPropagation()}
     >
       {children}
       {popup}
     </span>
   );
+}
+
+function normalizeItem(item: string | HoverTipItem): HoverTipItem {
+  return typeof item === 'string' ? { label: item } : item;
 }

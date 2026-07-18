@@ -5,7 +5,10 @@ import {
   DEFAULT_WATCH_WIDTH,
 } from './columnLayout';
 import { ContextInspector } from './ContextInspector';
-import { stateIdsForContextKey } from './contextDepHighlights';
+import {
+  contextKeysForEntities,
+  stateIdsForContextKey,
+} from './contextDepHighlights';
 import { SideColumn } from './SideColumn';
 import { FoldSection } from './FoldSection';
 import { StateTree } from './StateTree';
@@ -55,6 +58,7 @@ export function VisualizerView({
   const [hoveredContextKey, setHoveredContextKey] = useState<string | null>(
     null,
   );
+  const [hoveredEntityIds, setHoveredEntityIds] = useState<string[]>([]);
   const [zoomAnchors, setZoomAnchors] = useState<Set<string>>(() => new Set());
   /** Watched node paths keyed by actor session id (order preserved). */
   const [watchedBySession, setWatchedBySession] = useState<
@@ -79,6 +83,19 @@ export function VisualizerView({
           hoveredContextKey,
         )
       : { assignIds: new Set<string>(), consumeIds: new Set<string>() };
+
+  const { assignKeys: entityAssignKeys, consumeKeys: entityConsumeKeys } =
+    contextKeysForEntities(machine?.analysis.contextDeps, hoveredEntityIds);
+
+  const onHoverContextKey = useCallback((key: string | null) => {
+    setHoveredContextKey(key);
+    if (key != null) setHoveredEntityIds([]);
+  }, []);
+
+  const onEntityHover = useCallback((entityIds: string[]) => {
+    setHoveredEntityIds(entityIds);
+    if (entityIds.length > 0) setHoveredContextKey(null);
+  }, []);
 
   const toggleZoom = useCallback((path: string, exclusive: boolean) => {
     setZoomAnchors((current) => {
@@ -193,6 +210,7 @@ export function VisualizerView({
               onToggleZoom={toggleZoom}
               highlightedTargetIds={highlightedTargetIds}
               onHighlightTargets={setHighlightedTargetIds}
+              onEntityHover={onEntityHover}
               contextAssignIds={contextAssignIds}
               contextConsumeIds={contextConsumeIds}
             />
@@ -220,6 +238,7 @@ export function VisualizerView({
                 onToggleZoom={toggleZoom}
                 highlightedTargetIds={highlightedTargetIds}
                 onHighlightTargets={setHighlightedTargetIds}
+                onEntityHover={onEntityHover}
                 contextAssignIds={contextAssignIds}
                 contextConsumeIds={contextConsumeIds}
               />
@@ -247,7 +266,9 @@ export function VisualizerView({
               context={frame?.context}
               contextDeps={machine?.analysis.contextDeps}
               hoveredKey={hoveredContextKey}
-              onHoverKey={setHoveredContextKey}
+              onHoverKey={onHoverContextKey}
+              assignKeys={entityAssignKeys}
+              consumeKeys={entityConsumeKeys}
             />
           </FoldSection>
           <FoldSection title="Context deps">
