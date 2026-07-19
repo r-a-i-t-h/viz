@@ -1,3 +1,23 @@
+## 2026-07-19 — Next events are plain rows with sort modes
+
+**Context:** Next-event chips wrapped poorly for long event names; list order was Map insertion from a shallow DFS (roughly ancestors-first, not an intentional sort).
+
+**Decision:** Render each next event as a context-style plain row. Sort controls: **shallow** (min provider depth ascending — ancestors top), **deep** (min provider depth descending — ancestors bottom), **name**. Depth comes from the live machine tree in the renderer.
+
+**Rationale:** Long event types need a full row; graph depth is the meaningful order for bubbling handlers.
+
+---
+
+## 2026-07-19 — Right column is tabbed (State / Context / Event log)
+
+**Context:** The end-side inspector stacked six fold sections (current state, status/output, next events, context, context deps, event log). Status/output mostly duplicated the tree status badge; the raw context-deps JSON dump was low value as a default surface.
+
+**Decision:** Replace the stacked folds with tabs — **State** (foldable current value as plain text + foldable next events; spawn `input` / done `output` only when present), **Context** (inspector; deps graph via “Show context deps” / “Copy deps”, hidden by default), **Event log**. Drop the standalone Status/output fold and bordered code chrome around current state — keep fold headers so large values can collapse.
+
+**Rationale:** One job per tab; keep the dense dumps discoverable without owning the default viewport; folds remain so next events stay reachable when state value is huge.
+
+---
+
 ## 2026-07-19 — Visualizer light mode via Appearance theme toggle
 
 **Context:** The visualizer UI was dark-only with hardcoded hex colors. Appearance already grouped zoom range and badge visibility as renderer-local prefs.

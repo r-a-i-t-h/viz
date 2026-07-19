@@ -10,6 +10,7 @@ import {
   stateIdsForContextKey,
 } from './contextDepHighlights';
 import { SideColumn } from './SideColumn';
+import { SideTabs } from './SideTabs';
 import { FoldSection } from './FoldSection';
 import { NextEventsPanel } from './NextEventsPanel';
 import { StateTree } from './StateTree';
@@ -289,107 +290,142 @@ export function VisualizerView({
           onWidthChange={setSideWidth}
           className="viz__panel--side"
         >
-          <FoldSection title="Current state">
-            <pre className="viz__code">
-              {JSON.stringify(frame?.value, null, 2)}
-            </pre>
-          </FoldSection>
-          <FoldSection title="Status / output">
-            <StatusOutputDump frame={frame} machine={machine} />
-          </FoldSection>
-          <FoldSection title="Next events">
-            <NextEventsPanel
-              events={frame?.nextEvents ?? []}
-              onHighlightProviders={setHighlightedTargetIds}
-              onEntityHover={onEntityHover}
-            />
-          </FoldSection>
-          <FoldSection title="Context">
-            <ContextInspector
-              context={frame?.context}
-              contextDeps={machine?.analysis.contextDeps}
-              contextKeyAges={frame?.contextKeyAges}
-              hoveredKey={hoveredContextKey}
-              onHoverKey={onHoverContextKey}
-              assignKeys={entityAssignKeys}
-              consumeKeys={entityConsumeKeys}
-              onSelectActor={setSelectedSessionId}
-            />
-          </FoldSection>
-          <FoldSection title="Context deps">
-            <pre className="viz__code">
-              {JSON.stringify(machine?.analysis.contextDeps, null, 2)}
-            </pre>
-          </FoldSection>
-          <FoldSection title="Event log">
-            <ul className="viz__log">
-              {snapshot.log.map((entry) => (
-                <li
-                  key={entry.seq}
-                  className={`viz__log-item viz__log-item--${entry.type.replace('@xstate.', '')}`}
-                >
-                  <span className="viz__log-type">{entry.type}</span>
-                  {entry.eventType && (
-                    <span className="viz__log-event">{entry.eventType}</span>
-                  )}
-                  {entry.value !== undefined && (
-                    <span className="viz__log-value">
-                      {JSON.stringify(entry.value)}
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </FoldSection>
+          <SideTabs
+            panels={{
+              state: (
+                <>
+                  <FoldSection title="Current state">
+                    <pre className="viz__code viz__code--plain">
+                      {JSON.stringify(frame?.value, null, 2)}
+                    </pre>
+                    <InputOutputMeta frame={frame} machine={machine} />
+                  </FoldSection>
+                  <FoldSection title="Next events">
+                    <NextEventsPanel
+                      events={frame?.nextEvents ?? []}
+                      root={machine?.root}
+                      onHighlightProviders={setHighlightedTargetIds}
+                      onEntityHover={onEntityHover}
+                    />
+                  </FoldSection>
+                </>
+              ),
+              context: (
+                <>
+                  <ContextInspector
+                    context={frame?.context}
+                    contextDeps={machine?.analysis.contextDeps}
+                    contextKeyAges={frame?.contextKeyAges}
+                    hoveredKey={hoveredContextKey}
+                    onHoverKey={onHoverContextKey}
+                    assignKeys={entityAssignKeys}
+                    consumeKeys={entityConsumeKeys}
+                    onSelectActor={setSelectedSessionId}
+                  />
+                  <ContextDepsTools deps={machine?.analysis.contextDeps} />
+                </>
+              ),
+              log: (
+                <ul className="viz__log">
+                  {snapshot.log.map((entry) => (
+                    <li
+                      key={entry.seq}
+                      className={`viz__log-item viz__log-item--${entry.type.replace('@xstate.', '')}`}
+                    >
+                      <span className="viz__log-type">{entry.type}</span>
+                      {entry.eventType && (
+                        <span className="viz__log-event">{entry.eventType}</span>
+                      )}
+                      {entry.value !== undefined && (
+                        <span className="viz__log-value">
+                          {JSON.stringify(entry.value)}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ),
+            }}
+          />
         </SideColumn>
       </main>
     </div>
   );
 }
 
-function StatusOutputDump({
+/** Spawn input / done output under current state — status lives on the tree badge. */
+function InputOutputMeta({
   frame,
   machine,
 }: {
   frame: VizFrame | undefined;
   machine: VizMachine | undefined;
 }) {
-  if (!frame && machine?.input === undefined) {
-    return <p className="viz__muted">No frame yet.</p>;
-  }
+  const showInput = machine?.input !== undefined;
+  const showOutput = frame?.status === 'done' || frame?.output !== undefined;
+  if (!showInput && !showOutput) return null;
   return (
     <dl className="viz__dump-meta">
-      <div>
-        <dt>status</dt>
-        <dd>
-          <span
-            className={`viz__actor-status viz__actor-status--${frame?.status ?? 'active'}`}
-          >
-            {frame?.status ?? '—'}
-          </span>
-        </dd>
-      </div>
-      {machine?.input !== undefined && (
+      {showInput && (
         <div>
           <dt>input</dt>
           <dd>
-            <pre className="viz__code viz__code--inline">
-              {JSON.stringify(machine.input, null, 2)}
+            <pre className="viz__code viz__code--plain viz__code--inline">
+              {JSON.stringify(machine?.input, null, 2)}
             </pre>
           </dd>
         </div>
       )}
-      {frame?.status === 'done' || frame?.output !== undefined ? (
+      {showOutput && (
         <div>
           <dt>output</dt>
           <dd>
-            <pre className="viz__code viz__code--inline">
+            <pre className="viz__code viz__code--plain viz__code--inline">
               {JSON.stringify(frame?.output ?? null, null, 2)}
             </pre>
           </dd>
         </div>
-      ) : null}
+      )}
     </dl>
+  );
+}
+
+function ContextDepsTools({
+  deps,
+}: {
+  deps: VizMachine['analysis']['contextDeps'] | undefined;
+}) {
+  const [showDeps, setShowDeps] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const json = JSON.stringify(deps ?? null, null, 2);
+
+  const copyDeps = async () => {
+    try {
+      await navigator.clipboard.writeText(json);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <div className="viz__context-deps-tools">
+      <div className="viz__context-deps-actions">
+        <button
+          type="button"
+          className="viz__text-button"
+          aria-expanded={showDeps}
+          onClick={() => setShowDeps((open) => !open)}
+        >
+          {showDeps ? 'Hide context deps' : 'Show context deps'}
+        </button>
+        <button type="button" className="viz__text-button" onClick={copyDeps}>
+          {copied ? 'Copied' : 'Copy deps'}
+        </button>
+      </div>
+      {showDeps && <pre className="viz__code">{json}</pre>}
+    </div>
   );
 }
 

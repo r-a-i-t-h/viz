@@ -6,9 +6,6 @@ import {
 } from '@viz/protocol';
 import { stateIdsForContextKey } from './contextDepHighlights';
 
-/** Fade highlight window: age 0 is hottest; ages beyond this look idle. */
-const AGE_FADE_MAX = 8;
-
 type ContextSort = 'name' | 'age';
 
 /**
@@ -41,18 +38,20 @@ export function ContextInspector({
   const [sortBy, setSortBy] = useState<ContextSort>('name');
 
   if (context == null) {
-    return <pre className="viz__code">null</pre>;
+    return <pre className="viz__code viz__code--plain">null</pre>;
   }
 
   if (typeof context !== 'object' || Array.isArray(context)) {
     return (
-      <pre className="viz__code">{JSON.stringify(context, null, 2)}</pre>
+      <pre className="viz__code viz__code--plain">
+        {JSON.stringify(context, null, 2)}
+      </pre>
     );
   }
 
   const entries = Object.entries(context as Record<string, unknown>);
   if (entries.length === 0) {
-    return <pre className="viz__code">{'{}'}</pre>;
+    return <pre className="viz__code viz__code--plain">{'{}'}</pre>;
   }
 
   const knownKeys = new Set(
@@ -117,9 +116,7 @@ export function ContextInspector({
             key,
           );
           const ageClass =
-            age != null && age <= AGE_FADE_MAX
-              ? `viz__context-key--changed viz__context-key--age-${age}`
-              : '';
+            age === 0 ? 'viz__context-key--age-0' : '';
           return (
             <li key={key}>
               <button
