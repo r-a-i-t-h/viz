@@ -1,3 +1,15 @@
+## 2026-07-19 — Late inspect via `actor.system.inspect`
+
+**Context:** For local debugging it is useful to know whether `inspect` is construction-only or can be attached to an already-created actor (e.g. without touching every `createActor` call site).
+
+**Finding:** XState v5 registers `createActor(machine, { inspect })` on the **actor system** (root only). The same observer can be attached later with `actor.system.inspect(viz.inspect)`, which returns a subscription. `@viz/host` still only projects structure from `@xstate.actor`; attaching **after** `start()` misses that event, so the popup gets snapshots/logs without a machine tree. Attach before `start()` (or pass `inspect` at construction) for a usable viz.
+
+**Decision:** Document both paths and the timing caveat in [`HOST-INTEGRATION.md`](./HOST-INTEGRATION.md); note `system.inspect` in [`INSPECT-V4-VS-V5.md`](./INSPECT-V4-VS-V5.md).
+
+**Rationale:** Late attach is a real XState capability and valuable for opt-in local debugging; the `@xstate.actor` dependency is easy to miss without an explicit warning.
+
+---
+
 ## 2026-07-19 — Disable text selection in visualizer UI
 
 **Context:** Click/drag across the graph, panels, and chrome was selecting labels and other text, which fought hover and resize interactions.

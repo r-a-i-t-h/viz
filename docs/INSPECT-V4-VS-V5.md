@@ -25,7 +25,7 @@ What changed is:
 | | v4 world | v5 world |
 |---|---|---|
 | Package | `@xstate/inspect` | Inspect is **built into `xstate`**; `@statelyai/inspect` is a **transport / UI adapter** |
-| Attachment | Global `inspect()` + `interpret(machine, { devTools: true })` | `createActor(machine, { inspect })` |
+| Attachment | Global `inspect()` + `interpret(machine, { devTools: true })` | `createActor(machine, { inspect })` **or** later `actor.system.inspect(observer)` (returns a subscription) |
 | Custom viz entry | `createWindowReceiver()` → `service.register` / `service.state` / … | Raw `InspectionEvent` observer, *or* `@statelyai/inspect`’s `StatelyInspectionEvent` over postMessage / WebSocket |
 | Scope | Mostly machine *services* | Full **actor system** (machine, promise, callback, observable, transition, …) |
 
@@ -35,6 +35,21 @@ v5:  createActor({ inspect })       →  InspectionEvent (lean)
                                     →  optional @statelyai/inspect  →  Stately* wire events
                                     →  and/or own host that reads actorRef.logic
 ```
+
+### Late attachment (`actor.system.inspect`)
+
+`createActor(machine, { inspect })` only wires the observer when creating a **root** actor (it calls `system.inspect` internally). You can attach the same way after construction:
+
+```ts
+const actor = createActor(machine);
+const sub = actor.system.inspect((inspectionEvent) => {
+  /* … */
+});
+actor.start();
+// sub.unsubscribe();
+```
+
+Inspection is **system-wide** and does **not** replay past events. For a custom viz that keys structure off `@xstate.actor` (as `@viz/host` does), attach **before** `start()` or you will see later snapshots/events without a machine graph. See [`HOST-INTEGRATION.md`](./HOST-INTEGRATION.md#attaching-inspect-after-createactor).
 
 ---
 
@@ -187,6 +202,7 @@ type StatelyActorEvent = {
 | Challenge | Detail |
 |-----------|--------|
 | Discovery | Machine structure is *not* on the event — easy to miss `actorRef.logic` |
+| Late inspect | `system.inspect` after `start()` misses `@xstate.actor`; no replay |
 | No traversal helpers | `@statelyai/inspect` does not walk graphs; you walk `StateNodeDefinition` yourself |
 | Actor diversity | Many `actorRef`s are not machines → no `.definition` |
 | `setup()` implementations | Never round-trip over the wire; UI should show names / types / params |
@@ -197,7 +213,7 @@ type StatelyActorEvent = {
 
 - Granular `@xstate.microstep` / `@xstate.action` (eventless / always cascades, action stream).
 - Consistent `actorRef` + parent/child `sessionId` for actor-system diagrams.
-- Explicit attach point (`inspect` option) instead of global DevTools magic.
+- Explicit attach point (`inspect` option **or** `actor.system.inspect`) instead of global DevTools magic.
 
 ---
 

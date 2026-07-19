@@ -45,13 +45,42 @@ Lifecycle:
 
 2. **Point at a popup page** — a deployed visualizer build (from this repo’s `apps/visualizer/dist/` — `index.html` + `assets/`) that speaks `@viz.*`. Pass its absolute URL as `visualizerUrl`. It can live in any subdirectory (or another origin); keep the HTML and `assets/` folder together. Asset URLs are relative (`base: './'`), so domain-root hosting is not required.
 
-3. **Wire inspect on every actor you care about** — pass the same `viz.inspect` into each `createActor(..., { inspect })`. No separate `attachActor()`. Spawned/invoked machine children that emit `@xstate.actor` are picked up automatically.
+3. **Wire inspect on every root actor you care about** — pass the same `viz.inspect` into each `createActor(..., { inspect })`, or attach later via `actor.system.inspect` (see below). No separate `attachActor()`. Spawned/invoked machine children that emit `@xstate.actor` are picked up automatically once the **system** is inspected.
 
-4. **Call `openPopup()` from a user gesture** — click/keydown. Especially important when the host runs in an iframe (popup blockers). Check the boolean return / `getPopupStatus()` for `'blocked'`.
+4. **Call `openPopup()` from a user gesture** — click/keydown. Especially important when the host runs in an iframe (popup blockers). Check the boolean return / `getPopupStatus()` for `'blocked'`. For local debugging, console `viz.openPopup()` often works if the origin allows popups.
 
 5. **If the host is in a hidden iframe** (see [`apps/demo/embed.html`](../apps/demo/embed.html)) — sandbox needs `allow-scripts`, `allow-popups`, and usually `allow-popups-to-escape-sandbox`.
 
 6. **Optional hygiene** — `sanitizeContext` / `sanitizeEvent` before frames/logs cross the wire; `dispose()` on shutdown; stop actors yourself (host dispose does not stop them).
+
+## Attaching inspect after `createActor`
+
+XState v5 does **not** require `inspect` only at construction. `createActor(machine, { inspect })` is sugar: on a root actor it registers the observer on `actor.system`. You can do the same later:
+
+```ts
+const viz = createVisualizerHost({ visualizerUrl: '…' });
+const actor = createActor(machine); // no inspect option
+
+// Before start — still receives @xstate.actor (machine structure)
+const sub = actor.system.inspect(viz.inspect);
+actor.start();
+
+// later: sub.unsubscribe();
+```
+
+Useful when you cannot (or prefer not to) change every `createActor` call site — e.g. local debugging toggled from the console, or a thin wrapper around an existing factory.
+
+### Timing that matters for `@viz/host`
+
+The host builds the machine tree only from **`@xstate.actor`** events (`machineLogicFromEvent` → `projectMachine`). Snapshot/event streams alone do not register structure.
+
+| When you call `system.inspect(viz.inspect)` | What you get |
+| --- | --- |
+| Before `actor.start()` | Full structure + live frames (same as construction-time `inspect`) |
+| After `actor.start()` | Later `@xstate.snapshot` / `@xstate.event` only — **no** machine graph (registration already fired) |
+| On a child actor’s `system` | Same system as the root — inspect is system-wide either way |
+
+Prefer construction-time `inspect` or `system.inspect` **before** `start()`. There is no built-in replay of past inspection events.
 
 ## What you do NOT need on the host
 
