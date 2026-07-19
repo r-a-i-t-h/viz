@@ -39,7 +39,9 @@ export const workerMachine = setup({
  * - `always` (eventless) gate + `invoke` with onDone/onError
  * - history state under `running.signal` (RESTORE)
  * - `spawn` child into `context.worker` on START
- * - parent+child both handle `NUDGE` (next-events multi-provider highlight)
+ * - parent+child both handle `NUDGE` (multi-provider, action-only)
+ * - child+ancestor `BAIL`: guarded deep handler else ancestor target
+ *   (next-events hover → two amber providers + two red targets)
  * - context dep-graph: multi-key assign, named + inline guards, invoke I/O
  *
  * Written with XState v5's `setup().createMachine()` so `actorRef.logic` exposes
@@ -63,6 +65,7 @@ export const demoMachine = setup({
       | { type: 'RESUME' }
       | { type: 'TICK' }
       | { type: 'NUDGE' }
+      | { type: 'BAIL' }
       | { type: 'CYCLE' }
       | { type: 'TOGGLE_MODE' }
       | { type: 'DONE' }
@@ -182,6 +185,8 @@ export const demoMachine = setup({
         STOP: 'idle',
         // Same event on parent + child → next-events lists both providers.
         NUDGE: { actions: 'noteParentNudge' },
+        // Ancestor fallback when deep `BAIL` guard fails (see engine.active).
+        BAIL: 'idle',
       },
       states: {
         // Region 1 — a simple compound engine with pause/resume.
@@ -202,6 +207,11 @@ export const demoMachine = setup({
                   actions: assign({
                     ticks: ({ context }) => context.ticks + 1,
                   }),
+                },
+                // Deep guarded handler; if isReady is false, bubbles to running.BAIL → idle.
+                BAIL: {
+                  guard: 'isReady',
+                  target: 'paused',
                 },
               },
             },

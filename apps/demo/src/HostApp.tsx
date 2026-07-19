@@ -26,6 +26,7 @@ const SEND_BUTTONS: { label: string; event: ActorEvent }[] = [
   { label: 'FETCH', event: { type: 'FETCH' } },
   { label: 'TICK', event: { type: 'TICK' } },
   { label: 'NUDGE', event: { type: 'NUDGE' } },
+  { label: 'BAIL', event: { type: 'BAIL' } },
   { label: 'PAUSE', event: { type: 'PAUSE' } },
   { label: 'RESUME', event: { type: 'RESUME' } },
   { label: 'CYCLE', event: { type: 'CYCLE' } },

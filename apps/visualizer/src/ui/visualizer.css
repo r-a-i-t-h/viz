@@ -1129,7 +1129,9 @@ body.viz--resizing iframe {
   margin: 0.1rem 0;
 }
 
-.node--transition-target {
+/* Transition hover: source/handler (amber) vs destination (red = change).
+   Target wins on overlap when both classes apply. */
+.node--transition-source {
   border-color: var(--viz-warn);
   background: var(--viz-warn-bg);
   box-shadow:
@@ -1137,7 +1139,15 @@ body.viz--resizing iframe {
     0 0 12px var(--viz-warn-glow-soft);
 }
 
-/* Context dep-graph: assign (red) vs consume-only (amber). */
+.node--transition-target {
+  border-color: var(--viz-err);
+  background: var(--viz-err-bg);
+  box-shadow:
+    0 0 0 2px var(--viz-err-glow),
+    0 0 12px var(--viz-err-glow-soft);
+}
+
+/* Context dep-graph: assign/write (red = change) vs consume/read (amber). */
 .node--context-assign {
   border-color: var(--viz-err);
   background: var(--viz-err-bg);
@@ -1643,6 +1653,7 @@ body.viz--resizing iframe {
   background: transparent;
   color: inherit;
   font: inherit;
+  text-align: left;
   cursor: help;
 }
 

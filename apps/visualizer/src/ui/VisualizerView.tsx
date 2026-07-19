@@ -27,6 +27,10 @@ import {
   readStoredTheme,
   type VizTheme,
 } from './theme';
+import {
+  NO_TRANSITION_HIGHLIGHT,
+  type TransitionHighlight,
+} from './transitionHighlight';
 import './visualizer.css';
 
 /**
@@ -68,9 +72,8 @@ export function VisualizerView({
   const [watchPanelOpen, setWatchPanelOpen] = useState(true);
   const [watchWidth, setWatchWidth] = useState(DEFAULT_WATCH_WIDTH);
   const [sideWidth, setSideWidth] = useState(DEFAULT_SIDE_WIDTH);
-  const [highlightedTargetIds, setHighlightedTargetIds] = useState<Set<string>>(
-    () => new Set(),
-  );
+  const [transitionHighlight, setTransitionHighlight] =
+    useState<TransitionHighlight>(NO_TRANSITION_HIGHLIGHT);
   const [hoveredContextKey, setHoveredContextKey] = useState<string | null>(
     null,
   );
@@ -235,8 +238,9 @@ export function VisualizerView({
               onUnwatch={unwatch}
               zoomAnchors={zoomAnchors}
               onToggleZoom={toggleZoom}
-              highlightedTargetIds={highlightedTargetIds}
-              onHighlightTargets={setHighlightedTargetIds}
+              highlightedSourceIds={transitionHighlight.sources}
+              highlightedTargetIds={transitionHighlight.targets}
+              onHighlightTransition={setTransitionHighlight}
               onEntityHover={onEntityHover}
               contextAssignIds={contextAssignIds}
               contextConsumeIds={contextConsumeIds}
@@ -270,8 +274,9 @@ export function VisualizerView({
                 watchedPaths={watchedPathSet}
                 zoomAnchors={zoomAnchors}
                 onToggleZoom={toggleZoom}
-                highlightedTargetIds={highlightedTargetIds}
-                onHighlightTargets={setHighlightedTargetIds}
+                highlightedSourceIds={transitionHighlight.sources}
+                highlightedTargetIds={transitionHighlight.targets}
+                onHighlightTransition={setTransitionHighlight}
                 onEntityHover={onEntityHover}
                 contextAssignIds={contextAssignIds}
                 contextConsumeIds={contextConsumeIds}
@@ -304,8 +309,7 @@ export function VisualizerView({
                     <NextEventsPanel
                       events={frame?.nextEvents ?? []}
                       root={machine?.root}
-                      onHighlightProviders={setHighlightedTargetIds}
-                      onEntityHover={onEntityHover}
+                      onHighlightTransition={setTransitionHighlight}
                     />
                   </FoldSection>
                 </>

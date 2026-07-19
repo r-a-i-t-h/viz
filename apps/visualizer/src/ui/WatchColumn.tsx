@@ -5,6 +5,11 @@ import { DisclosureChevron } from './DisclosureChevron';
 import { findNodeByPath } from './findNodeByPath';
 import { NodeLifecycleBadges } from './NodeLifecycleBadges';
 import { FinalStateIcon, HistoryStateIcon } from './nodeIcons';
+import {
+  NO_TRANSITION_HIGHLIGHT,
+  targetHighlight,
+  type TransitionHighlight,
+} from './transitionHighlight';
 
 export function WatchColumn({
   root,
@@ -15,8 +20,9 @@ export function WatchColumn({
   onUnwatch,
   zoomAnchors,
   onToggleZoom,
+  highlightedSourceIds,
   highlightedTargetIds,
-  onHighlightTargets,
+  onHighlightTransition,
   onEntityHover,
   contextAssignIds,
   contextConsumeIds,
@@ -29,8 +35,9 @@ export function WatchColumn({
   onUnwatch: (path: string) => void;
   zoomAnchors?: Set<string>;
   onToggleZoom?: (path: string, exclusive: boolean) => void;
+  highlightedSourceIds?: Set<string>;
   highlightedTargetIds?: Set<string>;
-  onHighlightTargets?: (targets: Set<string>) => void;
+  onHighlightTransition?: (highlight: TransitionHighlight) => void;
   onEntityHover?: (entityIds: string[]) => void;
   contextAssignIds?: Set<string>;
   contextConsumeIds?: Set<string>;
@@ -54,6 +61,7 @@ export function WatchColumn({
               node={node}
               path={path}
               isActive={path === '' || activePaths.has(path)}
+              isTransitionSource={highlightedSourceIds?.has(node.id) ?? false}
               isTransitionTarget={highlightedTargetIds?.has(node.id) ?? false}
               isContextAssign={contextAssignIds?.has(node.id) ?? false}
               isContextConsume={contextConsumeIds?.has(node.id) ?? false}
@@ -65,7 +73,7 @@ export function WatchColumn({
               onMoveDown={() => onMove(path, 1)}
               onToggleZoom={() => onToggleZoom?.(path, false)}
               onClose={() => onUnwatch(path)}
-              onHighlightTargets={onHighlightTargets}
+              onHighlightTransition={onHighlightTransition}
               onEntityHover={onEntityHover}
             />
           </li>
@@ -79,6 +87,7 @@ function WatchNode({
   node,
   path,
   isActive,
+  isTransitionSource,
   isTransitionTarget,
   isContextAssign,
   isContextConsume,
@@ -90,12 +99,13 @@ function WatchNode({
   onMoveDown,
   onToggleZoom,
   onClose,
-  onHighlightTargets,
+  onHighlightTransition,
   onEntityHover,
 }: {
   node: VizNode;
   path: string;
   isActive: boolean;
+  isTransitionSource: boolean;
   isTransitionTarget: boolean;
   isContextAssign: boolean;
   isContextConsume: boolean;
@@ -107,7 +117,7 @@ function WatchNode({
   onMoveDown: () => void;
   onToggleZoom: () => void;
   onClose: () => void;
-  onHighlightTargets?: (targets: Set<string>) => void;
+  onHighlightTransition?: (highlight: TransitionHighlight) => void;
   onEntityHover?: (entityIds: string[]) => void;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -132,6 +142,7 @@ function WatchNode({
         isFinal ? 'node--final' : '',
         isHistory ? 'node--history' : '',
         detailsOpen ? 'node--watch-open' : '',
+        isTransitionSource ? 'node--transition-source' : '',
         isTransitionTarget ? 'node--transition-target' : '',
         isContextAssign ? 'node--context-assign' : '',
         isContextConsume ? 'node--context-consume' : '',
@@ -197,7 +208,7 @@ function WatchNode({
           node={node}
           align="left"
           className="node__badges--watch"
-          onHighlightTargets={onHighlightTargets}
+          onHighlightTransition={onHighlightTransition}
           onEntityHover={onEntityHover}
         />
       )}
@@ -273,9 +284,11 @@ function WatchNode({
             <div
               className="node__watch-on"
               onMouseEnter={() =>
-                onHighlightTargets?.(new Set(alwaysHighlightIds))
+                onHighlightTransition?.(targetHighlight(alwaysHighlightIds))
               }
-              onMouseLeave={() => onHighlightTargets?.(new Set())}
+              onMouseLeave={() =>
+                onHighlightTransition?.(NO_TRANSITION_HIGHLIGHT)
+              }
             >
               <dt>always</dt>
               <dd>
@@ -291,9 +304,11 @@ function WatchNode({
             <div
               className="node__watch-on"
               onMouseEnter={() =>
-                onHighlightTargets?.(new Set(afterHighlightIds))
+                onHighlightTransition?.(targetHighlight(afterHighlightIds))
               }
-              onMouseLeave={() => onHighlightTargets?.(new Set())}
+              onMouseLeave={() =>
+                onHighlightTransition?.(NO_TRANSITION_HIGHLIGHT)
+              }
             >
               <dt>after</dt>
               <dd>
@@ -309,9 +324,11 @@ function WatchNode({
             <div
               className="node__watch-on"
               onMouseEnter={() =>
-                onHighlightTargets?.(new Set(invokeHighlightIds))
+                onHighlightTransition?.(targetHighlight(invokeHighlightIds))
               }
-              onMouseLeave={() => onHighlightTargets?.(new Set())}
+              onMouseLeave={() =>
+                onHighlightTransition?.(NO_TRANSITION_HIGHLIGHT)
+              }
             >
               <dt>invoke</dt>
               <dd>
@@ -336,7 +353,7 @@ function WatchNode({
             <EventDetail
               key={ev.type}
               event={ev}
-              onHighlightTargets={onHighlightTargets}
+              onHighlightTransition={onHighlightTransition}
               onEntityHover={onEntityHover}
             />
           ))}
@@ -407,11 +424,11 @@ function SymbolItem({
 
 function EventDetail({
   event,
-  onHighlightTargets,
+  onHighlightTransition,
   onEntityHover,
 }: {
   event: VizEvent;
-  onHighlightTargets?: (targets: Set<string>) => void;
+  onHighlightTransition?: (highlight: TransitionHighlight) => void;
   onEntityHover?: (entityIds: string[]) => void;
 }) {
   if (event.detailLines.length === 0) return null;
@@ -433,11 +450,11 @@ function EventDetail({
     <div
       className="node__watch-on"
       onMouseEnter={() => {
-        onHighlightTargets?.(new Set(event.highlightIds));
+        onHighlightTransition?.(targetHighlight(event.highlightIds));
         if (entityIds.length > 0) onEntityHover?.(entityIds);
       }}
       onMouseLeave={() => {
-        onHighlightTargets?.(new Set());
+        onHighlightTransition?.(NO_TRANSITION_HIGHLIGHT);
         onEntityHover?.([]);
       }}
     >

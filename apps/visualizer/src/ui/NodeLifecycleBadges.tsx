@@ -9,6 +9,11 @@ import {
   HistoryIcon,
   InvokeIcon,
 } from './nodeIcons';
+import {
+  NO_TRANSITION_HIGHLIGHT,
+  targetHighlight,
+  type TransitionHighlight,
+} from './transitionHighlight';
 
 const LIFECYCLE_KINDS = new Set([
   'entry',
@@ -24,14 +29,14 @@ export function NodeLifecycleBadges({
   node,
   align = 'right',
   className,
-  onHighlightTargets,
+  onHighlightTransition,
   onEntityHover,
 }: {
   node: VizNode;
   align?: 'left' | 'right';
   className?: string;
   /** Highlight badge transition targets while hovered. */
-  onHighlightTargets?: (targets: Set<string>) => void;
+  onHighlightTransition?: (highlight: TransitionHighlight) => void;
   /** Highlight context keys for hovered action/guard entities. */
   onEntityHover?: (entityIds: string[]) => void;
 }) {
@@ -46,7 +51,7 @@ export function NodeLifecycleBadges({
           badge={badge}
           node={node}
           align={align}
-          onHighlightTargets={onHighlightTargets}
+          onHighlightTransition={onHighlightTransition}
           onEntityHover={onEntityHover}
         />
       ))}
@@ -58,13 +63,13 @@ function BadgeTip({
   badge,
   node,
   align,
-  onHighlightTargets,
+  onHighlightTransition,
   onEntityHover,
 }: {
   badge: VizBadge;
   node: VizNode;
   align: 'left' | 'right';
-  onHighlightTargets?: (targets: Set<string>) => void;
+  onHighlightTransition?: (highlight: TransitionHighlight) => void;
   onEntityHover?: (entityIds: string[]) => void;
 }) {
   const Icon =
@@ -96,8 +101,10 @@ function BadgeTip({
       onActiveChange={
         badge.highlightIds.length > 0
           ? (active) =>
-              onHighlightTargets?.(
-                active ? new Set(badge.highlightIds) : new Set(),
+              onHighlightTransition?.(
+                active
+                  ? targetHighlight(badge.highlightIds)
+                  : NO_TRANSITION_HIGHLIGHT,
               )
           : undefined
       }

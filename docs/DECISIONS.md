@@ -1,3 +1,33 @@
+## 2026-07-19 — Demo BAIL event for guarded bubble + dual targets
+
+**Context:** Needed a live example of next-event hover with two amber providers and two red targets (deep guarded handler + ancestor fallback).
+
+**Decision:** Add `BAIL` on `running.engine.active` (`guard: isReady` → `paused`) and on `running` (→ `idle`). Send button in the demo host. After `START`, hover `BAIL` in next events.
+
+**Rationale:** `NUDGE` only covered multi-provider action-only; this exercises the source/target colour split with a real cond bubble.
+
+---
+
+## 2026-07-19 — Transition hover: amber source, red target
+
+**Context:** Next-event hover painted providers and destinations the same amber. Context deps already used red=write/change and amber=read/relevant.
+
+**Decision:** Split transition highlights into **source** (handler / consuming state, amber) and **target** (destination, red). Graph `on:` / badge / watch hovers keep target-only (red). Next events set both. Context assign/consume colors unchanged (already match the metaphor).
+
+**Rationale:** One consistent rule — amber = relevant locus, red = change — across transitions and context deps.
+
+---
+
+## 2026-07-19 — Next-event hover is graph highlight only
+
+**Context:** Next-event rows used `HoverTip` for the cond cascade. A close-timer race cleared graph highlights while the tip could stay open; the cascade tip also duplicated what hovering `on:` on the graph already shows, and was hard to read as a side-panel affordance.
+
+**Decision:** Next-event hover only highlights providers/targets on the graph (native `title` keeps a compact cascade summary). Fix `HoverTip.open` to always re-assert `onActiveChange(true)` so close-timer races cannot leave highlights cleared while the tip remains. Cond-cascade detail stays on graph event tips.
+
+**Rationale:** The unique value of the next-events list is “what can fire from here + where does it live”; ordered cond detail belongs next to the declaring `on:` on the tree.
+
+---
+
 ## 2026-07-19 — Next events are plain rows with sort modes
 
 **Context:** Next-event chips wrapped poorly for long event names; list order was Map insertion from a shallow DFS (roughly ancestors-first, not an intentional sort).

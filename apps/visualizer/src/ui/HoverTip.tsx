@@ -69,6 +69,7 @@ export function HoverTip({
 
   const [active, setActive] = useState(false);
   const [hoveredItemIndex, setHoveredItemIndex] = useState<number | null>(null);
+  const hoveredItemIndexRef = useRef<number | null>(null);
 
   const normalized = items.map(normalizeItem);
   const interactive =
@@ -103,13 +104,12 @@ export function HoverTip({
 
   const open = useCallback(() => {
     clearCloseTimer();
-    setActive((prev) => {
-      if (!prev) {
-        onActiveChangeRef.current?.(true);
-        emitEntities(null, true);
-      }
-      return true;
-    });
+    // Always re-assert active side effects. A close-timer may have already
+    // called onActiveChange(false) while React still has active=true, and
+    // relying on setActive's prev check would skip restoring the highlight.
+    setActive(true);
+    onActiveChangeRef.current?.(true);
+    emitEntities(hoveredItemIndexRef.current, true);
   }, [clearCloseTimer, emitEntities]);
 
   const scheduleClose = useCallback(() => {
@@ -118,6 +118,7 @@ export function HoverTip({
       closeTimerRef.current = null;
       setActive(false);
       setHoveredItemIndex(null);
+      hoveredItemIndexRef.current = null;
       onActiveChangeRef.current?.(false);
       emitEntities(null, false);
     }, CLOSE_DELAY_MS);
@@ -128,6 +129,7 @@ export function HoverTip({
   const hoverItem = useCallback(
     (index: number | null) => {
       setHoveredItemIndex(index);
+      hoveredItemIndexRef.current = index;
       emitEntities(index, true);
     },
     [emitEntities],

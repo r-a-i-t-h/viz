@@ -11,6 +11,11 @@ import {
   HistoryStateIcon,
   InitialArrowIcon,
 } from './nodeIcons';
+import {
+  NO_TRANSITION_HIGHLIGHT,
+  targetHighlight,
+  type TransitionHighlight,
+} from './transitionHighlight';
 import { DEFAULT_ZOOM_RADIUS, isZoomLarge } from './zoom';
 
 interface StateTreeProps {
@@ -25,8 +30,9 @@ interface StateTreeProps {
   onToggleZoom?: (path: string, exclusive: boolean) => void;
   onToggleWatch?: (path: string) => void;
   watchedPaths?: Set<string>;
+  highlightedSourceIds?: Set<string>;
   highlightedTargetIds?: Set<string>;
-  onHighlightTargets?: (targets: Set<string>) => void;
+  onHighlightTransition?: (highlight: TransitionHighlight) => void;
   onEntityHover?: (entityIds: string[]) => void;
   contextAssignIds?: Set<string>;
   contextConsumeIds?: Set<string>;
@@ -47,8 +53,9 @@ export function StateTree({
   watchedPaths,
   zoomAnchors,
   onToggleZoom,
+  highlightedSourceIds,
   highlightedTargetIds,
-  onHighlightTargets,
+  onHighlightTransition,
   onEntityHover,
   contextAssignIds,
   contextConsumeIds,
@@ -61,8 +68,9 @@ export function StateTree({
   watchedPaths?: Set<string>;
   zoomAnchors: Set<string>;
   onToggleZoom: (path: string, exclusive: boolean) => void;
+  highlightedSourceIds?: Set<string>;
   highlightedTargetIds?: Set<string>;
-  onHighlightTargets?: (targets: Set<string>) => void;
+  onHighlightTransition?: (highlight: TransitionHighlight) => void;
   onEntityHover?: (entityIds: string[]) => void;
   contextAssignIds?: Set<string>;
   contextConsumeIds?: Set<string>;
@@ -78,8 +86,9 @@ export function StateTree({
       onToggleZoom={onToggleZoom}
       onToggleWatch={onToggleWatch}
       watchedPaths={watchedPaths}
+      highlightedSourceIds={highlightedSourceIds}
       highlightedTargetIds={highlightedTargetIds}
-      onHighlightTargets={onHighlightTargets}
+      onHighlightTransition={onHighlightTransition}
       onEntityHover={onEntityHover}
       contextAssignIds={contextAssignIds}
       contextConsumeIds={contextConsumeIds}
@@ -98,8 +107,9 @@ function StateTreeNode({
   onToggleZoom,
   onToggleWatch,
   watchedPaths = new Set(),
+  highlightedSourceIds = new Set(),
   highlightedTargetIds = new Set(),
-  onHighlightTargets,
+  onHighlightTransition,
   onEntityHover,
   contextAssignIds = new Set(),
   contextConsumeIds = new Set(),
@@ -112,6 +122,7 @@ function StateTreeNode({
   const zoomLarge = [...zoomAnchors].some((anchor) =>
     isZoomLarge(path, anchor, zoomRadius),
   );
+  const isTransitionSource = highlightedSourceIds.has(node.id);
   const isTransitionTarget = highlightedTargetIds.has(node.id);
   const isContextAssign = contextAssignIds.has(node.id);
   const isContextConsume = contextConsumeIds.has(node.id);
@@ -148,6 +159,7 @@ function StateTreeNode({
         isHistory ? 'node--history' : '',
         zoomAnchors.has(path) ? 'node--zoom-focus' : '',
         isWatched ? 'node--watched' : '',
+        isTransitionSource ? 'node--transition-source' : '',
         isTransitionTarget ? 'node--transition-target' : '',
         isContextAssign ? 'node--context-assign' : '',
         isContextConsume ? 'node--context-consume' : '',
@@ -170,7 +182,7 @@ function StateTreeNode({
         <NodeLifecycleBadges
           node={node}
           align="right"
-          onHighlightTargets={onHighlightTargets}
+          onHighlightTransition={onHighlightTransition}
           onEntityHover={onEntityHover}
         />
       )}
@@ -209,8 +221,10 @@ function StateTreeNode({
                   placement="below"
                   align="left"
                   onActiveChange={(active) =>
-                    onHighlightTargets?.(
-                      active ? new Set(ev.highlightIds) : new Set(),
+                    onHighlightTransition?.(
+                      active
+                        ? targetHighlight(ev.highlightIds)
+                        : NO_TRANSITION_HIGHLIGHT,
                     )
                   }
                   onEntityHover={onEntityHover}
@@ -246,8 +260,9 @@ function StateTreeNode({
                 onToggleZoom={onToggleZoom}
                 onToggleWatch={onToggleWatch}
                 watchedPaths={watchedPaths}
+                highlightedSourceIds={highlightedSourceIds}
                 highlightedTargetIds={highlightedTargetIds}
-                onHighlightTargets={onHighlightTargets}
+                onHighlightTransition={onHighlightTransition}
                 onEntityHover={onEntityHover}
                 contextAssignIds={contextAssignIds}
                 contextConsumeIds={contextConsumeIds}

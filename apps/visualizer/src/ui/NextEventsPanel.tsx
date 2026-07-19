@@ -1,25 +1,26 @@
 import { useMemo, useState } from 'react';
 import type { VizNextEvent, VizNode } from '@viz/protocol';
-import { HoverTip, type HoverTipItem } from './HoverTip';
-import { depEntityId } from './contextDepHighlights';
+import {
+  NO_TRANSITION_HIGHLIGHT,
+  sourceAndTargetHighlight,
+  type TransitionHighlight,
+} from './transitionHighlight';
 
 type NextEventSort = 'shallow' | 'deep' | 'name';
 
 /**
- * Events the active configuration can handle. Hover shows ordered cond
- * cascade and highlights providing states + candidate targets.
+ * Events the active configuration can handle. Hover highlights providing
+ * states (amber) and candidate targets (red) on the graph.
  */
 export function NextEventsPanel({
   events,
   root,
-  onHighlightProviders,
-  onEntityHover,
+  onHighlightTransition,
 }: {
   events: VizNextEvent[];
   /** Machine tree — used for graph-depth sorts. */
   root?: VizNode;
-  onHighlightProviders: (providerIds: Set<string>) => void;
-  onEntityHover?: (entityIds: string[]) => void;
+  onHighlightTransition: (highlight: TransitionHighlight) => void;
 }) {
   const [sortBy, setSortBy] = useState<NextEventSort>('shallow');
 
@@ -83,33 +84,50 @@ export function NextEventsPanel({
         </SortButton>
       </div>
       <ul className="viz__next-events">
-        {sorted.map((event) => (
-          <li key={event.type}>
-            <HoverTip
-              className="viz__next-event"
-              label={event.type}
-              items={cascadeTipItems(event)}
-              placement="below"
-              align="left"
-              onEntityHover={onEntityHover}
-              onActiveChange={(active) =>
-                onHighlightProviders(
-                  active
-                    ? new Set(event.highlightIds ?? event.providerIds)
-                    : new Set(),
-                )
-              }
-            >
-              <span className="viz__next-event-type">{event.type}</span>
-              <span className="viz__next-event-providers">
-                {(event.candidates ?? []).length || event.providerIds.length}
-              </span>
-            </HoverTip>
-          </li>
-        ))}
+        {sorted.map((event) => {
+          const candidateCount =
+            (event.candidates ?? []).length || event.providerIds.length;
+          const title = nextEventTitle(event);
+          const highlight = nextEventHighlight(event);
+          return (
+            <li key={event.type}>
+              <button
+                type="button"
+                className="viz__next-event"
+                title={title}
+                onMouseEnter={() => onHighlightTransition(highlight)}
+                onMouseLeave={() =>
+                  onHighlightTransition(NO_TRANSITION_HIGHLIGHT)
+                }
+                onFocus={() => onHighlightTransition(highlight)}
+                onBlur={() => onHighlightTransition(NO_TRANSITION_HIGHLIGHT)}
+              >
+                <span className="viz__next-event-type">{event.type}</span>
+                <span className="viz__next-event-providers">
+                  {candidateCount}
+                </span>
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
+}
+
+function nextEventHighlight(event: VizNextEvent): TransitionHighlight {
+  const targets = (event.candidates ?? []).flatMap((c) => c.targetIds);
+  return sourceAndTargetHighlight(event.providerIds, targets);
+}
+
+function nextEventTitle(event: VizNextEvent): string {
+  const providers = event.providerIds.join(', ') || '—';
+  const candidates = event.candidates ?? [];
+  if (candidates.length === 0) {
+    return `via ${providers}`;
+  }
+  const lines = candidates.map((c, i) => `${i + 1}. ${c.line}`);
+  return `via ${providers}\n${lines.join('\n')}`;
 }
 
 function SortButton({
@@ -162,30 +180,4 @@ function minProviderDepth(
     if (depth != null && depth < min) min = depth;
   }
   return min === Number.POSITIVE_INFINITY ? 0 : min;
-}
-
-function cascadeTipItems(event: VizNextEvent): HoverTipItem[] {
-  const candidates = event.candidates ?? [];
-  if (candidates.length === 0) {
-    return event.providerIds.map((id) => ({ label: `via ${id}` }));
-  }
-  const items: HoverTipItem[] = [];
-  candidates.forEach((candidate, index) => {
-    items.push({
-      label: `${index + 1}. ${candidate.line}`,
-    });
-    if (candidate.guard) {
-      items.push({
-        label: `if ${candidate.guard.name}`,
-        entityId: depEntityId(candidate.guard) ?? undefined,
-      });
-    }
-    for (const action of candidate.actions) {
-      items.push({
-        label: `do ${action.name}`,
-        entityId: depEntityId(action) ?? undefined,
-      });
-    }
-  });
-  return items;
 }
