@@ -1,3 +1,13 @@
+## 2026-07-19 — Disable text selection in visualizer UI
+
+**Context:** Click/drag across the graph, panels, and chrome was selecting labels and other text, which fought hover and resize interactions.
+
+**Decision:** Set `user-select: none` on `.viz`; keep `user-select: text` on inputs, textareas, and `.viz__code` so values can still be copied.
+
+**Rationale:** The visualizer is primarily interactive, not a document surface; selective re-enable preserves copy for the few places it matters.
+
+---
+
 ## 2026-07-19 — Demo BAIL event for guarded bubble + dual targets
 
 **Context:** Needed a live example of next-event hover with two amber providers and two red targets (deep guarded handler + ancestor fallback).

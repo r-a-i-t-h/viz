@@ -204,6 +204,16 @@
   background: var(--viz-bg);
   color-scheme: dark;
   text-align: left;
+  /* Interactive graph/panels: drag should not select labels. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.viz input,
+.viz textarea,
+.viz .viz__code {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .viz[data-theme='light'] {
