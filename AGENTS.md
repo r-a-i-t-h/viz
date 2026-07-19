@@ -29,3 +29,4 @@ Real hosts typically only depend on `@viz/host` and call `openPopup()`.
 - Verify changes with `npm run build` and `npm run lint` before committing.
 - Keep commits small and focused.
 - After changing protocol or host sources, `npm run build:packages` (also run by `dev` / `build`).
+- App builds are separate: visualizer → `apps/visualizer/dist/`, demo+embed → `apps/demo/dist/`. Deploy only the visualizer artifact for real hosts.

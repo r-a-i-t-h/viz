@@ -4,22 +4,28 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 const root = path.dirname(fileURLToPath(import.meta.url))
+const repoRoot = path.resolve(root, '../..')
 
-// Multi-page: demo host + independently hostable visualizer (+ embed shell).
-// Relative base so viz.html (+ assets) can be served from any subdirectory.
 export default defineConfig({
   base: './',
   plugins: [react()],
   server: {
+    port: 5173,
+    strictPort: true,
     fs: {
-      allow: [root],
+      allow: [repoRoot],
     },
   },
+  preview: {
+    port: 4173,
+    strictPort: true,
+  },
   build: {
+    outDir: 'dist',
+    emptyOutDir: true,
     rollupOptions: {
       input: {
         main: path.resolve(root, 'index.html'),
-        visualizer: path.resolve(root, 'viz.html'),
         embed: path.resolve(root, 'embed.html'),
       },
     },

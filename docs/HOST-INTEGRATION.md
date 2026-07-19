@@ -9,7 +9,7 @@ import { createActor } from 'xstate';
 import { createVisualizerHost } from '@viz/host';
 
 const viz = createVisualizerHost({
-  visualizerUrl: 'https://your-viz-host/viz.html',
+  visualizerUrl: 'https://your-viz-host/',
   // optional: maxLogEntries, sanitizeContext, sanitizeEvent
 });
 
@@ -43,13 +43,13 @@ Lifecycle:
 
 1. **Depend on `@viz/host`** — pulls `@viz/protocol` as a dependency. Peer: **xstate v5**. Packages are private workspaces today; consume via workspace / `npm link` / path until published.
 
-2. **Point at a popup page** — a deployed visualizer build (from this repo’s `viz.html` + `assets/`) that speaks `@viz.*`. Pass its absolute URL as `visualizerUrl`. It can live in any subdirectory (or another origin); keep the HTML and `assets/` folder together. Asset URLs are relative (`base: './'`), so domain-root hosting is not required.
+2. **Point at a popup page** — a deployed visualizer build (from this repo’s `apps/visualizer/dist/` — `index.html` + `assets/`) that speaks `@viz.*`. Pass its absolute URL as `visualizerUrl`. It can live in any subdirectory (or another origin); keep the HTML and `assets/` folder together. Asset URLs are relative (`base: './'`), so domain-root hosting is not required.
 
 3. **Wire inspect on every actor you care about** — pass the same `viz.inspect` into each `createActor(..., { inspect })`. No separate `attachActor()`. Spawned/invoked machine children that emit `@xstate.actor` are picked up automatically.
 
 4. **Call `openPopup()` from a user gesture** — click/keydown. Especially important when the host runs in an iframe (popup blockers). Check the boolean return / `getPopupStatus()` for `'blocked'`.
 
-5. **If the host is in a hidden iframe** (see root [`embed.html`](../embed.html)) — sandbox needs `allow-scripts`, `allow-popups`, and usually `allow-popups-to-escape-sandbox`.
+5. **If the host is in a hidden iframe** (see [`apps/demo/embed.html`](../apps/demo/embed.html)) — sandbox needs `allow-scripts`, `allow-popups`, and usually `allow-popups-to-escape-sandbox`.
 
 6. **Optional hygiene** — `sanitizeContext` / `sanitizeEvent` before frames/logs cross the wire; `dispose()` on shutdown; stop actors yourself (host dispose does not stop them).
 

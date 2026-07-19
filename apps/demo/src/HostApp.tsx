@@ -65,7 +65,11 @@ export default function HostApp() {
   const [snapshot, setSnapshot] = useState<VisualizerSnapshot | null>(null);
 
   useEffect(() => {
-    const visualizerUrl = new URL('viz.html', window.location.href).href;
+    const visualizerUrl =
+      import.meta.env.VITE_VISUALIZER_URL ??
+      (import.meta.env.DEV
+        ? 'http://localhost:5174/'
+        : 'http://localhost:4174/');
     const viz = createVisualizerHost({ visualizerUrl });
     window.viz = viz;
     setHost(viz);

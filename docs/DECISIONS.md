@@ -1,8 +1,28 @@
+## 2026-07-19 — App build output lives next to each app
+
+**Context:** After splitting builds, outDirs were briefly `dist/visualizer/` and `dist/demo/` at the repo root — a collect-at-root shape that fought the workspace mental model (`packages/*/dist`).
+
+**Decision:** Each app emits to its own `dist/` (`apps/visualizer/dist/`, `apps/demo/dist/`), matching Vite’s default and the packages.
+
+**Rationale:** One pattern for every workspace package/app; less cognitive friction when finding deploy artifacts.
+
+---
+
+## 2026-07-19 — Separate demo and visualizer build artifacts
+
+**Context:** Root Vite was a single MPA writing `index.html`, `viz.html`, and `embed.html` into one shared `dist/`, even though the visualizer is meant to be independently hostable.
+
+**Decision:** Each app owns its Vite config and emits to its own `dist/` — `apps/visualizer/dist/` (standalone popup page) and `apps/demo/dist/` (PoC host + embed). Local `npm run dev` runs two servers (:5173 demo, :5174 visualizer); demo points at the visualizer via `VITE_VISUALIZER_URL` (defaults to the local visualizer origin).
+
+**Rationale:** Matches “ship only the visualizer” for real embeds; demo/embed stay PoC-only and no longer couple deploy artifacts.
+
+---
+
 ## 2026-07-19 — Visualizer build is subdirectory-safe
 
 **Context:** Independently hosted visualizer may be served under a path prefix (not domain root). Absolute `/assets/…` URLs broke that.
 
-**Decision:** Vite `base: './'` so built `viz.html` references assets relatively. Deploy the HTML alongside its `assets/` folder anywhere (or on another origin); pass that absolute page URL as `visualizerUrl`.
+**Decision:** Vite `base: './'` so built visualizer HTML references assets relatively. Deploy the HTML alongside its `assets/` folder anywhere (or on another origin); pass that absolute page URL as `visualizerUrl`.
 
 **Rationale:** Matches “visualizer hosted completely independently” without requiring a fixed deploy path.
 
@@ -12,7 +32,7 @@
 
 **Context:** Host and visualizer should share only Viz*/wire types; the visualizer will be hosted independently; consuming apps need a linkable host library.
 
-**Decision:** npm workspaces with `@viz/protocol` (Viz* + `@viz.*` + `connectPopupReceiver`), `@viz/host` (inspect/project/HostBridge; depends on protocol; peer xstate), `apps/visualizer` (React UI, protocol only), and `apps/demo` (PoC host). Root Vite still serves `/`, `/viz.html`, `/embed.html`. Packages emit `dist/` via `npm run build:packages`.
+**Decision:** npm workspaces with `@viz/protocol` (Viz* + `@viz.*` + `connectPopupReceiver`), `@viz/host` (inspect/project/HostBridge; depends on protocol; peer xstate), `apps/visualizer` (React UI, protocol only), and `apps/demo` (PoC host). Each app builds to its own `dist/` (`apps/*/dist/`). Packages emit `dist/` via `npm run build:packages`.
 
 **Rationale:** Enforces the host↔viz boundary in package deps; demo stays for local development; real apps take `@viz/host` (+ transitive protocol) and a separate visualizer URL.
 

@@ -17,7 +17,7 @@ export type { HostBridgeStatus, VisualizerSnapshot } from '@viz/protocol';
 
 export interface VisualizerHostOptions {
   /**
-   * Absolute or same-origin URL of the visualizer page (e.g. viz.html).
+   * Absolute or same-origin URL of the visualizer page.
    * Required for `openPopup()`.
    */
   visualizerUrl: string;
@@ -45,7 +45,7 @@ export type VisualizerListener = (snapshot: VisualizerSnapshot) => void;
  * @example
  * ```ts
  * const viz = createVisualizerHost({
- *   visualizerUrl: new URL('viz.html', location.href).href,
+ *   visualizerUrl: 'https://your-viz-host/',
  * });
  * const actor = createActor(machine, { inspect: viz.inspect });
  * actor.start();

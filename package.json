@@ -9,16 +9,23 @@
   ],
   "scripts": {
     "build:packages": "npm run build -w @viz/protocol && npm run build -w @viz/host",
-    "dev": "npm run build:packages && vite",
-    "build": "npm run build:packages && tsc -b && vite build",
-    "lint": "oxlint packages apps",
-    "preview": "vite preview"
+    "dev:demo": "npm run dev -w @viz/demo",
+    "dev:visualizer": "npm run dev -w @viz/visualizer",
+    "dev": "npm run build:packages && concurrently -n demo,viz -c blue,magenta \"npm run dev:demo\" \"npm run dev:visualizer\"",
+    "build:demo": "npm run build -w @viz/demo",
+    "build:visualizer": "npm run build -w @viz/visualizer",
+    "build": "npm run build:packages && tsc -b && npm run build:visualizer && npm run build:demo",
+    "preview:demo": "npm run preview -w @viz/demo",
+    "preview:visualizer": "npm run preview -w @viz/visualizer",
+    "preview": "concurrently -n demo,viz -c blue,magenta \"npm run preview:demo\" \"npm run preview:visualizer\"",
+    "lint": "oxlint packages apps"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
+    "concurrently": "^9.2.1",
     "oxlint": "^1.71.0",
     "typescript": "~6.0.2",
     "vite": "^8.1.1"
