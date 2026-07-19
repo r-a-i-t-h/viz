@@ -20,6 +20,12 @@ import {
   MAX_ZOOM_RADIUS,
   MIN_ZOOM_RADIUS,
 } from './zoom';
+import {
+  applyDocumentTheme,
+  persistTheme,
+  readStoredTheme,
+  type VizTheme,
+} from './theme';
 import './visualizer.css';
 
 /**
@@ -28,12 +34,14 @@ import './visualizer.css';
  * headless host that only needs `openPopup()`.
  */
 export type ConnectionStatus = 'waiting' | 'connected' | 'closed' | 'orphan';
+export type { VizTheme };
 
 export function VisualizerView({
   snapshot,
   title = 'Visualizer',
   connection,
   defaultZoomRadius = DEFAULT_ZOOM_RADIUS,
+  syncDocumentTheme = false,
 }: {
   snapshot: VisualizerSnapshot;
   title?: string;
@@ -41,10 +49,16 @@ export function VisualizerView({
   connection?: ConnectionStatus;
   /** Initial ± range for click-zoom neighborhood (also adjustable on-screen). */
   defaultZoomRadius?: number;
+  /**
+   * When true, mirrors the theme onto `document.documentElement` so popup
+   * page chrome matches. Leave false for inline embeds inside a host page.
+   */
+  syncDocumentTheme?: boolean;
 }) {
   const [zoomRadius, setZoomRadius] = useState(() =>
     clampZoomRadius(defaultZoomRadius),
   );
+  const [theme, setTheme] = useState<VizTheme>(readStoredTheme);
   const [showLifecycleBadges, setShowLifecycleBadges] = useState(true);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
     null,
@@ -122,6 +136,14 @@ export function VisualizerView({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
+  useEffect(() => {
+    persistTheme(theme);
+    // Always set document data-theme so body-portaled hover tips inherit
+    // --viz-* tokens. color-scheme / page chrome only for the popup shell.
+    document.documentElement.dataset.theme = theme;
+    if (syncDocumentTheme) applyDocumentTheme(theme);
+  }, [theme, syncDocumentTheme]);
+
   const toggleWatch = useCallback(
     (path: string) => {
       if (!sessionId) return;
@@ -166,7 +188,7 @@ export function VisualizerView({
   );
 
   return (
-    <div className="viz">
+    <div className="viz" data-theme={theme}>
       <header className="viz__header">
         <div className="viz__header-row">
           <div className="viz__header-start">
@@ -182,6 +204,8 @@ export function VisualizerView({
             />
           )}
           <AppearanceSettings
+            theme={theme}
+            onThemeChange={setTheme}
             zoomRadius={zoomRadius}
             onZoomRadiusChange={setZoomRadius}
             showLifecycleBadges={showLifecycleBadges}
@@ -462,11 +486,15 @@ function flattenActorTree(
 }
 
 function AppearanceSettings({
+  theme,
+  onThemeChange,
   zoomRadius,
   onZoomRadiusChange,
   showLifecycleBadges,
   onShowLifecycleBadgesChange,
 }: {
+  theme: VizTheme;
+  onThemeChange: (next: VizTheme) => void;
   zoomRadius: number;
   onZoomRadiusChange: (next: number) => void;
   showLifecycleBadges: boolean;
@@ -476,6 +504,27 @@ function AppearanceSettings({
     <details className="viz__appearance">
       <summary>Appearance</summary>
       <div className="viz__appearance-panel">
+        <div className="viz__setting-row">
+          <span>Theme</span>
+          <div className="viz__theme-toggle" role="group" aria-label="Theme">
+            <button
+              type="button"
+              className="viz__theme-btn"
+              aria-pressed={theme === 'dark'}
+              onClick={() => onThemeChange('dark')}
+            >
+              Dark
+            </button>
+            <button
+              type="button"
+              className="viz__theme-btn"
+              aria-pressed={theme === 'light'}
+              onClick={() => onThemeChange('light')}
+            >
+              Light
+            </button>
+          </div>
+        </div>
         <div
           className="viz__setting-row"
           title="How many parent/child levels around a clicked node become large"

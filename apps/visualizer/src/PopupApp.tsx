@@ -9,6 +9,7 @@ import {
   VisualizerView,
   type ConnectionStatus,
 } from './ui/VisualizerView';
+import { readStoredTheme } from './ui/theme';
 import './ui/visualizer.css';
 
 /**
@@ -75,25 +76,28 @@ export default function PopupApp() {
 
   if (connection === 'orphan') {
     return (
-      <div className="viz viz--popup">
-        <header className="viz__header">
-          <div className="viz__header-row">
-            <div className="viz__header-start">
-              <h1 className="viz__title">XState viz</h1>
-              <span className="viz__status viz__status--err">no host</span>
+      <div className="viz--popup">
+        <div className="viz" data-theme={readStoredTheme()}>
+          <header className="viz__header">
+            <div className="viz__header-row">
+              <div className="viz__header-start">
+                <h1 className="viz__title">XState viz</h1>
+                <span className="viz__status viz__status--err">no host</span>
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="viz viz--popup">
+    <div className="viz--popup">
       <VisualizerView
         snapshot={snapshot}
         title="XState viz"
         connection={connection}
+        syncDocumentTheme
       />
     </div>
   );

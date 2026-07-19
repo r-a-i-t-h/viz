@@ -1,4 +1,13 @@
-## 2026-07-19 — App build output lives next to each app
+## 2026-07-19 — Visualizer light mode via Appearance theme toggle
+
+**Context:** The visualizer UI was dark-only with hardcoded hex colors. Appearance already grouped zoom range and badge visibility as renderer-local prefs.
+
+**Decision:** Introduce CSS custom properties on `:root` and `.viz` (cool slate dark defaults + matching light overrides under `data-theme="light"`), add a Dark/Light segmented control in Appearance, persist the choice in `localStorage` (`viz.theme`), and sync `document.documentElement` `data-theme` whenever the theme changes so body-portaled hover tips inherit tokens. Page `color-scheme` / chrome sync stays popup-only (`syncDocumentTheme`) so inline embeds do not restyle the host page background.
+
+**Rationale:** Keeps theming in the renderer (not protocol/host), reuses the Appearance extension point, and avoids host-page chrome flicker when the demo shows an inline viz. Tokens must live on `:root` because `HoverTip` portals to `document.body` outside `.viz`.
+
+---
+
 
 **Context:** After splitting builds, outDirs were briefly `dist/visualizer/` and `dist/demo/` at the repo root — a collect-at-root shape that fought the workspace mental model (`packages/*/dist`).
 
