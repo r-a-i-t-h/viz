@@ -1,3 +1,23 @@
+## 2026-07-20 — Kill document elastic overscroll in the popup
+
+**Context:** Trackpad pan/zoom on the graph still rubber-banded the popup window (macOS elastic overscroll) even when the page had nowhere to scroll.
+
+**Decision:** Lock the visualizer document (`html`/`body`/`#root` and `.viz--popup`) with `overflow: hidden` + `overscroll-behavior: none`. Side panels use `overscroll-behavior: contain`; the tree viewport uses `none` and stops wheel propagation.
+
+**Rationale:** The popup is a fixed tool surface, not a document; bounce is pure noise while navigating the graph.
+
+---
+
+## 2026-07-20 — Graph viewport pan + pure scale zoom
+
+**Context:** The tree used native `overflow: auto` for two-finger scroll, but there was no pinch / Ctrl|Cmd+scroll scale. Click neighborhood zoom (`node--zoom-large` / `node--zoom-small`) is for attention, not map-style magnification.
+
+**Decision:** Wrap the state tree in `TreeViewport`: wheel pan (trackpad two-finger scroll), Ctrl/Cmd+wheel and Safari `gesture*` pinch apply a CSS `translate` + `scale` on `.viz__tree-canvas` (`viewportTransform.ts`). Overflow on `.viz__tree-scroll` is `hidden` so the wrapper owns the wheel. Reset transform when the selected actor session changes. Keep neighborhood zoom unchanged.
+
+**Rationale:** Local debugging needs free pan/scale over dense graphs without conflating “look at this region” with “magnify the canvas.”
+
+---
+
 ## 2026-07-19 — Late inspect via `actor.system.inspect`
 
 **Context:** For local debugging it is useful to know whether `inspect` is construction-only or can be attached to an already-created actor (e.g. without touching every `createActor` call site).

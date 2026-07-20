@@ -42,6 +42,7 @@ This is a React-owned view-model at the view root — not buried imperative DOM 
 Pure functions that any interaction model / renderer can reuse:
 
 - Zoom neighborhood math (`zoom.ts`)
+- Graph viewport pan/scale math (`viewportTransform.ts`)
 - Finding a node by path on `VizNode.children` (`findNodeByPath.ts`)
 - Context-dep highlight id sets (`contextDepHighlights.ts`)
 - Watch list mutate/reorder (logic today inline in `VisualizerView`)

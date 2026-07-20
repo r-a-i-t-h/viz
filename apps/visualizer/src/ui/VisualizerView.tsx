@@ -13,6 +13,7 @@ import { SideColumn } from './SideColumn';
 import { SideTabs } from './SideTabs';
 import { FoldSection } from './FoldSection';
 import { NextEventsPanel } from './NextEventsPanel';
+import { TreeViewport } from './TreeViewport';
 import { StateTree } from './StateTree';
 import { WatchColumn } from './WatchColumn';
 import {
@@ -263,7 +264,7 @@ export function VisualizerView({
               </span>
             )}
           </h3>
-          <div className="viz__tree-scroll">
+          <TreeViewport resetKey={machine?.sessionId}>
             {machine ? (
               <StateTree
                 node={machine.root}
@@ -284,7 +285,7 @@ export function VisualizerView({
             ) : (
               <p className="viz__muted">Waiting for machine definition…</p>
             )}
-          </div>
+          </TreeViewport>
         </section>
 
         <SideColumn
@@ -569,7 +570,9 @@ function AppearanceSettings({
           className="viz__setting-row"
           title="How many parent/child levels around a clicked node become large"
         >
-          <span>Zoom range</span>
+          <span title="Click-zoom neighborhood hops (± levels), not viewport scale">
+            Zoom range
+          </span>
           <div className="viz__zoom-control">
             <button
               type="button"

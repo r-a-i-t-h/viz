@@ -503,6 +503,7 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 
 /* Side inspector: tabs own the scroll so the tab strip stays pinned. */
@@ -576,15 +577,25 @@
 }
 
 /*
- * Single scrollport for the whole state graph. Nodes (incl. parallel
- * regions) size to their content and never scroll internally — when the
- * graph exceeds this viewport, scroll here instead.
+ * Graph viewport: pan (two-finger scroll) + pure scale zoom (pinch /
+ * Ctrl|Cmd+scroll) via transform on `.viz__tree-canvas`. Native overflow
+ * scroll is disabled so wheel ownership stays with TreeViewport.
+ * Node neighborhood zoom (`node--zoom-*`) is a separate attention layer.
  */
 .viz__tree-scroll {
   flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
-  overflow: auto;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+
+.viz__tree-canvas {
+  transform-origin: 0 0;
+  width: max-content;
+  min-width: 100%;
+  min-height: 100%;
 }
 
 .viz__panel-heading {
@@ -718,14 +729,18 @@ body.viz--resizing iframe {
 .viz--popup {
   margin: 0 auto;
   padding: 1rem 1.25rem;
-  min-height: 100vh;
+  height: 100%;
   box-sizing: border-box;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 .viz--popup > .viz {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 2rem);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .viz--popup .viz__panels {
@@ -791,6 +806,7 @@ body.viz--resizing iframe {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .viz__context-deps-tools {
