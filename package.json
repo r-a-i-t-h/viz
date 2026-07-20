@@ -8,15 +8,15 @@
     "apps/*"
   ],
   "scripts": {
-    "build:packages": "npm run build -w @viz/protocol && npm run build -w @viz/host",
-    "dev:demo": "npm run dev -w @viz/demo",
-    "dev:visualizer": "npm run dev -w @viz/visualizer",
+    "build:packages": "npm run build -w @r-a-i-t-h/viz-protocol && npm run build -w @r-a-i-t-h/viz-host",
+    "dev:demo": "npm run dev -w @r-a-i-t-h/viz-demo",
+    "dev:visualizer": "npm run dev -w @r-a-i-t-h/viz",
     "dev": "npm run build:packages && concurrently -n demo,viz -c blue,magenta \"npm run dev:demo\" \"npm run dev:visualizer\"",
-    "build:demo": "npm run build -w @viz/demo",
-    "build:visualizer": "npm run build -w @viz/visualizer",
+    "build:demo": "npm run build -w @r-a-i-t-h/viz-demo",
+    "build:visualizer": "npm run build -w @r-a-i-t-h/viz",
     "build": "npm run build:packages && tsc -b && npm run build:visualizer && npm run build:demo",
-    "preview:demo": "npm run preview -w @viz/demo",
-    "preview:visualizer": "npm run preview -w @viz/visualizer",
+    "preview:demo": "npm run preview -w @r-a-i-t-h/viz-demo",
+    "preview:visualizer": "npm run preview -w @r-a-i-t-h/viz",
     "preview": "concurrently -n demo,viz -c blue,magenta \"npm run preview:demo\" \"npm run preview:visualizer\"",
     "lint": "oxlint packages apps"
   },

@@ -1,4 +1,4 @@
-import type { VizNode } from '@viz/protocol';
+import type { VizNode } from '@r-a-i-t-h/viz-protocol';
 
 /** Resolve a dot-path (`""` = root, `"a.b"` = nested) against a VizNode tree. */
 export function findNodeByPath(

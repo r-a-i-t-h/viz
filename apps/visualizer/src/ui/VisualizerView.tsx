@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { VizFrame, VizMachine, VisualizerSnapshot } from '@viz/protocol';
+import type { VizFrame, VizMachine, VisualizerSnapshot } from '@r-a-i-t-h/viz-protocol';
 import {
   DEFAULT_SIDE_WIDTH,
   DEFAULT_WATCH_WIDTH,

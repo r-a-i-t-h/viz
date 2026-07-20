@@ -9,7 +9,7 @@ import {
   type VizLogEntry,
   type VizMachine,
   type VizUpstreamMessage,
-} from '@viz/protocol';
+} from '@r-a-i-t-h/viz-protocol';
 
 export type { HostBridgeStatus };
 

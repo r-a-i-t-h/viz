@@ -3,7 +3,7 @@ import {
   isVizActorRefMarker,
   type ContextDepGraph,
   type VizActorRefMarker,
-} from '@viz/protocol';
+} from '@r-a-i-t-h/viz-protocol';
 import { stateIdsForContextKey } from './contextDepHighlights';
 
 type ContextSort = 'name' | 'age';

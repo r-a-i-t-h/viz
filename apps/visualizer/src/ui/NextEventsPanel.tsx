@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { VizNextEvent, VizNode } from '@viz/protocol';
+import type { VizNextEvent, VizNode } from '@r-a-i-t-h/viz-protocol';
 import {
   NO_TRANSITION_HIGHLIGHT,
   sourceAndTargetHighlight,

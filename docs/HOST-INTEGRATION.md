@@ -1,12 +1,12 @@
 # Host-side requirements for popup visualizer
 
-Real embeds only need **`@viz/host`** (which depends on **`@viz/protocol`**): create a host, pass `inspect` into actors, point at a hosted visualizer URL, and call `openPopup()` from a user gesture. React, CSS, and inline viz are PoC-only (`apps/demo` / `apps/visualizer`).
+Real embeds only need **`@r-a-i-t-h/viz-host`** (which depends on **`@r-a-i-t-h/viz-protocol`**): create a host, pass `inspect` into actors, point at a hosted visualizer URL, and call `openPopup()` from a user gesture. React, CSS, and inline viz are PoC-only (`apps/demo` / `apps/visualizer`).
 
 ## What the host actually needs
 
 ```ts
 import { createActor } from 'xstate';
-import { createVisualizerHost } from '@viz/host';
+import { createVisualizerHost } from '@r-a-i-t-h/viz-host';
 
 const viz = createVisualizerHost({
   visualizerUrl: 'https://your-viz-host/',
@@ -26,8 +26,8 @@ viz.dispose();
 
 ```text
 XState inspect
-  → @viz/host (projectMachine / projectFrame)
-       → VisualizerSnapshot (@viz/protocol)
+  → @r-a-i-t-h/viz-host (projectMachine / projectFrame)
+       → VisualizerSnapshot (@r-a-i-t-h/viz-protocol)
             ├─ openPopup() → visualizer app via postMessage
             └─ subscribe()  → optional inline PoC only
 ```
@@ -41,9 +41,9 @@ Lifecycle:
 
 ## Checklist for an existing app
 
-1. **Depend on `@viz/host`** — pulls `@viz/protocol` as a dependency. Peer: **xstate v5**. Packages are private workspaces today; consume via workspace / `npm link` / path until published.
+1. **Depend on `@r-a-i-t-h/viz-host`** — `npm install @r-a-i-t-h/viz-host` (pulls `@r-a-i-t-h/viz-protocol`). Peer: **xstate v5**.
 
-2. **Point at a popup page** — a deployed visualizer build (from this repo’s `apps/visualizer/dist/` — `index.html` + `assets/`) that speaks `@viz.*`. Pass its absolute URL as `visualizerUrl`. It can live in any subdirectory (or another origin); keep the HTML and `assets/` folder together. Asset URLs are relative (`base: './'`), so domain-root hosting is not required.
+2. **Point at a popup page** — a deployed visualizer build (from this repo’s `apps/visualizer/dist/` — `index.html` + `assets/`) that speaks `@viz.*`. Pass its absolute URL as `visualizerUrl`. It can live in any subdirectory (or another origin); keep the HTML and `assets/` folder together. Asset URLs are relative (`base: './'`), so domain-root hosting is not required. The inspector app (`@r-a-i-t-h/viz`) is **not** an npm dependency — only a hosted URL.
 
 3. **Wire inspect on every root actor you care about** — pass the same `viz.inspect` into each `createActor(..., { inspect })`, or attach later via `actor.system.inspect` (see below). No separate `attachActor()`. Spawned/invoked machine children that emit `@xstate.actor` are picked up automatically once the **system** is inspected.
 
@@ -70,7 +70,7 @@ actor.start();
 
 Useful when you cannot (or prefer not to) change every `createActor` call site — e.g. local debugging toggled from the console, or a thin wrapper around an existing factory.
 
-### Timing that matters for `@viz/host`
+### Timing that matters for `@r-a-i-t-h/viz-host`
 
 The host builds the machine tree only from **`@xstate.actor`** events (`machineLogicFromEvent` → `projectMachine`). Snapshot/event streams alone do not register structure.
 
@@ -90,19 +90,19 @@ Prefer construction-time `inspect` or `system.inspect` **before** `start()`. The
 | `visualizer.css` / inline `showInline` | PoC conveniences |
 | `subscribe()` | Only if you mirror status or render inline |
 | `@statelyai/inspect` | Unused; raw XState `inspect` only |
-| Direct `@viz/protocol` import | Optional — `@viz/host` re-exports Viz* types |
+| Direct `@r-a-i-t-h/viz-protocol` import | Optional — `@r-a-i-t-h/viz-host` re-exports Viz* types |
 
 ## Package boundary
 
 | Package | In the target app? |
 |---------|-------------------|
-| `@viz/protocol` | Transitive (shared Viz* + wire) |
-| `@viz/host` | Direct dependency |
-| `apps/visualizer` | No — host separately; only `visualizerUrl` |
+| `@r-a-i-t-h/viz-protocol` | Transitive (shared Viz* + wire); on npm |
+| `@r-a-i-t-h/viz-host` | Direct dependency; on npm |
+| `@r-a-i-t-h/viz` / `apps/visualizer` | No — deploy `dist/` separately; only `visualizerUrl` |
 
 ## Realistic caveats today
 
-- **Not published to npm yet** — private workspaces; use `npm run build:packages` then link/path-install `@viz/host`.
+- **Inspector is not on npm** — publish/deploy `apps/visualizer/dist/` and pass that URL as `visualizerUrl`.
 - **One-way inspection** — no send-event-back-to-actor from the viz.
 - **Secrets** — sanitize hooks are opt-in; default posts projected context over `postMessage`.
 

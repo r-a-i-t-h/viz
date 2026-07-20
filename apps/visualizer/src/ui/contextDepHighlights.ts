@@ -2,7 +2,7 @@ import {
   normalizeStateNodeId,
   type ContextDepGraph,
   type VizSymbol,
-} from '@viz/protocol';
+} from '@r-a-i-t-h/viz-protocol';
 
 /** State node ids that assign vs only consume a context key (assign wins on overlap). */
 export function stateIdsForContextKey(

@@ -1,6 +1,6 @@
 import { HoverTip, type HoverTipItem } from './HoverTip';
 import { depEntityId } from './contextDepHighlights';
-import type { VizBadge, VizInvoke, VizNode, VizSymbol } from '@viz/protocol';
+import type { VizBadge, VizInvoke, VizNode, VizSymbol } from '@r-a-i-t-h/viz-protocol';
 import {
   AfterIcon,
   AlwaysIcon,

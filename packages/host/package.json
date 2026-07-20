@@ -1,8 +1,17 @@
 {
-  "name": "@viz/host",
-  "version": "0.0.0",
-  "private": true,
+  "name": "@r-a-i-t-h/viz-host",
+  "version": "0.1.0",
+  "description": "XState v5 inspect host: project machines and open the visualizer popup",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/r-a-i-t-h/viz.git",
+    "directory": "packages/host"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -11,13 +20,13 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "LICENSE"],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@viz/protocol": "*"
+    "@r-a-i-t-h/viz-protocol": "^0.1.0"
   },
   "peerDependencies": {
     "xstate": "^5.0.0"

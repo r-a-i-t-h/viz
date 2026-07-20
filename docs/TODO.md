@@ -12,7 +12,7 @@ Priorities, in order:
 
 **Avoid:** first-class chrome for every guard/action/meta detail; drawing all transition linkages by default; turning the UI into a step debugger or remote control surface.
 
-Capture: raw `inspect` on the host → **projection** (`projectMachine` / `projectFrame` in `@viz/host`) → shared `Viz*` model (`@viz/protocol`) over `postMessage`. New structure/badge features extend the **projector** (typed against XState), not popup duck-typing. See [`VIZ-PRESENTATION-MODEL.md`](./VIZ-PRESENTATION-MODEL.md).
+Capture: raw `inspect` on the host → **projection** (`projectMachine` / `projectFrame` in `@r-a-i-t-h/viz-host`) → shared `Viz*` model (`@r-a-i-t-h/viz-protocol`) over `postMessage`. New structure/badge features extend the **projector** (typed against XState), not popup duck-typing. See [`VIZ-PRESENTATION-MODEL.md`](./VIZ-PRESENTATION-MODEL.md).
 
 ---
 

@@ -49,7 +49,7 @@ actor.start();
 // sub.unsubscribe();
 ```
 
-Inspection is **system-wide** and does **not** replay past events. For a custom viz that keys structure off `@xstate.actor` (as `@viz/host` does), attach **before** `start()` or you will see later snapshots/events without a machine graph. See [`HOST-INTEGRATION.md`](./HOST-INTEGRATION.md#attaching-inspect-after-createactor).
+Inspection is **system-wide** and does **not** replay past events. For a custom viz that keys structure off `@xstate.actor` (as `@r-a-i-t-h/viz-host` does), attach **before** `start()` or you will see later snapshots/events without a machine graph. See [`HOST-INTEGRATION.md`](./HOST-INTEGRATION.md#attaching-inspect-after-createactor).
 
 ---
 
@@ -92,7 +92,7 @@ That normalized tree is the ideal viz substrate: node kinds (incl. parallel vs c
 
 **Live** `StateNode` / `TransitionDefinition` still hold object refs (`target: StateNode[]`, `source`, guards/actions as functions). Excellent in-process; useless across `postMessage` without sanitizing to names/ids/params.
 
-This repo **projects** `logic.definition` on the host into a shared `VizMachine` (`@viz/host` / `@viz/protocol`) and overlays `VizFrame.activePaths` from snapshots — see [`VIZ-PRESENTATION-MODEL.md`](./VIZ-PRESENTATION-MODEL.md).
+This repo **projects** `logic.definition` on the host into a shared `VizMachine` (`@r-a-i-t-h/viz-host` / `@r-a-i-t-h/viz-protocol`) and overlays `VizFrame.activePaths` from snapshots — see [`VIZ-PRESENTATION-MODEL.md`](./VIZ-PRESENTATION-MODEL.md).
 
 ### Current state (runtime)
 
@@ -240,7 +240,7 @@ Optional depth (in-process only, or specialized events)
 
 ## How this repo applies it
 
-- Host API (`@viz/host`): raw `inspect` observer via `createVisualizerHost()`.
+- Host API (`@r-a-i-t-h/viz-host`): raw `inspect` observer via `createVisualizerHost()`.
 - On `@xstate.actor`: `captureMachine()` reads `actorRef.logic.definition` (+ `config`, context dep-graph).
 - On `@xstate.snapshot`: store `value` / context; UI overlays active paths onto the stored definition tree.
 - Popup / embed: host captures first, then ships portable JSON over `postMessage` — live `actorRef` / functions never cross the boundary.

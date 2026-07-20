@@ -1,6 +1,6 @@
 /**
  * Static context dependency graph shape — shared by host analysis and UI.
- * The analyzer that builds this lives in `@viz/host` (needs live XState logic).
+ * The analyzer that builds this lives in `@r-a-i-t-h/viz-host` (needs live XState logic).
  */
 
 export type DepEntityKind = 'contextKey' | 'action' | 'guard' | 'invoke';

@@ -1,5 +1,5 @@
 {
-  "name": "@viz/demo",
+  "name": "@r-a-i-t-h/viz-demo",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,8 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@viz/host": "*",
-    "@viz/visualizer": "*",
+    "@r-a-i-t-h/viz-host": "*",
+    "@r-a-i-t-h/viz": "*",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "xstate": "^5.32.5"

@@ -7,7 +7,7 @@ import type {
   DepEntityKind,
   DepRelation,
   DepSite,
-} from '@viz/protocol';
+} from '@r-a-i-t-h/viz-protocol';
 
 export type {
   ContextDepEdge,
@@ -17,7 +17,7 @@ export type {
   DepEntityKind,
   DepRelation,
   DepSite,
-} from '@viz/protocol';
+} from '@r-a-i-t-h/viz-protocol';
 
 /**
  * Static context dependency graph: which actions / guards / invokes read or

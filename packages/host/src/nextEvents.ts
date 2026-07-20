@@ -2,7 +2,7 @@ import type {
   VizNextEvent,
   VizNextEventCandidate,
   VizNode,
-} from '@viz/protocol';
+} from '@r-a-i-t-h/viz-protocol';
 
 /**
  * Events the active configuration can handle, including handlers on active

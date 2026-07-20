@@ -2,7 +2,7 @@ import {
   type KeyboardEvent,
   type MouseEvent,
 } from 'react';
-import type { VizEvent, VizNode } from '@viz/protocol';
+import type { VizEvent, VizNode } from '@r-a-i-t-h/viz-protocol';
 import { depEntityId } from './contextDepHighlights';
 import { HoverTip, type HoverTipItem } from './HoverTip';
 import { NodeLifecycleBadges } from './NodeLifecycleBadges';

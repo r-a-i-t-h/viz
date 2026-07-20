@@ -1,5 +1,5 @@
 {
-  "name": "@viz/visualizer",
+  "name": "@r-a-i-t-h/viz",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,7 +12,7 @@
     "./ui": "./src/ui/VisualizerView.tsx"
   },
   "dependencies": {
-    "@viz/protocol": "*",
+    "@r-a-i-t-h/viz-protocol": "*",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },

@@ -1,5 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import type { VisualizerHost, VisualizerSnapshot } from '@viz/host';
+import type { VisualizerHost, VisualizerSnapshot } from '@r-a-i-t-h/viz-host';
 
 /** React subscription helper for optional UI consumers. */
 export function useVisualizerSnapshot(

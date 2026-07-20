@@ -1,3 +1,11 @@
+## 2026-07-20 — Publish host/protocol under `@r-a-i-t-h`; deploy visualizer separately
+
+**Context:** Packages were private `@viz/*` workspaces. Goal is real npm publish so workplace Artifactory (proxying npmjs) can install them. `@raith` on JSR does not imply an npm scope; Artifactory does not reliably proxy JSR.
+
+**Decision:** Rename publishable packages to `@r-a-i-t-h/viz-protocol` and `@r-a-i-t-h/viz-host` (public npm). Keep the inspector as private workspace `@r-a-i-t-h/viz` and deploy `apps/visualizer/dist/` as the `visualizerUrl` — not an installable component library. Demo stays private as `@r-a-i-t-h/viz-demo`. Wire message type strings (`@viz.*`) stay unchanged.
+
+**Rationale:** Hosts only need the host library on npm; the UI is a standalone inspector URL. Publishing to registry.npmjs.org (not JSR-only) matches Artifactory’s usual npm upstream.
+
 ## 2026-07-20 — Kill document elastic overscroll in the popup
 
 **Context:** Trackpad pan/zoom on the graph still rubber-banded the popup window (macOS elastic overscroll) even when the page had nowhere to scroll.
@@ -22,7 +30,7 @@
 
 **Context:** For local debugging it is useful to know whether `inspect` is construction-only or can be attached to an already-created actor (e.g. without touching every `createActor` call site).
 
-**Finding:** XState v5 registers `createActor(machine, { inspect })` on the **actor system** (root only). The same observer can be attached later with `actor.system.inspect(viz.inspect)`, which returns a subscription. `@viz/host` still only projects structure from `@xstate.actor`; attaching **after** `start()` misses that event, so the popup gets snapshots/logs without a machine tree. Attach before `start()` (or pass `inspect` at construction) for a usable viz.
+**Finding:** XState v5 registers `createActor(machine, { inspect })` on the **actor system** (root only). The same observer can be attached later with `actor.system.inspect(viz.inspect)`, which returns a subscription. `@r-a-i-t-h/viz-host` still only projects structure from `@xstate.actor`; attaching **after** `start()` misses that event, so the popup gets snapshots/logs without a machine tree. Attach before `start()` (or pass `inspect` at construction) for a usable viz.
 
 **Decision:** Document both paths and the timing caveat in [`HOST-INTEGRATION.md`](./HOST-INTEGRATION.md); note `system.inspect` in [`INSPECT-V4-VS-V5.md`](./INSPECT-V4-VS-V5.md).
 
@@ -133,9 +141,9 @@
 
 **Context:** Host and visualizer should share only Viz*/wire types; the visualizer will be hosted independently; consuming apps need a linkable host library.
 
-**Decision:** npm workspaces with `@viz/protocol` (Viz* + `@viz.*` + `connectPopupReceiver`), `@viz/host` (inspect/project/HostBridge; depends on protocol; peer xstate), `apps/visualizer` (React UI, protocol only), and `apps/demo` (PoC host). Each app builds to its own `dist/` (`apps/*/dist/`). Packages emit `dist/` via `npm run build:packages`.
+**Decision:** npm workspaces with `@r-a-i-t-h/viz-protocol` (Viz* + `@viz.*` + `connectPopupReceiver`), `@r-a-i-t-h/viz-host` (inspect/project/HostBridge; depends on protocol; peer xstate), `apps/visualizer` (React UI, protocol only), and `apps/demo` (PoC host). Each app builds to its own `dist/` (`apps/*/dist/`). Packages emit `dist/` via `npm run build:packages`.
 
-**Rationale:** Enforces the host↔viz boundary in package deps; demo stays for local development; real apps take `@viz/host` (+ transitive protocol) and a separate visualizer URL.
+**Rationale:** Enforces the host↔viz boundary in package deps; demo stays for local development; real apps take `@r-a-i-t-h/viz-host` (+ transitive protocol) and a separate visualizer URL.
 
 ---
 

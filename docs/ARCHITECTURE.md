@@ -6,13 +6,13 @@ How inspection, interaction, and rendering split today — and when a further ex
 
 | Term | Meaning | Where today |
 |------|---------|-------------|
-| **Host API** | Framework-agnostic inspect + projection + snapshot store + popup/inline launch. What real embeds depend on. | `@viz/host` (`createVisualizerHost`, bridge, `project`) |
-| **Protocol** | Shared `Viz*` model + `@viz.*` messages. | `@viz/protocol` |
-| **Projection** | Walk live XState `logic` (official types) → shared `VizMachine` / `VizFrame`. | `@viz/host` `project.ts` |
+| **Host API** | Framework-agnostic inspect + projection + snapshot store + popup/inline launch. What real embeds depend on. | `@r-a-i-t-h/viz-host` (`createVisualizerHost`, bridge, `project`) |
+| **Protocol** | Shared `Viz*` model + `@viz.*` messages. | `@r-a-i-t-h/viz-protocol` |
+| **Projection** | Walk live XState `logic` (official types) → shared `VizMachine` / `VizFrame`. | `@r-a-i-t-h/viz-host` `project.ts` |
 | **Interaction model** | Presentation/session behavior over a snapshot: zoom anchors, transition highlights, watches, selected actor, panel prefs. | React `useState` in `VisualizerView` (+ pure helpers under `apps/visualizer/src/ui/`) |
 | **Renderer** | DOM/UI that displays host snapshot + interaction state. | `apps/visualizer` |
 
-Avoid “visualizer API” alone — it blurs host vs interaction. Prefer **host API** for `@viz/host`.
+Avoid “visualizer API” alone — it blurs host vs interaction. Prefer **host API** for `@r-a-i-t-h/viz-host`.
 
 Avoid “headless visualizer” alone — the host is already headless. A future extract would be a **headless interaction model** (or session), not a second host.
 
@@ -20,8 +20,8 @@ Avoid “headless visualizer” alone — the host is already headless. A future
 
 ```text
 XState inspect
-  → @viz/host (projectMachine / projectFrame → VizMachine / VizFrame)
-       → VisualizerSnapshot (@viz/protocol)
+  → @r-a-i-t-h/viz-host (projectMachine / projectFrame → VizMachine / VizFrame)
+       → VisualizerSnapshot (@r-a-i-t-h/viz-protocol)
             ├─ apps/demo subscribe or postMessage
             └─ apps/visualizer: VisualizerView
                  ├─ Interaction state (React-owned)
@@ -30,7 +30,7 @@ XState inspect
 ```
 
 - **Domain/runtime** lives only in the host snapshot as already-projected `Viz*` models. No zoom, highlight, or watches there.
-- UI must not import XState structural types; only `VizMachine` / `VizFrame` / `VizNode` from `@viz/protocol`.
+- UI must not import XState structural types; only `VizMachine` / `VizFrame` / `VizNode` from `@r-a-i-t-h/viz-protocol`.
 - **Shared interaction state** is lifted in `VisualizerView` and passed as props/callbacks into `StateTree` / `WatchColumn`.
 - **Leaf-local** UI (hover tip open, watch-card disclosure, fold open, resize gesture) stays in components.
 - Inline and popup each mount their own `VisualizerView`, so interaction state is **not** shared across surfaces.
@@ -78,7 +78,7 @@ Pull `zoomAnchors`, `highlightedTargetIds`, `watchedBySession`, actor selection 
 3. Derives presentation facts for the current machine
 4. Lets React (or anything else) subscribe and render
 
-Keep `@viz/host` as the **host API** only. Do not fold interaction into `VisualizerSnapshot` unless cross-surface sync becomes a real product requirement.
+Keep `@r-a-i-t-h/viz-host` as the **host API** only. Do not fold interaction into `VisualizerSnapshot` unless cross-surface sync becomes a real product requirement.
 
 ## Related
 

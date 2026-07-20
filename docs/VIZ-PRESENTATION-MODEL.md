@@ -271,7 +271,7 @@ interface VizFrame {
 
 Optional later (still host-projected): —
 
-`nextEvents` now includes ordered `candidates` (cond cascade) and `highlightIds` (providers ∪ targets). See `VizNextEvent` in `@viz/protocol`.
+`nextEvents` now includes ordered `candidates` (cond cascade) and `highlightIds` (providers ∪ targets). See `VizNextEvent` in `@r-a-i-t-h/viz-protocol`.
 ---
 
 ## Schema — registry (multi-actor)
@@ -307,18 +307,18 @@ interface VizActorListItem {
 ## Package split (iframe vs popup bundles)
 
 ```text
-@viz/host          // createVisualizerHost, inspect, projectMachine, HostBridge
-  depends on: @viz/protocol, peer xstate
+@r-a-i-t-h/viz-host          // createVisualizerHost, inspect, projectMachine, HostBridge (npm)
+  depends on: @r-a-i-t-h/viz-protocol, peer xstate
 
-@viz/protocol      // VizMachine, VizFrame, message types, connectPopupReceiver
+@r-a-i-t-h/viz-protocol      // VizMachine, VizFrame, message types, connectPopupReceiver (npm)
   depends on: nothing
 
-apps/visualizer    // popup React renderer
-  depends on: @viz/protocol
-  does NOT depend on: xstate / @viz/host
+@r-a-i-t-h/viz (apps/visualizer)  // popup React renderer — deploy dist/, not published
+  depends on: @r-a-i-t-h/viz-protocol
+  does NOT depend on: xstate / @r-a-i-t-h/viz-host
 
-apps/demo          // PoC machine host
-  depends on: @viz/host (+ @viz/visualizer for inline only)
+@r-a-i-t-h/viz-demo (apps/demo)   // PoC machine host — private
+  depends on: @r-a-i-t-h/viz-host (+ @r-a-i-t-h/viz for inline only)
 ```
 
 Implemented as npm workspaces under `packages/` and `apps/`.

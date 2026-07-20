@@ -1,8 +1,17 @@
 {
-  "name": "@viz/protocol",
-  "version": "0.0.0",
-  "private": true,
+  "name": "@r-a-i-t-h/viz-protocol",
+  "version": "0.1.0",
+  "description": "Shared Viz* model and @viz.* wire types for XState visualizer hosts",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/r-a-i-t-h/viz.git",
+    "directory": "packages/protocol"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -11,7 +20,7 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "LICENSE"],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "clean": "rm -rf dist"

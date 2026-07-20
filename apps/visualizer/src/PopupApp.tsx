@@ -4,7 +4,7 @@ import {
   type VizLogEntry,
   type VizMachine,
   type VisualizerSnapshot,
-} from '@viz/protocol';
+} from '@r-a-i-t-h/viz-protocol';
 import {
   VisualizerView,
   type ConnectionStatus,

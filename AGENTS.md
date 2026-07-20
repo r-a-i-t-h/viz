@@ -4,19 +4,19 @@
 
 An npm-workspaces monorepo for XState v5 inspection:
 
-- **`@viz/protocol`** — shared `Viz*` model + `@viz.*` wire types (no XState, no React)
-- **`@viz/host`** — `createVisualizerHost`, projection, host bridge (peer: xstate)
-- **`apps/visualizer`** — independently hostable React visualizer (protocol only)
-- **`apps/demo`** — PoC machine host that calls `openPopup()` / inline viz
+- **`@r-a-i-t-h/viz-protocol`** — shared `Viz*` model + `@viz.*` wire types (no XState, no React); published to npm
+- **`@r-a-i-t-h/viz-host`** — `createVisualizerHost`, projection, host bridge (peer: xstate); published to npm
+- **`@r-a-i-t-h/viz`** (`apps/visualizer`) — standalone inspector UI; deploy `dist/`, do not publish to npm
+- **`@r-a-i-t-h/viz-demo`** (`apps/demo`) — PoC machine host that calls `openPopup()` / inline viz; private
 
-Real hosts typically only depend on `@viz/host` and call `openPopup()`.
+Real hosts typically only depend on `@r-a-i-t-h/viz-host`, call `openPopup()`, and point `visualizerUrl` at a deployed inspector.
 
 ## Conventions
 
 - TypeScript everywhere; keep strictness as configured.
 - XState v5 APIs only (`createMachine`, `createActor`, `setup`) — do not use v4 patterns like `Machine()` or `interpret()`.
-- XState structural types are consumed only in **`@viz/host`** (`project.ts`); UI speaks `Viz*` from **`@viz/protocol`**.
-- Do not import React/CSS from `@viz/host` or `@viz/protocol`.
+- XState structural types are consumed only in **`@r-a-i-t-h/viz-host`** (`project.ts`); UI speaks `Viz*` from **`@r-a-i-t-h/viz-protocol`**.
+- Do not import React/CSS from `@r-a-i-t-h/viz-host` or `@r-a-i-t-h/viz-protocol`.
 - Launching the popup or toggling inline viz must remain **API methods** (`viz.openPopup()`, `viz.showInline()`, …), not React-only affordances.
 
 ## Workflow

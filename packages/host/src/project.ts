@@ -25,8 +25,8 @@ import type {
   VizNodeKind,
   VizSymbol,
   VizTransition,
-} from '@viz/protocol';
-import { normalizeStateNodeId } from '@viz/protocol';
+} from '@r-a-i-t-h/viz-protocol';
+import { normalizeStateNodeId } from '@r-a-i-t-h/viz-protocol';
 import { collectNextEvents } from './nextEvents.js';
 
 const AFTER_EVENT = /^xstate\.after\./;

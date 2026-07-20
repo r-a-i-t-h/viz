@@ -1,7 +1,7 @@
 /**
  * Host library: inspect + project live XState logic → Viz*, open popup bridge.
  *
- * Depends on `@viz/protocol` for the shared model/wire types.
+ * Depends on `@r-a-i-t-h/viz-protocol` for the shared model/wire types.
  * Peer: `xstate` v5.
  */
 
@@ -12,7 +12,7 @@ export {
   type VisualizerListener,
 } from './createVisualizerHost.js';
 
-export type { HostBridgeStatus, VisualizerSnapshot } from '@viz/protocol';
+export type { HostBridgeStatus, VisualizerSnapshot } from '@r-a-i-t-h/viz-protocol';
 
 export {
   machineLogicFromEvent,
@@ -22,7 +22,7 @@ export {
   activePaths,
 } from './project.js';
 
-export { normalizeStateNodeId } from '@viz/protocol';
+export { normalizeStateNodeId } from '@r-a-i-t-h/viz-protocol';
 
 export { collectNextEvents } from './nextEvents.js';
 export { computeContextKeyAges } from './contextAges.js';
@@ -38,7 +38,7 @@ export {
   type DepSite,
 } from './contextDeps.js';
 
-/** Re-export protocol model for apps that only install `@viz/host`. */
+/** Re-export protocol model for apps that only install `@r-a-i-t-h/viz-host`. */
 export type {
   VizActorRefMarker,
   VizAnalysis,
@@ -56,6 +56,6 @@ export type {
   VizNodeKind,
   VizSymbol,
   VizTransition,
-} from '@viz/protocol';
+} from '@r-a-i-t-h/viz-protocol';
 
-export { isVizActorRefMarker } from '@viz/protocol';
+export { isVizActorRefMarker } from '@r-a-i-t-h/viz-protocol';

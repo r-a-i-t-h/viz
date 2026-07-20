@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { VizEvent, VizNode, VizSymbol } from '@viz/protocol';
+import type { VizEvent, VizNode, VizSymbol } from '@r-a-i-t-h/viz-protocol';
 import { depEntityId } from './contextDepHighlights';
 import { DisclosureChevron } from './DisclosureChevron';
 import { findNodeByPath } from './findNodeByPath';

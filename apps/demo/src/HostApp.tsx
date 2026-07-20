@@ -5,13 +5,13 @@ import {
   type HostBridgeStatus,
   type VisualizerHost,
   type VisualizerSnapshot,
-} from '@viz/host';
+} from '@r-a-i-t-h/viz-host';
 import { blinkerMachine, demoMachine, wideParallelMachine } from './machine';
 import './host.css';
 
 // Lazy: visualizer.css is only fetched when inline viz is shown.
 const VisualizerView = lazy(() =>
-  import('@viz/visualizer/ui').then((m) => ({ default: m.VisualizerView })),
+  import('@r-a-i-t-h/viz/ui').then((m) => ({ default: m.VisualizerView })),
 );
 
 type ActorEvent = Parameters<
