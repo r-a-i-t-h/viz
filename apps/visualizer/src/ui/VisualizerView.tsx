@@ -80,6 +80,7 @@ export function VisualizerView({
   );
   const [hoveredEntityIds, setHoveredEntityIds] = useState<string[]>([]);
   const [zoomAnchors, setZoomAnchors] = useState<Set<string>>(() => new Set());
+  const [viewportResetSignal, setViewportResetSignal] = useState(0);
   /** Watched node paths keyed by actor session id (order preserved). */
   const [watchedBySession, setWatchedBySession] = useState<
     Record<string, string[]>
@@ -131,11 +132,12 @@ export function VisualizerView({
     });
   }, []);
 
-  // Escape clears every zoom anchor (graph + watch "z" controls).
+  // Escape resets graph viewport pan/zoom and clears every zoom anchor.
   useEffect(() => {
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       setZoomAnchors(new Set());
+      setViewportResetSignal((current) => current + 1);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
@@ -264,7 +266,9 @@ export function VisualizerView({
               </span>
             )}
           </h3>
-          <TreeViewport resetKey={machine?.sessionId}>
+          <TreeViewport
+            resetKey={`${machine?.sessionId ?? ''}:${viewportResetSignal}`}
+          >
             {machine ? (
               <StateTree
                 node={machine.root}

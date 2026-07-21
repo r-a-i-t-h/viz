@@ -577,9 +577,9 @@
 }
 
 /*
- * Graph viewport: pan (two-finger scroll) + pure scale zoom (pinch /
- * Ctrl|Cmd+scroll) via transform on `.viz__tree-canvas`. Native overflow
- * scroll is disabled so wheel ownership stays with TreeViewport.
+ * Graph viewport: pan (two-finger scroll, Space+drag, right-button drag) +
+ * pure scale zoom (pinch / Ctrl|Cmd+scroll) via transform on `.viz__tree-canvas`.
+ * Native overflow scroll is disabled so wheel ownership stays with TreeViewport.
  * Node neighborhood zoom (`node--zoom-*`) is a separate attention layer.
  */
 .viz__tree-scroll {
@@ -589,6 +589,16 @@
   overflow: hidden;
   overscroll-behavior: none;
   touch-action: none;
+}
+
+.viz__tree-scroll--pan-ready,
+.viz__tree-scroll--pan-ready * {
+  cursor: grab;
+}
+
+.viz__tree-scroll--panning,
+.viz__tree-scroll--panning * {
+  cursor: grabbing;
 }
 
 .viz__tree-canvas {
