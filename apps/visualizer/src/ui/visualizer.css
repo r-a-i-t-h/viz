@@ -1016,47 +1016,57 @@ body.viz--resizing iframe {
   margin: 0;
   cursor: default;
   overflow: visible;
-  /* Room for control + badge clusters on the top edge. */
-  padding-top: 0.85rem;
 }
 
 .node--watch .node__key {
   font-size: 1rem;
 }
 
-.node--watch > .node__header {
-  /* Keep the node label clear of the in-card action cluster (4 buttons). */
-  padding-right: 5.9rem;
-}
-
+/* Action lozenge sits on the top border (same vertical placement as badges). */
 .node__watch-controls {
   position: absolute;
-  top: 0.35rem;
+  top: 0;
   right: 0.45rem;
   left: auto;
-  display: flex;
-  gap: 0.2rem;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0;
   z-index: 2;
+  border-radius: 999px;
+  border: 1px solid var(--viz-border-strong);
+  background: var(--viz-surface-chip);
+  box-shadow: 0 1px 2px var(--viz-shadow-soft);
+  overflow: hidden;
 }
 
 .node__watch-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.35rem;
-  height: 1.35rem;
+  width: 1.15rem;
+  height: 1.15rem;
   padding: 0;
-  border-radius: 999px;
-  border: 1px solid var(--viz-border-strong);
-  background: var(--viz-surface-chip);
+  border: none;
+  border-radius: 0;
+  background: transparent;
   color: var(--viz-text-secondary);
-  box-shadow: 0 1px 2px var(--viz-shadow-soft);
+  box-shadow: none;
   cursor: pointer;
   position: relative;
-  font-size: 0.7rem;
+  font-size: 0.62rem;
   font-weight: 700;
   line-height: 1;
   text-transform: lowercase;
+}
+
+.node__watch-btn svg {
+  width: 10px;
+  height: 10px;
+}
+
+.node__watch-btn + .node__watch-btn {
+  border-left: 1px solid var(--viz-border);
 }
 
 .node__watch-btn:hover:not(:disabled) {
@@ -1070,14 +1080,11 @@ body.viz--resizing iframe {
 
 .node__watch-btn--zoom.node__watch-btn--active {
   color: var(--viz-focus);
-  border-color: var(--viz-focus-border);
   background: var(--viz-focus-bg);
-  box-shadow: 0 0 0 1px var(--viz-focus-ring);
 }
 
 .node__watch-btn--close {
   color: var(--viz-err-soft);
-  border-color: var(--viz-err-border);
   background: var(--viz-err-bg-btn);
 }
 
@@ -1085,7 +1092,7 @@ body.viz--resizing iframe {
   background: var(--viz-err-bg-btn-hover);
 }
 
-/* Lifecycle badges sit top-left on watch cards; controls are top-right. */
+/* Lifecycle badges sit top-left on the watch card edge; controls are top-right. */
 .node__badges--watch {
   left: 0.45rem;
   right: auto;
