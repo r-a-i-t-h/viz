@@ -16,8 +16,28 @@ export type PopupMessageHandler = (message: VizDownstreamMessage) => void;
  * Does not send `@viz.bye` on React effect cleanup — StrictMode remounts would
  * otherwise clear the host's popup handle while leaving status "connected".
  * Teardown uses `pagehide` (actual close / navigate) instead.
+ *
+ * Closes the popup when the host sends `@viz.closed` (including on host
+ * refresh via the bridge's `pagehide` handler) or when `window.opener` is gone.
  */
 export function connectPopupReceiver(onMessage: PopupMessageHandler): () => void {
+  let closed = false;
+  let openerPoll: number | null = null;
+
+  const stopOpenerPoll = () => {
+    if (openerPoll !== null) {
+      window.clearInterval(openerPoll);
+      openerPoll = null;
+    }
+  };
+
+  const closePopup = () => {
+    if (closed) return;
+    closed = true;
+    stopOpenerPoll();
+    window.close();
+  };
+
   const handle = (event: MessageEvent) => {
     if (!isVizMessage(event.data)) return;
     const data = event.data;
@@ -28,6 +48,7 @@ export function connectPopupReceiver(onMessage: PopupMessageHandler): () => void
       data.type === '@viz.closed'
     ) {
       onMessage(data);
+      if (data.type === '@viz.closed') closePopup();
     }
   };
 
@@ -52,6 +73,12 @@ export function connectPopupReceiver(onMessage: PopupMessageHandler): () => void
   // pagehide fires on real close/navigation; not on React StrictMode remount.
   window.addEventListener('pagehide', sendBye);
 
+  if (window.opener) {
+    openerPoll = window.setInterval(() => {
+      if (!window.opener || window.opener.closed) closePopup();
+    }, 500);
+  }
+
   if (target) {
     const hello: VizUpstreamMessage = {
       channel: VIZ_CHANNEL,
@@ -64,5 +91,6 @@ export function connectPopupReceiver(onMessage: PopupMessageHandler): () => void
   return () => {
     window.removeEventListener('message', handle);
     window.removeEventListener('pagehide', sendBye);
+    stopOpenerPoll();
   };
 }

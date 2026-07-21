@@ -38,6 +38,14 @@ export class HostBridge {
   private readonly onStatus?: (status: HostBridgeStatus) => void;
   private closePoll: number | null = null;
 
+  private readonly onPageHide = () => {
+    // Fires on host refresh/navigation before unload — tell the popup to close
+    // so a later openPopup() gets a clean handshake (not a stale orphan).
+    if (this.popup && !this.popup.closed) {
+      this.post({ channel: VIZ_CHANNEL, type: '@viz.closed' });
+    }
+  };
+
   private readonly onMessage = (event: MessageEvent) => {
     if (!isVizMessage(event.data)) return;
     const data = event.data as VizUpstreamMessage;
@@ -72,6 +80,7 @@ export class HostBridge {
     this.maxLogDeferred = options.maxLogDeferred ?? 100;
     this.onStatus = options.onStatus;
     window.addEventListener('message', this.onMessage);
+    window.addEventListener('pagehide', this.onPageHide);
   }
 
   getStatus(): HostBridgeStatus {
@@ -135,6 +144,7 @@ export class HostBridge {
 
   dispose(): void {
     window.removeEventListener('message', this.onMessage);
+    window.removeEventListener('pagehide', this.onPageHide);
     this.stopClosePoll();
     if (this.popup && !this.popup.closed) {
       this.post({ channel: VIZ_CHANNEL, type: '@viz.closed' });

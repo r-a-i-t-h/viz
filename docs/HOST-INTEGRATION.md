@@ -37,7 +37,7 @@ Lifecycle:
 1. `createVisualizerHost({ visualizerUrl })` — bridge listens for `@viz.hello`.
 2. `createActor(machine, { inspect: viz.inspect })` + `actor.start()` — `@xstate.actor` / snapshot / event → project → store + bridge.
 3. `viz.openPopup()` from a **user gesture** — `window.open` → popup posts hello → host replays machines/frames/logs → live stream.
-4. Teardown — `actor.stop()` (and any other inspected actors), then `viz.dispose()`.
+4. Teardown — `actor.stop()` (and any other inspected actors), then `viz.dispose()`. On host refresh/navigation the bridge also sends `@viz.closed` so the popup closes automatically; call `openPopup()` again after reload.
 
 ## Checklist for an existing app
 

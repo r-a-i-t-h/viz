@@ -15,6 +15,8 @@
  * 2. Popup loads and posts `@viz.hello` to `window.opener`.
  * 3. Host marks the link connected and replays deferred payloads
  *    (VizMachine + latest VizFrame), then streams live updates.
+ * 4. On host refresh/navigation/dispose, host sends `@viz.closed`; popup
+ *    self-closes so the next `openPopup()` gets a fresh handshake.
  *
  * Payloads are already-projected viz models — not raw XState definitions.
  */

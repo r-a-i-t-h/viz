@@ -513,6 +513,16 @@
 
 ---
 
+## 2026-07-21 — Popup self-close when host refreshes
+
+**Context:** After a host page reload the popup could survive with a dead bridge; reconnect-on-refresh was considered but is heavier than needed.
+
+**Decision:** On host `pagehide` (fires before unload on refresh/navigation), `HostBridge` sends `@viz.closed` to the popup. `connectPopupReceiver` closes the window on that message and polls `window.opener.closed` as a fallback when the host tab is closed without unload (crash/kill).
+
+**Rationale:** Normal reload is covered by `pagehide` → `@viz.closed` → `window.close()`. The next `openPopup()` opens a fresh popup and the usual `@viz.hello` replay path applies. No re-handshake or optional window name required for this flow.
+
+---
+
 ## 2026-07-16 — Intention: revive the state machine visualizer for XState v5
 
 **Context:** We previously built a visualizer against XState v4 and the old `@xstate/inspect`. XState v5 + the new `@statelyai/inspect` take a different approach and we need to re-establish the foundation. The core blocker: inspection events surface the *current state*, but a visualizer needs the *entire machine make-up* (all states, nesting, parallel regions, transitions). We could see all the events flow, but couldn't find the machine config on an actor event.
