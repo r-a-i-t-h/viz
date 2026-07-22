@@ -1,3 +1,32 @@
+## 2026-07-22 — Shift+wheel → horizontal pan (mouse-only remap)
+
+**Context:** Vertical mouse wheels commonly use Shift to scroll horizontally. Trackpads already emit `deltaX`/`deltaY` for two-finger pan.
+
+**Decision:** On the pan path only, if `shiftKey && deltaX === 0 && deltaY !== 0`, treat `deltaY` as horizontal. Do not remap when `deltaX` is already non-zero (native trackpad axes, or browsers that already swapped Shift+wheel into `deltaX`). Zoom path (Ctrl/Cmd / drag mode / pinch) ignores Shift.
+
+**Rationale:** Gives mouse users the expected affordance without inventing a device detector. Trackpad diagonal/horizontal scrolls stay intact; accidental Shift + purely vertical trackpad scroll is the only mild remap edge case.
+
+---
+
+## 2026-07-22 — Drag-mode wheel zooms without Ctrl/Cmd
+
+**Context:** Space / right-button pan mode did not change wheel handling. Unmodified `wheel` always panned, so a mouse wheel needed Ctrl/Cmd to zoom even while already in drag mode. Ideal map UX: wheel zooms in drag mode; the modifier is only for flipping trackpad two-finger scroll to zoom when *not* dragging.
+
+**Finding (input Venn):** Browsers do **not** expose distinct “mouse wheel” vs “trackpad scroll” vs “pinch” APIs on the common path. Almost everything is one `WheelEvent`:
+- Mouse wheel notches and trackpad two-finger scroll → plain `wheel` (often `deltaMode` pixel vs line, but not reliable across OS/browser).
+- Chromium/Firefox trackpad pinch → `wheel` with **`ctrlKey: true` synthesized** (user is not holding Ctrl).
+- Intentional Ctrl/Cmd+scroll → same `ctrlKey`/`metaKey` + `wheel`.
+- Safari trackpad pinch → separate non-standard `gesturestart` / `gesturechange` (scale).
+- Touch pinch is not handled as a first-class path here beyond whatever the browser maps into the above.
+
+So the “device” split is a **modifier + Safari gesture heuristic**, not a clean Venn diagram. We cannot zoom-only-for-mouse and pan-only-for-trackpad without guessing.
+
+**Decision:** While Space is held or a Space/right-button drag is active, plain `wheel` zooms (same path as Ctrl/Cmd+wheel). Outside drag mode, keep plain wheel → pan and Ctrl/Cmd|pinch → zoom. Drag itself remains the pan gesture in drag mode.
+
+**Rationale:** Gives mouse users unmodified zoom once they enter pan mode, without inventing a fragile mouse-vs-trackpad detector. Tradeoff: Space + two-finger trackpad scroll also zooms; pan then via the drag.
+
+---
+
 ## 2026-07-20 — Publish host/protocol under `@r-a-i-t-h`; deploy visualizer separately
 
 **Context:** Packages were private `@viz/*` workspaces. Goal is real npm publish so workplace Artifactory (proxying npmjs) can install them. `@raith` on JSR does not imply an npm scope; Artifactory does not reliably proxy JSR.

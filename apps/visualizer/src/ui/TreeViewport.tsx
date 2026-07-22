@@ -13,10 +13,17 @@ type PanCursor = 'default' | 'grab' | 'grabbing';
 /**
  * Scrollable/scalable shell around the state graph.
  *
- * - Two-finger trackpad scroll → pan
+ * Wheel inputs are a browser heuristic mess (see DECISIONS): mouse wheel,
+ * trackpad two-finger scroll, and Chromium/Firefox pinch all arrive as
+ * `wheel` — only Safari pinch is a distinct `gesture*` event.
+ *
+ * - Plain wheel / two-finger scroll → pan
+ * - Shift + vertical-only wheel → horizontal pan (mouse); skipped when
+ *   deltaX is already set (trackpad / browser-remapped Shift)
  * - Pinch (ctrl+wheel on Chromium/Firefox; Safari GestureEvent) or
- *   Ctrl/Cmd+scroll → pure scale zoom
- * - Space + drag or right-button drag → pan
+ *   Ctrl/Cmd+scroll → scale zoom
+ * - Space held or right-button drag active (“drag mode”) → plain wheel
+ *   zooms; pan via the drag itself. Modifier still zooms (pinch + explicit).
  * - Escape (via parent resetKey) → reset pan/scale to origin
  *
  * Independent of node neighborhood zoom (`zoom.ts`).
@@ -155,12 +162,18 @@ export function TreeViewport({
     };
 
     const onWheel = (event: WheelEvent) => {
-      const { deltaX, deltaY } = normalizedWheelDeltas(event);
+      let { deltaX, deltaY } = normalizedWheelDeltas(event);
+      const dragMode =
+        spacePressedRef.current || dragRef.current !== null;
+      // Drag mode: unmodified wheel zooms (mouse + trackpad look identical).
+      // Otherwise: only pinch (ctrl+wheel) / Ctrl|Cmd+scroll zoom; plain → pan.
+      const zoom =
+        dragMode || event.ctrlKey || event.metaKey;
 
-      // Pinch-zoom and Ctrl/Cmd+scroll → scale. Plain two-finger scroll → pan.
-      if (event.ctrlKey || event.metaKey) {
-        event.preventDefault();
-        event.stopPropagation();
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (zoom) {
         const rect = el.getBoundingClientRect();
         const pointerX = event.clientX - rect.left;
         const pointerY = event.clientY - rect.top;
@@ -171,8 +184,14 @@ export function TreeViewport({
         return;
       }
 
-      event.preventDefault();
-      event.stopPropagation();
+      // Shift + vertical-only wheel → horizontal pan (mouse convention).
+      // Skip when deltaX is already set: trackpads / some browsers already
+      // deliver horizontal deltas (sometimes after their own Shift remap).
+      if (event.shiftKey && deltaX === 0 && deltaY !== 0) {
+        deltaX = deltaY;
+        deltaY = 0;
+      }
+
       setTransform((current) => panViewport(current, deltaX, deltaY));
     };
 
