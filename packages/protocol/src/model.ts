@@ -198,4 +198,9 @@ export interface VizLogEntry {
   eventType?: string;
   value?: unknown;
   at: number;
+  /**
+   * Projected frame for `@xstate.snapshot` rows — enables UI history scrubbing.
+   * Omitted on other log types; may be stripped from popup reconnect replay.
+   */
+  frame?: VizFrame;
 }

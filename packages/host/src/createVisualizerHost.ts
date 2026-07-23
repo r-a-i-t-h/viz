@@ -136,8 +136,6 @@ export function createVisualizerHost(
     }
 
     const logged = summarizeInspectionEvent(event, seq++, options.sanitizeEvent);
-    log = [logged, ...log].slice(0, maxLogEntries);
-    bridge.sendLog(logged);
 
     if (event.type === '@xstate.snapshot') {
       const snapshot = event.snapshot as {
@@ -165,8 +163,14 @@ export function createVisualizerHost(
         previousContextAges.set(sessionId, frame.contextKeyAges);
       }
       frames.set(frame.sessionId, frame);
+      // Snapshot rows carry the projected frame for UI history scrubbing
+      // (view-only — does not rewind the live actor).
+      logged.frame = frame;
       bridge.sendFrame(frame);
     }
+
+    log = [logged, ...log].slice(0, maxLogEntries);
+    bridge.sendLog(logged);
 
     emit();
   };

@@ -130,16 +130,25 @@ export class HostBridge {
   }
 
   sendLog(entry: VizLogEntry): void {
-    const message: VizDownstreamMessage = {
+    // Live path keeps optional snapshot `frame` for history scrubbing.
+    // Deferred reconnect replay strips it — reload may clear history; latest
+    // per-session frame is already replayed via `frames`.
+    const live: VizDownstreamMessage = {
       channel: VIZ_CHANNEL,
       type: '@viz.log',
       payload: toPortable(entry),
     };
-    this.deferredLogs.push(message);
+    const { frame: _frame, ...withoutFrame } = entry;
+    const deferred: VizDownstreamMessage = {
+      channel: VIZ_CHANNEL,
+      type: '@viz.log',
+      payload: toPortable(withoutFrame),
+    };
+    this.deferredLogs.push(deferred);
     if (this.deferredLogs.length > this.maxLogDeferred) {
       this.deferredLogs.shift();
     }
-    if (this.status === 'connected') this.post(message);
+    if (this.status === 'connected') this.post(live);
   }
 
   dispose(): void {

@@ -1,3 +1,13 @@
+## 2026-07-23 — Snapshot log history scrubbing (view-only)
+
+**Context:** Want to click past `@xstate.snapshot` event-log rows and re-see state/context/active overlay. Not actor rewind; child actors keep independent timelines; visualizer reload may drop history.
+
+**Decision:** Attach the projected `VizFrame` on snapshot `VizLogEntry`s (`frame?`). UI pins that frame for tree / State / Context / next-events until “back to live”. Only snapshot rows are revisitable. Host deferred popup replay strips `frame` (latest live frame still replays); live `@viz.log` keeps frames for the open session.
+
+**Rationale:** Reuses existing projection; no protocol control channel; memory bounded by log cap; reconnect stays cheap.
+
+---
+
 ## 2026-07-23 — Event log “filter to current machine”
 
 **Context:** The host keeps one shared `log: VizLogEntry[]` across all inspected actors. Each entry already carries `sessionId` (from `actorRef.sessionId`). The Event log tab showed the full interleaved timeline, which is confusing when multiple machines receive different events.

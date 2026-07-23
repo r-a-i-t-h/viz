@@ -73,6 +73,12 @@ export function VisualizerView({
   const [showLifecycleBadges, setShowLifecycleBadges] = useState(true);
   const [filterLogToCurrentMachine, setFilterLogToCurrentMachine] =
     useState(true);
+  /** View-only pin of a past snapshot frame (does not rewind the live actor). */
+  const [historyPin, setHistoryPin] = useState<{
+    seq: number;
+    sessionId: string;
+    frame: VizFrame;
+  } | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
     null,
   );
@@ -96,11 +102,14 @@ export function VisualizerView({
   const { machines } = snapshot;
   const machine =
     machines.find((m) => m.sessionId === selectedSessionId) ?? machines[0];
-  const frame = machine ? snapshot.frames[machine.sessionId] : undefined;
+  const sessionId = machine?.sessionId ?? '';
+  const liveFrame = machine ? snapshot.frames[machine.sessionId] : undefined;
+  const viewingHistory =
+    historyPin != null && historyPin.sessionId === sessionId;
+  const frame = viewingHistory ? historyPin.frame : liveFrame;
 
   const active = new Set(frame?.activePaths ?? []);
 
-  const sessionId = machine?.sessionId ?? '';
   const watchedPaths = watchedBySession[sessionId] ?? [];
   const watchedPathSet = new Set(watchedPaths);
 
@@ -201,6 +210,20 @@ export function VisualizerView({
     [sessionId],
   );
 
+  const selectHistory = useCallback((entry: VizLogEntry) => {
+    if (!entry.frame) return;
+    setSelectedSessionId(entry.sessionId);
+    setHistoryPin({
+      seq: entry.seq,
+      sessionId: entry.sessionId,
+      frame: entry.frame,
+    });
+  }, []);
+
+  const clearHistory = useCallback(() => {
+    setHistoryPin(null);
+  }, []);
+
   return (
     <div className="viz" data-theme={theme}>
       <header className="viz__header">
@@ -272,6 +295,15 @@ export function VisualizerView({
                 {frame.status}
               </span>
             )}
+            {viewingHistory && (
+              <button
+                type="button"
+                className="viz__history-live"
+                onClick={clearHistory}
+              >
+                Viewing history · back to live
+              </button>
+            )}
           </h3>
           <TreeViewport
             resetKey={`${machine?.sessionId ?? ''}:${viewportResetSignal}`}
@@ -311,7 +343,7 @@ export function VisualizerView({
             panels={{
               state: (
                 <>
-                  <FoldSection title="Current state">
+                  <FoldSection title={viewingHistory ? 'State (history)' : 'Current state'}>
                     <pre className="viz__code viz__code--plain">
                       {JSON.stringify(frame?.value, null, 2)}
                     </pre>
@@ -347,6 +379,8 @@ export function VisualizerView({
                   sessionId={sessionId}
                   filterToCurrent={filterLogToCurrentMachine}
                   onFilterToCurrentChange={setFilterLogToCurrentMachine}
+                  pinnedSeq={viewingHistory ? historyPin.seq : null}
+                  onSelectEntry={selectHistory}
                 />
               ),
             }}
@@ -465,11 +499,15 @@ function EventLogPanel({
   sessionId,
   filterToCurrent,
   onFilterToCurrentChange,
+  pinnedSeq,
+  onSelectEntry,
 }: {
   entries: VizLogEntry[];
   sessionId: string;
   filterToCurrent: boolean;
   onFilterToCurrentChange: (next: boolean) => void;
+  pinnedSeq: number | null;
+  onSelectEntry: (entry: VizLogEntry) => void;
 }) {
   const visible =
     filterToCurrent && sessionId
@@ -491,25 +529,53 @@ function EventLogPanel({
         <p className="viz__log-empty">No events yet.</p>
       ) : (
         <ul className="viz__log">
-          {visible.map((entry) => (
-            <li
-              key={entry.seq}
-              className={`viz__log-item viz__log-item--${entry.type.replace('@xstate.', '')}`}
-            >
-              <span className="viz__log-type">{entry.type}</span>
-              {entry.eventType && (
-                <span className="viz__log-event">{entry.eventType}</span>
-              )}
-              {entry.value !== undefined && (
-                <span className="viz__log-value">
-                  {JSON.stringify(entry.value)}
-                </span>
-              )}
-            </li>
-          ))}
+          {visible.map((entry) => {
+            const revisitable = entry.frame != null;
+            const pinned = pinnedSeq === entry.seq;
+            return (
+              <li
+                key={entry.seq}
+                className={[
+                  'viz__log-item',
+                  `viz__log-item--${entry.type.replace('@xstate.', '')}`,
+                  revisitable ? 'viz__log-item--revisitable' : '',
+                  pinned ? 'viz__log-item--pinned' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                {revisitable ? (
+                  <button
+                    type="button"
+                    className="viz__log-hit"
+                    aria-pressed={pinned}
+                    onClick={() => onSelectEntry(entry)}
+                  >
+                    <LogEntryBody entry={entry} />
+                  </button>
+                ) : (
+                  <LogEntryBody entry={entry} />
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
+  );
+}
+
+function LogEntryBody({ entry }: { entry: VizLogEntry }) {
+  return (
+    <>
+      <span className="viz__log-type">{entry.type}</span>
+      {entry.eventType && (
+        <span className="viz__log-event">{entry.eventType}</span>
+      )}
+      {entry.value !== undefined && (
+        <span className="viz__log-value">{JSON.stringify(entry.value)}</span>
+      )}
+    </>
   );
 }
 
