@@ -1,3 +1,13 @@
+## 2026-07-23 — Pause freezes the visualizer view (not the actor)
+
+**Context:** While debugging, live inspect traffic rotates the event log and advances the tree before the user can inspect an interesting moment. Pause is cross-machine (all actors in the view), UI-only.
+
+**Decision:** **Pause** / **Resume** beside Appearance. Pause freezes the full displayed snapshot (every machine’s frames + log) and inserts a `--- PAUSED` log marker. While paused, live host updates are ignored. **Resume** re-engages: adopt live frames/machines, but **do not** import interim log rows (`seq <= watermark` at resume). Host/actors keep running; no host API or protocol change.
+
+**Rationale:** Neutral-gear disengage is a visualizer concern; skipping catch-up keeps the paused moment’s history intact with an explicit gap marker.
+
+---
+
 ## 2026-07-23 — Persist layout + watches in localStorage
 
 **Context:** Column widths / collapse and watch lists reset on every visualizer reload; theme already persisted.

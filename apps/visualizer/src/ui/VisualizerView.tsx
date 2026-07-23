@@ -106,13 +106,38 @@ export function VisualizerView({
   const [viewportResetSignal, setViewportResetSignal] = useState(0);
   /** Watched node paths keyed by machine name/`label` (best-effort across sessions). */
   const [watchedByName, setWatchedByName] = useState(readStoredWatches);
+  /**
+   * UI-only pause: disengage from live snapshot updates for *all* machines.
+   * Host keeps running; interim log rows are not caught up on resume.
+   */
+  const [paused, setPaused] = useState(false);
+  const [frozenSnapshot, setFrozenSnapshot] =
+    useState<VisualizerSnapshot | null>(null);
+  /** Log retained across resume (includes `--- PAUSED` markers). */
+  const [heldLog, setHeldLog] = useState<VizLogEntry[] | null>(null);
+  /** Live log entries with `seq <= watermark` were missed while paused — skip them. */
+  const [logWatermark, setLogWatermark] = useState<number | null>(null);
 
-  const { machines } = snapshot;
+  const viewLog = buildViewLog(
+    snapshot,
+    paused,
+    frozenSnapshot,
+    heldLog,
+    logWatermark,
+  );
+  const viewSnapshot: VisualizerSnapshot =
+    paused && frozenSnapshot != null
+      ? frozenSnapshot
+      : { ...snapshot, log: viewLog };
+
+  const { machines } = viewSnapshot;
   const machine =
     machines.find((m) => m.sessionId === selectedSessionId) ?? machines[0];
   const sessionId = machine?.sessionId ?? '';
   const machineName = machine?.label ?? '';
-  const liveFrame = machine ? snapshot.frames[machine.sessionId] : undefined;
+  const liveFrame = machine
+    ? viewSnapshot.frames[machine.sessionId]
+    : undefined;
   const viewingHistory =
     historyPin != null && historyPin.sessionId === sessionId;
   const frame = viewingHistory ? historyPin.frame : liveFrame;
@@ -246,6 +271,31 @@ export function VisualizerView({
     setHistoryPin(null);
   }, []);
 
+  const togglePause = useCallback(() => {
+    if (paused) {
+      // Resume listening; do not import interim log rows from the host.
+      setLogWatermark(maxLogSeq(snapshot.log));
+      setHeldLog(frozenSnapshot?.log ?? heldLog);
+      setFrozenSnapshot(null);
+      setPaused(false);
+      return;
+    }
+    const logNow = buildViewLog(
+      snapshot,
+      false,
+      null,
+      heldLog,
+      logWatermark,
+    );
+    const frozen: VisualizerSnapshot = {
+      ...snapshot,
+      log: [makePauseMarker(), ...logNow],
+    };
+    setFrozenSnapshot(frozen);
+    setHeldLog(frozen.log);
+    setPaused(true);
+  }, [paused, snapshot, frozenSnapshot, heldLog, logWatermark]);
+
   return (
     <div className="viz" data-theme={theme}>
       <header className="viz__header">
@@ -253,23 +303,46 @@ export function VisualizerView({
           <div className="viz__header-start">
             <h2 className="viz__title">{title}</h2>
             {connection && <StatusPill state={connection} />}
+            {paused && (
+              <span className="viz__status viz__status--warn">paused</span>
+            )}
           </div>
           {machines.length > 0 && (
             <ActorSelect
               machines={machines}
-              frames={snapshot.frames}
+              frames={viewSnapshot.frames}
               selectedSessionId={machine?.sessionId ?? ''}
               onChange={setSelectedSessionId}
             />
           )}
-          <AppearanceSettings
-            theme={theme}
-            onThemeChange={setTheme}
-            zoomRadius={zoomRadius}
-            onZoomRadiusChange={setZoomRadius}
-            showLifecycleBadges={showLifecycleBadges}
-            onShowLifecycleBadgesChange={setShowLifecycleBadges}
-          />
+          <div className="viz__header-end">
+            <button
+              type="button"
+              className={[
+                'viz__pause-btn',
+                paused ? 'viz__pause-btn--active' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              aria-pressed={paused}
+              title={
+                paused
+                  ? 'Resume listening to inspect events (missed events are not replayed)'
+                  : 'Pause: freeze all machines; stop accepting new events into this view'
+              }
+              onClick={togglePause}
+            >
+              {paused ? 'Resume' : 'Pause'}
+            </button>
+            <AppearanceSettings
+              theme={theme}
+              onThemeChange={setTheme}
+              zoomRadius={zoomRadius}
+              onZoomRadiusChange={setZoomRadius}
+              showLifecycleBadges={showLifecycleBadges}
+              onShowLifecycleBadgesChange={setShowLifecycleBadges}
+            />
+          </div>
         </div>
       </header>
 
@@ -397,7 +470,7 @@ export function VisualizerView({
               ),
               log: (
                 <EventLogPanel
-                  entries={snapshot.log}
+                  entries={viewSnapshot.log}
                   sessionId={sessionId}
                   filterToCurrent={filterLogToCurrentMachine}
                   onFilterToCurrentChange={setFilterLogToCurrentMachine}
@@ -509,6 +582,41 @@ function StatusPill({ state }: { state: ConnectionStatus }) {
   );
 }
 
+const PAUSE_LOG_TYPE = '@viz.paused';
+
+function maxLogSeq(log: VizLogEntry[]): number {
+  let max = -1;
+  for (const entry of log) {
+    if (entry.seq > max) max = entry.seq;
+  }
+  return max;
+}
+
+/** Client-only marker; negative seq avoids colliding with host seqs. */
+function makePauseMarker(): VizLogEntry {
+  return {
+    seq: -Date.now(),
+    type: PAUSE_LOG_TYPE,
+    sessionId: '',
+    at: Date.now(),
+  };
+}
+
+function buildViewLog(
+  live: VisualizerSnapshot,
+  paused: boolean,
+  frozen: VisualizerSnapshot | null,
+  heldLog: VizLogEntry[] | null,
+  logWatermark: number | null,
+): VizLogEntry[] {
+  if (paused && frozen != null) return frozen.log;
+  if (heldLog != null && logWatermark != null) {
+    const fresh = live.log.filter((entry) => entry.seq > logWatermark);
+    return [...fresh, ...heldLog];
+  }
+  return live.log;
+}
+
 type ActorOption = {
   sessionId: string;
   label: string;
@@ -533,7 +641,10 @@ function EventLogPanel({
 }) {
   const visible =
     filterToCurrent && sessionId
-      ? entries.filter((entry) => entry.sessionId === sessionId)
+      ? entries.filter(
+          (entry) =>
+            entry.type === PAUSE_LOG_TYPE || entry.sessionId === sessionId,
+        )
       : entries;
 
   return (
@@ -552,6 +663,13 @@ function EventLogPanel({
       ) : (
         <ul className="viz__log">
           {visible.map((entry) => {
+            if (entry.type === PAUSE_LOG_TYPE) {
+              return (
+                <li key={entry.seq} className="viz__log-item viz__log-item--paused">
+                  --- PAUSED
+                </li>
+              );
+            }
             const revisitable = entry.frame != null;
             const pinned = pinnedSeq === entry.seq;
             return (
