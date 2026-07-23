@@ -307,14 +307,16 @@ export function VisualizerView({
               <span className="viz__status viz__status--warn">paused</span>
             )}
           </div>
-          {machines.length > 0 && (
-            <ActorSelect
-              machines={machines}
-              frames={viewSnapshot.frames}
-              selectedSessionId={machine?.sessionId ?? ''}
-              onChange={setSelectedSessionId}
-            />
-          )}
+          <div className="viz__header-center">
+            {machines.length > 0 && (
+              <ActorSelect
+                machines={machines}
+                frames={viewSnapshot.frames}
+                selectedSessionId={machine?.sessionId ?? ''}
+                onChange={setSelectedSessionId}
+              />
+            )}
+          </div>
           <div className="viz__header-end">
             <button
               type="button"
