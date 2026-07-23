@@ -26,7 +26,7 @@ export interface VisualizerHostOptions {
   /**
    * Max event-log entries retained **per actor session** (subscribers + popup
    * deferred replay). Chatty machines cannot evict quieter ones.
-   * @default 20 ({@link DEFAULT_MAX_LOG_ENTRIES_PER_SESSION})
+   * @default 100 ({@link DEFAULT_MAX_LOG_ENTRIES_PER_SESSION})
    */
   maxLogEntries?: number;
   /**
@@ -256,13 +256,22 @@ function summarizeInspectionEvent(
     at: Date.now(),
   };
 
-  if ('event' in event && event.event) {
+  if (event.type === '@xstate.action') {
+    base.eventType = event.action.type;
+    base.value = event.action.params;
+  } else if ('event' in event && event.event) {
     const scrubbed = sanitizeEvent
       ? sanitizeEvent(event.event as AnyEventObject)
       : event.event;
     base.eventType = scrubbed.type;
+    // Inbound event rows: show the event object (type + payload). Snapshot
+    // rows overwrite `value` with state value below.
+    if (event.type === '@xstate.event') {
+      base.value = scrubbed;
+    }
   }
-  if ('snapshot' in event && event.snapshot) {
+
+  if (event.type === '@xstate.snapshot' && 'snapshot' in event && event.snapshot) {
     const snapshot = event.snapshot as { value?: unknown };
     base.value = snapshot.value;
   }

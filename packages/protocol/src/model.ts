@@ -206,7 +206,7 @@ export interface VizLogEntry {
 }
 
 /** Default max event-log entries retained per actor `sessionId`. */
-export const DEFAULT_MAX_LOG_ENTRIES_PER_SESSION = 20;
+export const DEFAULT_MAX_LOG_ENTRIES_PER_SESSION = 100;
 
 /**
  * Newest-first log: after prepending an entry for `sessionId`, drop that

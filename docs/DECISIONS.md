@@ -1,3 +1,13 @@
+## 2026-07-23 — Log all inspect kinds; default per-session cap 100
+
+**Context:** Keeping `@xstate.event` / `@xstate.action` / `@xstate.snapshot` (etc.) fills the per-machine ring quickly at 20. Action rows also showed no type/payload because summarization only read `event` / snapshot `value`.
+
+**Decision:** Keep logging all inspection kinds. Summarize `@xstate.action` as `eventType = action.type`, `value = action.params`; `@xstate.event` keeps `eventType` and stores the scrubbed event object as `value`. Raise `DEFAULT_MAX_LOG_ENTRIES_PER_SESSION` to **100** (still per `sessionId`).
+
+**Rationale:** Actions/events are useful for debugging; a higher per-machine cap absorbs the extra rows without bringing back global eviction across actors.
+
+---
+
 ## 2026-07-23 — Per-machine event-log retention (default 20)
 
 **Context:** A single global log cap let chatty actors (spawners, blinkers) evict history for quieter machines while scrubbing — useless while live events keep arriving.

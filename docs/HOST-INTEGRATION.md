@@ -10,7 +10,7 @@ import { createVisualizerHost } from '@r-a-i-t-h/viz-host';
 
 const viz = createVisualizerHost({
   visualizerUrl: 'https://your-viz-host/',
-  // optional: maxLogEntries (per session, default 20), sanitizeContext, sanitizeEvent
+  // optional: maxLogEntries (per session, default 100), sanitizeContext, sanitizeEvent
 });
 
 const actor = createActor(machine, { inspect: viz.inspect });
