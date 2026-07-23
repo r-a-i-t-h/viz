@@ -1,3 +1,13 @@
+## 2026-07-23 — Persist layout + watches in localStorage
+
+**Context:** Column widths / collapse and watch lists reset on every visualizer reload; theme already persisted.
+
+**Decision:** Store `viz.layout` (watch/side open + widths) and `viz.watches` (paths keyed by machine **name/`label`**, best-effort) in `localStorage`. Do **not** persist selected actor or history pin. Duplicate labels (or unnamed machines falling back to `sessionId`) can share or lose watches — user can unwatch spurious entries.
+
+**Rationale:** Layout prefs are stable; name-keyed watches usually survive host restart when machine ids are stable, which is more useful than precise per-session isolation.
+
+---
+
 ## 2026-07-23 — Log all inspect kinds; default per-session cap 100
 
 **Context:** Keeping `@xstate.event` / `@xstate.action` / `@xstate.snapshot` (etc.) fills the per-machine ring quickly at 20. Action rows also showed no type/payload because summarization only read `event` / snapshot `value`.

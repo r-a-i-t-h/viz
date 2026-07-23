@@ -5,15 +5,17 @@ import type {
   VizMachine,
   VisualizerSnapshot,
 } from '@r-a-i-t-h/viz-protocol';
-import {
-  DEFAULT_SIDE_WIDTH,
-  DEFAULT_WATCH_WIDTH,
-} from './columnLayout';
 import { ContextInspector } from './ContextInspector';
 import {
   contextKeysForEntities,
   stateIdsForContextKey,
 } from './contextDepHighlights';
+import {
+  persistLayout,
+  persistWatches,
+  readStoredLayout,
+  readStoredWatches,
+} from './persistedUi';
 import { SideColumn } from './SideColumn';
 import { SideTabs } from './SideTabs';
 import { FoldSection } from './FoldSection';
@@ -82,10 +84,18 @@ export function VisualizerView({
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
     null,
   );
-  const [sidePanelOpen, setSidePanelOpen] = useState(true);
-  const [watchPanelOpen, setWatchPanelOpen] = useState(true);
-  const [watchWidth, setWatchWidth] = useState(DEFAULT_WATCH_WIDTH);
-  const [sideWidth, setSideWidth] = useState(DEFAULT_SIDE_WIDTH);
+  const [sidePanelOpen, setSidePanelOpen] = useState(
+    () => readStoredLayout().sidePanelOpen,
+  );
+  const [watchPanelOpen, setWatchPanelOpen] = useState(
+    () => readStoredLayout().watchPanelOpen,
+  );
+  const [watchWidth, setWatchWidth] = useState(
+    () => readStoredLayout().watchWidth,
+  );
+  const [sideWidth, setSideWidth] = useState(
+    () => readStoredLayout().sideWidth,
+  );
   const [transitionHighlight, setTransitionHighlight] =
     useState<TransitionHighlight>(NO_TRANSITION_HIGHLIGHT);
   const [hoveredContextKey, setHoveredContextKey] = useState<string | null>(
@@ -94,15 +104,14 @@ export function VisualizerView({
   const [hoveredEntityIds, setHoveredEntityIds] = useState<string[]>([]);
   const [zoomAnchors, setZoomAnchors] = useState<Set<string>>(() => new Set());
   const [viewportResetSignal, setViewportResetSignal] = useState(0);
-  /** Watched node paths keyed by actor session id (order preserved). */
-  const [watchedBySession, setWatchedBySession] = useState<
-    Record<string, string[]>
-  >({});
+  /** Watched node paths keyed by machine name/`label` (best-effort across sessions). */
+  const [watchedByName, setWatchedByName] = useState(readStoredWatches);
 
   const { machines } = snapshot;
   const machine =
     machines.find((m) => m.sessionId === selectedSessionId) ?? machines[0];
   const sessionId = machine?.sessionId ?? '';
+  const machineName = machine?.label ?? '';
   const liveFrame = machine ? snapshot.frames[machine.sessionId] : undefined;
   const viewingHistory =
     historyPin != null && historyPin.sessionId === sessionId;
@@ -110,7 +119,7 @@ export function VisualizerView({
 
   const active = new Set(frame?.activePaths ?? []);
 
-  const watchedPaths = watchedBySession[sessionId] ?? [];
+  const watchedPaths = machineName ? (watchedByName[machineName] ?? []) : [];
   const watchedPathSet = new Set(watchedPaths);
 
   const { assignIds: contextAssignIds, consumeIds: contextConsumeIds } =
@@ -167,47 +176,60 @@ export function VisualizerView({
     if (syncDocumentTheme) applyDocumentTheme(theme);
   }, [theme, syncDocumentTheme]);
 
+  useEffect(() => {
+    persistLayout({
+      watchPanelOpen,
+      sidePanelOpen,
+      watchWidth,
+      sideWidth,
+    });
+  }, [watchPanelOpen, sidePanelOpen, watchWidth, sideWidth]);
+
+  useEffect(() => {
+    persistWatches(watchedByName);
+  }, [watchedByName]);
+
   const toggleWatch = useCallback(
     (path: string) => {
-      if (!sessionId) return;
-      setWatchedBySession((current) => {
-        const list = current[sessionId] ?? [];
+      if (!machineName) return;
+      setWatchedByName((current) => {
+        const list = current[machineName] ?? [];
         const next = list.includes(path)
           ? list.filter((p) => p !== path)
           : [...list, path];
-        return { ...current, [sessionId]: next };
+        return { ...current, [machineName]: next };
       });
       setWatchPanelOpen(true);
     },
-    [sessionId],
+    [machineName],
   );
 
   const unwatch = useCallback(
     (path: string) => {
-      if (!sessionId) return;
-      setWatchedBySession((current) => ({
+      if (!machineName) return;
+      setWatchedByName((current) => ({
         ...current,
-        [sessionId]: (current[sessionId] ?? []).filter((p) => p !== path),
+        [machineName]: (current[machineName] ?? []).filter((p) => p !== path),
       }));
     },
-    [sessionId],
+    [machineName],
   );
 
   const moveWatch = useCallback(
     (path: string, direction: -1 | 1) => {
-      if (!sessionId) return;
-      setWatchedBySession((current) => {
-        const list = [...(current[sessionId] ?? [])];
+      if (!machineName) return;
+      setWatchedByName((current) => {
+        const list = [...(current[machineName] ?? [])];
         const index = list.indexOf(path);
         if (index < 0) return current;
         const nextIndex = index + direction;
         if (nextIndex < 0 || nextIndex >= list.length) return current;
         const [item] = list.splice(index, 1);
         list.splice(nextIndex, 0, item);
-        return { ...current, [sessionId]: list };
+        return { ...current, [machineName]: list };
       });
     },
-    [sessionId],
+    [machineName],
   );
 
   const selectHistory = useCallback((entry: VizLogEntry) => {
