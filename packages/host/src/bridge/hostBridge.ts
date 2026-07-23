@@ -1,4 +1,5 @@
 import {
+  DEFAULT_MAX_LOG_ENTRIES_PER_SESSION,
   isVizMessage,
   toPortable,
   VIZ_CHANNEL,
@@ -13,10 +14,12 @@ import {
 
 export type { HostBridgeStatus };
 
+type VizLogMessage = Extract<VizDownstreamMessage, { type: '@viz.log' }>;
+
 export interface HostBridgeOptions {
   /** Absolute or same-origin URL of the visualizer page. */
   visualizerUrl: string;
-  /** Max log events to keep for replay when the popup (re)connects. */
+  /** Max deferred log events **per sessionId** when the popup (re)connects. */
   maxLogDeferred?: number;
   onStatus?: (status: HostBridgeStatus) => void;
 }
@@ -32,7 +35,8 @@ export class HostBridge {
   private machines = new Map<string, VizDownstreamMessage>();
   /** Latest VizFrame per sessionId — all replayed on (re)connect. */
   private frames = new Map<string, VizDownstreamMessage>();
-  private deferredLogs: VizDownstreamMessage[] = [];
+  /** Deferred logs per sessionId (oldest→newest within each session). */
+  private deferredLogsBySession = new Map<string, VizLogMessage[]>();
   private readonly maxLogDeferred: number;
   private readonly visualizerUrl: string;
   private readonly onStatus?: (status: HostBridgeStatus) => void;
@@ -77,7 +81,8 @@ export class HostBridge {
 
   constructor(options: HostBridgeOptions) {
     this.visualizerUrl = options.visualizerUrl;
-    this.maxLogDeferred = options.maxLogDeferred ?? 100;
+    this.maxLogDeferred =
+      options.maxLogDeferred ?? DEFAULT_MAX_LOG_ENTRIES_PER_SESSION;
     this.onStatus = options.onStatus;
     window.addEventListener('message', this.onMessage);
     window.addEventListener('pagehide', this.onPageHide);
@@ -139,15 +144,17 @@ export class HostBridge {
       payload: toPortable(entry),
     };
     const { frame: _frame, ...withoutFrame } = entry;
-    const deferred: VizDownstreamMessage = {
+    const deferred: VizLogMessage = {
       channel: VIZ_CHANNEL,
       type: '@viz.log',
       payload: toPortable(withoutFrame),
     };
-    this.deferredLogs.push(deferred);
-    if (this.deferredLogs.length > this.maxLogDeferred) {
-      this.deferredLogs.shift();
+    const list = this.deferredLogsBySession.get(entry.sessionId) ?? [];
+    list.push(deferred);
+    if (list.length > this.maxLogDeferred) {
+      list.shift();
     }
+    this.deferredLogsBySession.set(entry.sessionId, list);
     if (this.status === 'connected') this.post(live);
   }
 
@@ -165,7 +172,10 @@ export class HostBridge {
   private replay(): void {
     for (const msg of this.machines.values()) this.post(msg);
     for (const msg of this.frames.values()) this.post(msg);
-    for (const msg of this.deferredLogs) this.post(msg);
+    const deferred = [...this.deferredLogsBySession.values()]
+      .flat()
+      .sort((a, b) => a.payload.seq - b.payload.seq);
+    for (const msg of deferred) this.post(msg);
   }
 
   private post(message: VizDownstreamMessage): void {

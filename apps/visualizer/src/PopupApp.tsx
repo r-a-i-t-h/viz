@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import {
   connectPopupReceiver,
+  DEFAULT_MAX_LOG_ENTRIES_PER_SESSION,
+  retainLogEntriesPerSession,
   type VizLogEntry,
   type VizMachine,
   type VisualizerSnapshot,
@@ -61,11 +63,18 @@ export default function PopupApp() {
           break;
         case '@viz.log':
           setConnection('connected');
-          setSnapshot((prev) => ({
-            ...prev,
-            log: [message.payload as VizLogEntry, ...prev.log].slice(0, 40),
-            popupStatus: 'connected',
-          }));
+          setSnapshot((prev) => {
+            const entry = message.payload as VizLogEntry;
+            return {
+              ...prev,
+              log: retainLogEntriesPerSession(
+                [entry, ...prev.log],
+                entry.sessionId,
+                DEFAULT_MAX_LOG_ENTRIES_PER_SESSION,
+              ),
+              popupStatus: 'connected',
+            };
+          });
           break;
         case '@viz.closed':
           setConnection('closed');

@@ -58,4 +58,8 @@ export type {
   VizTransition,
 } from '@r-a-i-t-h/viz-protocol';
 
-export { isVizActorRefMarker } from '@r-a-i-t-h/viz-protocol';
+export {
+  DEFAULT_MAX_LOG_ENTRIES_PER_SESSION,
+  isVizActorRefMarker,
+  retainLogEntriesPerSession,
+} from '@r-a-i-t-h/viz-protocol';

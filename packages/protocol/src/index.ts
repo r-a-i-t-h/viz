@@ -33,7 +33,11 @@ export type {
   VizTransition,
 } from './model.js';
 
-export { isVizActorRefMarker } from './model.js';
+export {
+  DEFAULT_MAX_LOG_ENTRIES_PER_SESSION,
+  isVizActorRefMarker,
+  retainLogEntriesPerSession,
+} from './model.js';
 
 export type { HostBridgeStatus, VisualizerSnapshot } from './snapshot.js';
 

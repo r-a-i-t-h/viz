@@ -1,5 +1,7 @@
 import type { AnyEventObject, InspectionEvent, MachineContext } from 'xstate';
 import {
+  DEFAULT_MAX_LOG_ENTRIES_PER_SESSION,
+  retainLogEntriesPerSession,
   type HostBridgeStatus,
   type VizFrame,
   type VizLogEntry,
@@ -21,7 +23,11 @@ export interface VisualizerHostOptions {
    * Required for `openPopup()`.
    */
   visualizerUrl: string;
-  /** Max log entries retained for subscribers and popup replay. @default 100 */
+  /**
+   * Max event-log entries retained **per actor session** (subscribers + popup
+   * deferred replay). Chatty machines cannot evict quieter ones.
+   * @default 20 ({@link DEFAULT_MAX_LOG_ENTRIES_PER_SESSION})
+   */
   maxLogEntries?: number;
   /**
    * Scrub context before frames are stored / sent over postMessage.
@@ -94,7 +100,8 @@ export interface VisualizerHost {
 export function createVisualizerHost(
   options: VisualizerHostOptions,
 ): VisualizerHost {
-  const maxLogEntries = options.maxLogEntries ?? 100;
+  const maxLogEntries =
+    options.maxLogEntries ?? DEFAULT_MAX_LOG_ENTRIES_PER_SESSION;
   const listeners = new Set<VisualizerListener>();
 
   const machines = new Map<string, VizMachine>();
@@ -169,7 +176,11 @@ export function createVisualizerHost(
       bridge.sendFrame(frame);
     }
 
-    log = [logged, ...log].slice(0, maxLogEntries);
+    log = retainLogEntriesPerSession(
+      [logged, ...log],
+      logged.sessionId,
+      maxLogEntries,
+    );
     bridge.sendLog(logged);
 
     emit();

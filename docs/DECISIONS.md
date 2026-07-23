@@ -1,3 +1,13 @@
+## 2026-07-23 — Per-machine event-log retention (default 20)
+
+**Context:** A single global log cap let chatty actors (spawners, blinkers) evict history for quieter machines while scrubbing — useless while live events keep arriving.
+
+**Decision:** Cap at **20 entries per `sessionId`** by default (`DEFAULT_MAX_LOG_ENTRIES_PER_SESSION` / `maxLogEntries`). Host snapshot log, popup receiver, and deferred reconnect buffers all trim per session. Interleaved “all machines” view still merges retained rows; parent/child timelines can drift relative to each other — accepted.
+
+**Rationale:** Protects interesting machines’ history without growing unbounded; matches the existing per-machine filter/history mental model.
+
+---
+
 ## 2026-07-23 — Snapshot log history scrubbing (view-only)
 
 **Context:** Want to click past `@xstate.snapshot` event-log rows and re-see state/context/active overlay. Not actor rewind; child actors keep independent timelines; visualizer reload may drop history.

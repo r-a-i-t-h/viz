@@ -204,3 +204,23 @@ export interface VizLogEntry {
    */
   frame?: VizFrame;
 }
+
+/** Default max event-log entries retained per actor `sessionId`. */
+export const DEFAULT_MAX_LOG_ENTRIES_PER_SESSION = 20;
+
+/**
+ * Newest-first log: after prepending an entry for `sessionId`, drop that
+ * session’s overflow while leaving other actors untouched.
+ */
+export function retainLogEntriesPerSession(
+  entries: VizLogEntry[],
+  sessionId: string,
+  maxPerSession: number,
+): VizLogEntry[] {
+  let keptForSession = 0;
+  return entries.filter((entry) => {
+    if (entry.sessionId !== sessionId) return true;
+    keptForSession += 1;
+    return keptForSession <= maxPerSession;
+  });
+}
