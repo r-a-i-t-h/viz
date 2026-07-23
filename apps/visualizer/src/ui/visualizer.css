@@ -1728,6 +1728,24 @@ body.viz--resizing iframe {
   text-align: right;
 }
 
+.viz__log-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+}
+
+.viz__log-filter {
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.viz__log-empty {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--viz-subtle);
+}
+
 .viz__log {
   list-style: none;
   margin: 0;

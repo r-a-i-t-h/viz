@@ -105,7 +105,7 @@ Do not schedule these unless product scope changes:
 - Rich action-taxonomy UI beyond names/types in hover (taxonomy feeds analysis only)
 - Tags / `meta` / `description` as node decoration (optional watch-card/hover later if needed)
 - Microstep / `@xstate.transition` stream as a primary UI (step debugger)
-- Event-log filtering product surface
+- Event-log filtering product surface (beyond “filter to current machine” via `sessionId`)
 - Bidirectional control (send events from viz back to the host actor)
 - Drawing all transition edges by default (target highlight on hover remains the ceiling)
 

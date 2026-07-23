@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { VizFrame, VizMachine, VisualizerSnapshot } from '@r-a-i-t-h/viz-protocol';
+import type {
+  VizFrame,
+  VizLogEntry,
+  VizMachine,
+  VisualizerSnapshot,
+} from '@r-a-i-t-h/viz-protocol';
 import {
   DEFAULT_SIDE_WIDTH,
   DEFAULT_WATCH_WIDTH,
@@ -66,6 +71,8 @@ export function VisualizerView({
   );
   const [theme, setTheme] = useState<VizTheme>(readStoredTheme);
   const [showLifecycleBadges, setShowLifecycleBadges] = useState(true);
+  const [filterLogToCurrentMachine, setFilterLogToCurrentMachine] =
+    useState(true);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
     null,
   );
@@ -335,24 +342,12 @@ export function VisualizerView({
                 </>
               ),
               log: (
-                <ul className="viz__log">
-                  {snapshot.log.map((entry) => (
-                    <li
-                      key={entry.seq}
-                      className={`viz__log-item viz__log-item--${entry.type.replace('@xstate.', '')}`}
-                    >
-                      <span className="viz__log-type">{entry.type}</span>
-                      {entry.eventType && (
-                        <span className="viz__log-event">{entry.eventType}</span>
-                      )}
-                      {entry.value !== undefined && (
-                        <span className="viz__log-value">
-                          {JSON.stringify(entry.value)}
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+                <EventLogPanel
+                  entries={snapshot.log}
+                  sessionId={sessionId}
+                  filterToCurrent={filterLogToCurrentMachine}
+                  onFilterToCurrentChange={setFilterLogToCurrentMachine}
+                />
               ),
             }}
           />
@@ -464,6 +459,59 @@ type ActorOption = {
   depth: number;
   status: VizFrame['status'];
 };
+
+function EventLogPanel({
+  entries,
+  sessionId,
+  filterToCurrent,
+  onFilterToCurrentChange,
+}: {
+  entries: VizLogEntry[];
+  sessionId: string;
+  filterToCurrent: boolean;
+  onFilterToCurrentChange: (next: boolean) => void;
+}) {
+  const visible =
+    filterToCurrent && sessionId
+      ? entries.filter((entry) => entry.sessionId === sessionId)
+      : entries;
+
+  return (
+    <div className="viz__log-panel">
+      <label className="viz__setting-row viz__log-filter">
+        <span>Filter to current machine</span>
+        <input
+          type="checkbox"
+          checked={filterToCurrent}
+          disabled={!sessionId}
+          onChange={(event) => onFilterToCurrentChange(event.target.checked)}
+        />
+      </label>
+      {visible.length === 0 ? (
+        <p className="viz__log-empty">No events yet.</p>
+      ) : (
+        <ul className="viz__log">
+          {visible.map((entry) => (
+            <li
+              key={entry.seq}
+              className={`viz__log-item viz__log-item--${entry.type.replace('@xstate.', '')}`}
+            >
+              <span className="viz__log-type">{entry.type}</span>
+              {entry.eventType && (
+                <span className="viz__log-event">{entry.eventType}</span>
+              )}
+              {entry.value !== undefined && (
+                <span className="viz__log-value">
+                  {JSON.stringify(entry.value)}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 function ActorSelect({
   machines,

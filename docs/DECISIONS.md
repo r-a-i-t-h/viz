@@ -1,3 +1,13 @@
+## 2026-07-23 — Event log “filter to current machine”
+
+**Context:** The host keeps one shared `log: VizLogEntry[]` across all inspected actors. Each entry already carries `sessionId` (from `actorRef.sessionId`). The Event log tab showed the full interleaved timeline, which is confusing when multiple machines receive different events.
+
+**Decision:** Keep the shared host log; add a UI checkbox **Filter to current machine** (default on) that shows only entries whose `sessionId` matches the selected actor. Unchecked restores the full host timeline.
+
+**Rationale:** `sessionId` is exactly the actor key used for machines/frames selection — no protocol change needed. Richer event-log product filtering stays out of scope.
+
+---
+
 ## 2026-07-22 — Shift+wheel → horizontal pan (mouse-only remap)
 
 **Context:** Vertical mouse wheels commonly use Shift to scroll horizontally. Trackpads already emit `deltaX`/`deltaY` for two-finger pan.
